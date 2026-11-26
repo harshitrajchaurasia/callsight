@@ -21,6 +21,7 @@ app = FastAPI(title="Callsight", docs_url=None, redoc_url=None, openapi_url=None
 conn = store.connect()
 COOKIE = "cs_session"
 MAX_AUDIO = 25 * 1024 * 1024  # ~25 min of compressed phone audio
+MAX_MINUTES = float(os.getenv("MAX_AUDIO_MINUTES", "10"))  # Whisper on CPU: ~20 s of compute per minute of audio
 AUDIO = {".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm"}
 log = logging.getLogger("uvicorn.error")
 
@@ -45,6 +46,25 @@ def _authed(session: str | None) -> bool:
     return expiry > time.time() and hmac.compare_digest(session.encode(), _token(expiry).encode())
 
 
+def _ip(request: Request) -> str:
+    return request.headers.get("x-forwarded-for", "").split(",")[0].strip() or request.client.host  # Caddy sets it from CF
+
+
+# Per-IP limits on the endpoints that spend model tokens or CPU. With no login this is what stops one visitor using up
+# the day's budget (DAILY_BUDGET_USD) for everyone.
+LIMITS = {"call": (int(os.getenv("CALLS_PER_HOUR", "10")), 3600), "ask": (int(os.getenv("ASKS_PER_HOUR", "30")), 3600)}
+_hits: dict[tuple[str, str], list[float]] = {}  # ponytail: in-memory, one worker; never pruned of idle IPs
+
+
+def rate_limit(kind: str, request: Request) -> None:
+    n, window = LIMITS[kind]
+    now, key = time.time(), (kind, _ip(request))
+    hits = [t for t in _hits.get(key, []) if t > now - window]
+    if len(hits) >= n:
+        raise HTTPException(429, f"limit of {n} per hour reached for this demo; try again later")
+    _hits[key] = hits + [now]
+
+
 def _recent(ip: str, now: float) -> list[float]:
     hits = [t for t in _fails.get(ip, []) if t > now - WINDOW]
     if hits:
@@ -66,7 +86,7 @@ class Login(BaseModel):
 
 @app.post("/api/login")
 def login(body: Login, request: Request, response: Response):
-    ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or request.client.host  # Caddy sets it from CF
+    ip = _ip(request)
     now = time.time()
     if len(_recent(ip, now)) >= FAILS_PER_IP or sum(len(_recent(k, now)) for k in list(_fails)) >= FAILS_GLOBAL:
         log.warning("login locked out ip=%s", ip)
@@ -95,6 +115,11 @@ def index():
 
 # --- app API (cookie protected) ----------------------------------------------------------------------------------
 api = [Depends(require_session)]
+
+
+@app.get("/api/me")
+def me(cs_session: str | None = Cookie(default=None)):
+    return {"login_required": bool(os.getenv("DEMO_PASS")), "signed_in": _authed(cs_session)}
 
 
 @app.get("/api/clients", dependencies=api)
@@ -133,14 +158,15 @@ def call(call_id: str):
 
 
 @app.post("/api/calls", dependencies=api)
-async def new_call(client_id: str = Form(...), transcript: str | None = Form(None), audio: UploadFile | None = None,
-                   provider: str | None = Form(None)):
+async def new_call(request: Request, client_id: str = Form(...), transcript: str | None = Form(None),
+                   audio: UploadFile | None = None, provider: str | None = Form(None)):
     if client_id not in CLIENTS:
         raise HTTPException(422, "unknown client")
     if provider not in (None, "", "claude", "grok"):
         raise HTTPException(422, "provider must be claude or grok")
     if bool(transcript and transcript.strip()) == bool(audio and audio.filename):
         raise HTTPException(422, "send a transcript or an audio file, not both")
+    rate_limit("call", request)
     call_id = f"CALL-{time.strftime('%m%d')}-{uuid.uuid4().hex[:5]}"
     kw = {"provider": provider or None}
     try:
@@ -157,11 +183,22 @@ async def new_call(client_id: str = Form(...), transcript: str | None = Form(Non
         with tempfile.NamedTemporaryFile(suffix=suffix) as f:  # deleted as soon as it's transcribed
             f.write(data)
             f.flush()
+            if _minutes(f.name) > MAX_MINUTES:
+                raise HTTPException(413, f"recording too long ({MAX_MINUTES:g} minutes max)")
             return (await run_in_threadpool(pipeline.process, call_id, client_id, conn, audio_path=f.name, **kw)).model_dump()
     except redact.RedactionUnavailable as e:
         raise HTTPException(503, str(e))
     except extract.ModelUnavailable as e:
         raise HTTPException(502, str(e))
+
+
+def _minutes(path: str) -> float:
+    import av
+    try:
+        with av.open(path) as c:
+            return (c.duration or 0) / av.time_base / 60  # unknown duration -> 0; Whisper still runs under the CPU cap
+    except Exception:
+        raise HTTPException(415, "couldn't read that audio file")
 
 
 class Question(BaseModel):
@@ -170,7 +207,8 @@ class Question(BaseModel):
 
 
 @app.post("/api/ask", dependencies=api)
-async def ask_calls(q: Question):
+async def ask_calls(q: Question, request: Request):
+    rate_limit("ask", request)
     try:
         return await run_in_threadpool(ask.answer, conn, q.question, q.provider if q.provider in ("claude", "grok") else None)
     except extract.ModelUnavailable as e:

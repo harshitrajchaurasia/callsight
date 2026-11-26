@@ -36,3 +36,20 @@ def test_login_lockout(monkeypatch):
              for _ in range(6)]
     assert codes == [401] * 5 + [429]
     api._fails.clear()
+
+
+def test_public_mode_rate_limits_spending(tmp_path, monkeypatch):
+    monkeypatch.setattr(api, "conn", store.connect(str(tmp_path / "t.db")))
+    monkeypatch.setattr(redact, "redact", lambda segs: segs)
+    monkeypatch.setattr(ask, "embed", fake_embed)
+    monkeypatch.setitem(extract.PROVIDERS, "claude", lambda segs, client: insight())
+    monkeypatch.setenv("DEMO_PASS", "")
+    monkeypatch.setitem(api.LIMITS, "call", (2, 3600))
+    api._hits.clear()
+    c = TestClient(api.app, base_url="https://testserver")
+    assert c.get("/api/me").json() == {"login_required": False, "signed_in": True}
+    form = {"client_id": "C-03", "provider": "claude", "transcript": "AM: hi"}
+    codes = [c.post("/api/calls", data=form, headers={"x-forwarded-for": "1.1.1.1"}).status_code for _ in range(3)]
+    assert codes == [200, 200, 429]
+    assert c.post("/api/calls", data=form, headers={"x-forwarded-for": "2.2.2.2"}).status_code == 200  # per IP
+    api._hits.clear()

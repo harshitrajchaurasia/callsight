@@ -73,8 +73,9 @@ button.ghost { background:transparent; color:var(--accent) } button:disabled { o
 </div>
 
 <div id="app" hidden>
-<header><h1>Callsight</h1><span class="tag">Client calls in, checked facts and follow-ups out. All clients and calls are made up.</span>
-  <button class="ghost" id="howBtn" aria-expanded="false">How it works</button><button class="ghost" id="logout">Sign out</button></header>
+<header><h1>Callsight</h1><span class="tag">Client calls in, checked facts and follow-ups out. All clients and calls are made up.
+  Free and open source: <a href="https://github.com/harshitrajchaurasia/callsight">code on GitHub</a> (MIT).</span>
+  <button class="ghost" id="howBtn" aria-expanded="false">How it works</button><button class="ghost" id="logout" hidden>Sign out</button></header>
 <main>
   <section class="intro" style="grid-column:1/-1;margin:0" id="intro" hidden><h2>How it works</h2>
       <ol class="steps" id="stepsApp"></ol>
@@ -83,6 +84,8 @@ button.ghost { background:transparent; color:var(--accent) } button:disabled { o
   <div>
     <section><h2>1. Process a call</h2>
       <p class="help">Paste a transcript or upload a recording. Text takes about 10 seconds; audio about 20 seconds per minute.</p>
+      <p class="help"><b>Shared demo:</b> calls processed here are visible to everyone using it. Use a sample or a made-up
+        call, never real customer data. Limits: 10 calls and 30 questions an hour, recordings up to 10 minutes.</p>
       <form id="callForm">
         <label for="sample">Quick start: load a sample call</label>
         <select id="sample"><option value="">Choose a sample...</option></select>
@@ -122,7 +125,7 @@ const STEPS = [
   ["Mask", "Names, phone numbers, emails and card numbers become [NAME], [PHONE]... before any AI sees the call. If masking fails, the call stops."],
   ["Extract", "Claude or Grok writes a summary, churn risk, upsell signals and follow-ups, and must quote the exact words behind each one."],
   ["Check", "Code looks for every quote in the transcript. A point whose quote isn't there is marked unverified and can't raise an alert."],
-  ["Act", "Rules in code, not the AI, decide the alerts. Each call becomes a Monday.com item with the follow-ups as subitems."]];
+  ["Act", "Rules in code, not the AI, decide the alerts. In a real setup each call becomes a Monday.com item with the follow-ups as subitems."]];
 const stepsHtml = STEPS.map(([t, d]) => `<li><b>${t}.</b> ${d}</li>`).join("");
 $("#stepsLogin").innerHTML = $("#stepsApp").innerHTML = stepsHtml;
 const EXAMPLES = ["Which clients are thinking about leaving?", "Who wants to expand to new states?", "What did we promise to send, and to whom?"];
@@ -150,7 +153,8 @@ $("#howBtn").onclick = () => intro($("#intro").hidden);
 $("#hideIntro").onclick = e => { e.preventDefault(); intro(false); };
 
 async function start() {
-  const cs = await api("/api/clients"); show(true);
+  const [me, cs] = [await api("/api/me"), await api("/api/clients")]; show(true);
+  $("#logout").hidden = !me.login_required;
   intro(store.get("cs-intro") !== "0");
   $("#clients").innerHTML = cs.map(c => `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.plan)})</option>`).join("");
   samples = await api("/api/samples");
