@@ -3,8 +3,8 @@
 Client calls in; checked facts, alerts and follow-ups out. Built for a made-up lead agency ("Acme Leads") whose
 account managers talk to insurance agents all day: who is about to leave, who wants more, and what we promised.
 
-Free and open source (MIT). Live demo, no sign-up: [callsight.saakura.dev](https://callsight.saakura.dev). It's shared, so
-use the sample calls or made-up ones, not real customer data.
+Free and open source (MIT). Live demo: [callsight.saakura.dev](https://callsight.saakura.dev) (sign-in needed, since every call
+costs a little; ask for a login on [my projects page](https://harshit.saakura.dev/projects/), or run it yourself).
 
 ```
 recording (stereo) ─► faster-whisper (CPU) ─► PII Shield ─► Claude or Grok ─► quotes checked in code ─► rules ─► Monday / GHL
@@ -30,9 +30,9 @@ pasted transcript ────────────────────�
   code checks that every citation was actually retrieved.
 - **Web app.** FastAPI and one HTML page: paste a transcript or upload a recording, see the checked quotes with
   click-to-highlight in the transcript, ask questions across calls.
-- **Safe to leave open.** No login by default on the public demo, so spending is capped in code: a daily model budget
+- **Spending is capped in code** as well as by the optional login (`DEMO_PASS`): a daily model budget
   (`DAILY_BUDGET_USD`), per-IP limits on calls and questions, a 10-minute cap on recordings, and Whisper held to 2 CPU
-  cores. Set `DEMO_PASS` to put it behind a login instead.
+  cores.
 
 ## Results
 20 made-up calls (`data/calls*.json`), each with expected outcomes written before the run: a churn band, whether
