@@ -24,12 +24,12 @@ MUTATIONS = {
 }
 
 
-def _mmss(at: float | None) -> str:
-    return "" if at is None else f" @{int(at) // 60:02d}:{int(at) % 60:02d}"
-
-
 def report(r: CallResult) -> list[str]:
     """The summary, alerts and checked points as plain lines, shared by Monday and GHL."""
+    timed = any(s.end > s.start for s in r.segments)  # audio has times; a pasted transcript only has line numbers
+
+    def _mmss(at: float | None) -> str:
+        return "" if at is None else f" @{int(at) // 60:02d}:{int(at) % 60:02d}" if timed else f" (line {int(at) + 1})"
     i = r.insight
     lines = [i.summary, f"Sentiment {i.sentiment}, churn risk {i.churn_risk:.0%}", *r.alerts]
     lines += [f"{'' if c.found else '[unverified] '}{c.kind.replace('_', ' ')}: {c.text}{_mmss(c.at)}" for c in r.checks]

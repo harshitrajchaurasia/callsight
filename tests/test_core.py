@@ -61,9 +61,12 @@ class Resp:
     def json(self): return self.body
 
 
-def test_redact_maps_lines_back():
-    out = redact.redact(SEGS[:2], post=lambda url, **kw: Resp({"redacted_text": kw["json"]["text"].replace("vendors", "[X]")}))
-    assert out[1].text == "Honestly we're looking at other [X]." and out[1].speaker == "Client"
+def test_redact_maps_lines_back_and_masks_speaker_names():
+    segs = stt.from_text("Greg (Summit): Honestly we're looking at other vendors.\nAM: ok")
+    fake = lambda url, **kw: Resp({"redacted_text": kw["json"]["text"].replace("vendors", "[X]").replace("Greg", "[NAME]")})
+    out = redact.redact(segs, post=fake)
+    assert out[0].text == "Honestly we're looking at other [X]." and out[0].speaker == "[NAME] (Summit)"
+    assert out[1].speaker == "AM" and out[1].text == "ok"
 
 
 @pytest.mark.parametrize("post", [lambda url, **kw: Resp({}, 503), lambda url, **kw: Resp({"redacted_text": "one line"}),
@@ -150,3 +153,12 @@ def test_sinks_monday_and_ghl(tmp_path, monkeypatch):
     assert any("[unverified]" in j["variables"].get("body", "") for _, j in sent)  # churn quote isn't in this transcript
     monkeypatch.setenv("GHL_API_KEY", "k"); monkeypatch.setenv("GHL_CONTACTS", '{"C-03": "abc"}')
     assert sinks.to_ghl(r, post=post) and sent[-1][0].endswith("/contacts/abc/notes")
+
+
+def test_alias_speakers_hides_names_from_labels_and_text():
+    segs = redact.alias_speakers(stt.from_text("Marcus (Acme): Hey Greg, how did it go?\nGreg (Summit): Fine, thanks Marcus.\nMarcus: Great."))
+    assert [s.speaker for s in segs] == ["Speaker 1 (Acme)", "Speaker 2 (Summit)", "Speaker 1"]
+    assert segs[0].text == "Hey Speaker 2, how did it go?" and segs[1].text == "Fine, thanks Speaker 1."
+    assert redact.alias_speakers(SEGS)[0].speaker == "Speaker 1"  # "AM" is a label too
+    unlabeled = stt.from_text("just one block of text")
+    assert redact.alias_speakers(unlabeled) == unlabeled

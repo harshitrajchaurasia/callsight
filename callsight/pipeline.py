@@ -14,7 +14,7 @@ def process(call_id: str, client_id: str, conn, *, audio_path: str | None = None
     if (audio_path is None) == (text is None):
         raise ValueError("give exactly one of audio_path or text")
     start = time.perf_counter()
-    segments = stt.transcribe(audio_path) if audio_path else stt.from_text(text)
+    segments = stt.transcribe(audio_path) if audio_path else redact.alias_speakers(stt.from_text(text))
     segments = (redact_fn or redact.redact)(segments)  # raises if PII Shield is down: nothing unmasked goes further
     provider = provider or extract.default_provider()
     insight = extract.analyze(segments, client, provider, analyze_fn)
