@@ -104,3 +104,23 @@ def test_confirmed_task_goes_to_monday_safely(tmp_path, monkeypatch):
     monkeypatch.setenv("MONDAY_ALLOWED_SUBSCRIBERS", "2")  # someone else watches the board: write nothing
     assert command.run(conn, {"kind": "task", "text": "y"}, "g", post=post)["monday_item_id"] is None
     assert command.set_done(conn, a["id"], True, "garrett") and command.listing(conn, None)[-1]["done"]
+
+
+def test_ticking_a_follow_up_keeps_approval_and_notes_it_on_monday(tmp_path, monkeypatch):
+    from callsight import pipeline
+    conn = store.connect(str(tmp_path / "t.db"))
+    notes = []
+    monkeypatch.setattr(sinks, "to_monday", lambda r: "77")
+    monkeypatch.setattr(sinks, "to_ghl", lambda r: False)
+    monkeypatch.setattr(sinks, "monday_update", lambda item, lines: notes.append((item, lines)) or True)
+    r = pipeline.process("C1", "C-03", conn, text="AM: hi", write_out=False, redact_fn=lambda s: s, embed_fn=fake_embed,
+                         analyze_fn=lambda s, c: insight(churn_risk=0.9, sentiment="angry"))
+    r = pipeline.approve(conn, r, "priya")
+    assert r.monday_item_id == "77" and not notes
+    items = [a.model_copy(update={"done": True}) for a in r.insight.action_items]
+    r = pipeline.edit(conn, r, "priya", action_items=items, embed_fn=fake_embed)
+    assert r.approved_by == "priya" and notes[-1] == ("77", ["Done: call back (ticked by priya)"])
+    r = pipeline.edit(conn, r, "priya", summary="changed", embed_fn=fake_embed)
+    assert r.approved_by is None  # a real change needs approving again
+    r = pipeline.approve(conn, r, "dana")
+    assert notes[-1][0] == "77" and notes[-1][1][0] == "Approved again after changes by dana."  # same item, not a new one

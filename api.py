@@ -16,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from callsight import ask, command, extract, pipeline, redact, store, stt
+from callsight import ask, command, extract, pipeline, redact, sinks, store, stt
 from callsight.models import ActionItem, Segment
 from callsight.config import CLIENTS, ROOT
 
@@ -181,7 +181,8 @@ def me(request: Request, cs_session: str | None = Cookie(default=None)):
 def settings(user: str = Depends(require_session)):
     """What the settings page can offer, and the server defaults it starts from."""
     from callsight.config import RULES
-    return {"user": user, "admin": _admin(user), "team": command.TEAM, "providers": [p for p, k in (("claude", "ANTHROPIC_API_KEY"), ("grok", "XAI_API_KEY")) if os.getenv(k)],
+    return {"user": user, "admin": _admin(user), "team": command.TEAM, "monday_board": sinks.board_url(),
+            "providers": [p for p, k in (("claude", "ANTHROPIC_API_KEY"), ("grok", "XAI_API_KEY")) if os.getenv(k)],
             "default_provider": extract.default_provider(), "keepable": sorted(redact.KEEPABLE),
             "churn_alert": RULES["churn_alert_min"]}
 

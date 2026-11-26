@@ -76,6 +76,23 @@ def monday_task(name: str, body: str, *, post=requests.post) -> str | None:
         return None
 
 
+def monday_update(item: str, lines: list[str], *, post=requests.post) -> bool:
+    """An update (a comment) on an existing item: a follow-up ticked off, or the call re-approved after changes."""
+    if not (gql := _monday(f"update on {item}", post)):
+        return False
+    try:
+        gql("update", item=item, body="".join(f"<p>{escape(x)}</p>" for x in lines))
+        return True
+    except Exception as e:
+        log.warning("monday update on %s failed: %r", item, e)
+        return False
+
+
+def board_url() -> str | None:
+    """Link to the board for people (MONDAY_BOARD_URL, e.g. https://acct.monday.com/boards/123), if Monday is on."""
+    return os.getenv("MONDAY_BOARD_URL") if os.getenv("MONDAY_API_TOKEN") and os.getenv("MONDAY_CALLS_BOARD_ID") else None
+
+
 def to_monday(r: CallResult, *, post=requests.post) -> str | None:
     if not (gql := _monday(r.id, post)):
         return None

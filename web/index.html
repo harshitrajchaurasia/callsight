@@ -236,6 +236,7 @@ input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12p
 details.more { margin-top:12px } details.more > summary { cursor:pointer; font-size:14px; font-weight:600; color:var(--ink2); list-style:none; display:inline-block }
 details.more > summary::-webkit-details-marker { display:none } details.more > summary::after { content:" \25BE" } details.more[open] > summary::after { content:" \25B4" }
 details.more .toolbar { margin-top:10px }
+.explain { margin-top:8px; padding:12px 14px; border-radius:10px; background:var(--soft); font-size:13.5px; color:var(--ink2) } .explain p { margin:0 0 8px } .explain p:last-child { margin:0 }
 .back { display:inline-block; margin:0 0 12px; font-size:14px; font-weight:600; text-decoration:none }
 .today h3.sub { display:flex; align-items:baseline; gap:8px } .today h3 .muted { font-weight:500 }
 .today .more { display:inline-block; margin-top:10px; font-size:14px; font-weight:600; text-decoration:none }
@@ -708,9 +709,18 @@ function renderCall(r) {
   const missing = r.checks.filter(c => !c.found).length;
   const by = u => u ? ` by <b>${esc(u)}</b>` : "";
   const other = r.provider === "claude" ? "grok" : "claude";
+  const mon = server.monday_board, item = r.monday_item_id && mon ? `${mon}/pulses/${r.monday_item_id}` : "";
   const status = r.approved_by != null
-    ? `<span class="badge b-low">Approved</span><span>${by(r.approved_by)} · ${when(r.approved_at)}</span>`
-    : `<span class="badge b-med">Draft</span><span>${r.edited_by != null ? `Edited${by(r.edited_by)}. ` : ""}Check it, correct anything wrong, then approve to send it to Monday and GHL.</span>`;
+    ? `<span class="state st-ok">Approved</span><span>${by(r.approved_by)} · ${when(r.approved_at)}${item ? ` · <a href="${esc(item)}" target="_blank" rel="noopener">Open in Monday &#8599;</a>`
+        : mon ? "" : " · Monday isn't connected on this server, so nothing was sent"}</span>`
+    : `<span class="state st-draft">Waiting for review</span><span>${r.edited_by != null ? `Edited${by(r.edited_by)}. ` : ""}Nobody has checked the AI's draft yet. Nothing has gone to Monday.</span>`;
+  const explain = `<details class="more"><summary>What do these mean?</summary><div class="explain">
+    <p><b>Waiting for review:</b> the AI has read the call and drafted the summary, scores and follow-ups, but no person has checked them yet. Nothing has been sent anywhere.</p>
+    <p><b>Approve:</b> you confirm the draft is right (use Edit first if it isn't). CallSight then creates an item for this call on the
+      ${mon ? `<a href="${esc(mon)}" target="_blank" rel="noopener">Monday board &#8599;</a>` : "Monday board (not connected on this server)"},
+      with each follow-up as a subitem and the summary and alerts as an update. A link to the item appears next to "Approved".</p>
+    <p><b>Ticking a follow-up:</b> marks it done. It drops off Today and the client's open list and stays approved; on an approved call, a "Done: ..." note is added to the Monday item.</p>
+    <p><b>Editing after approval:</b> the call goes back to waiting for review. Approving it again posts the corrected report on the same Monday item, not a new one.</p></div></details>`;
   const ev = r.checks.map(c => `<div class="ev ${c.found ? "found" : "miss"}"><span class="k">${esc(c.kind.replace("_", " "))}</span>${esc(c.text)}
       ${c.found ? `<span class="tick b-low">&#10003; found</span><button class="ts" data-at="${c.at}" title="Show in transcript">${where(c.at)}</button>`
                 : '<span class="tick b-high">unverified</span>'}
@@ -727,7 +737,8 @@ function renderCall(r) {
         <div class="tile"><small>Analysed by</small><b>${esc(r.provider)}</b> <span class="due">${(r.latency_ms / 1000).toFixed(1)} s</span></div>
       </div>
       <div class="status">${status}<span class="grow"></span><button type="button" class="btn ghost" id="editBtn">Edit</button>
-        ${r.approved_by != null ? "" : '<button type="button" class="btn" id="approveBtn">Approve</button>'}</div>
+        ${r.approved_by != null ? "" : `<button type="button" class="btn" id="approveBtn">${mon ? "Approve and send to Monday" : "Approve"}</button>`}</div>
+      ${explain}
       <details class="more"><summary>More actions</summary><div class="toolbar"><button type="button" class="btn ghost" data-x="copy">Copy report</button><button type="button" class="btn ghost" data-x="email">Email the client a recap</button>
         <button type="button" class="btn ghost" data-x="csv">Follow-ups as CSV</button>
         ${server.providers.includes(other) ? `<button type="button" class="btn ghost" data-x="rerun" data-p="${other}">Re-run with ${PROVIDER[other]} and compare</button>` : ""}
@@ -740,7 +751,8 @@ function renderCall(r) {
     <section class="card" data-dtab="overview">
       <h3 class="sub">Alerts</h3><p class="help">Raised by rules in code, not by the AI. A churn or upsell alert needs a quote that was found in the transcript.</p>
       ${r.alerts.map(alertHtml).join("") || `<div class="alert a-ok">${ICON.check}<span>No alerts: nothing on this call needs action.</span></div>`}
-      <h3 class="sub">Follow-ups</h3><p class="help">What each side agreed to do, and who said they'd do it. "Us" is Acme Leads; "client" is the agency. Tick one off when it's done.</p>
+      <h3 class="sub">Follow-ups</h3><p class="help">What each side agreed to do, and who said they'd do it. "Us" is Acme Leads; "client" is the agency.
+      Tick one when it's done${r.approved_by != null && r.monday_item_id ? "; it's also noted on the Monday item" : ""}.</p>
       ${i.action_items.map((a, n) => `<div class="todo ${a.done ? "done" : ""}"><input type="checkbox" data-done="${n}" ${a.done ? "checked" : ""} aria-label="Done: ${esc(a.task)}">
         <span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "Us" : "Client"}</span>
         <span>${person(r, a) ? `<span class="who-name">${esc(person(r, a))}</span>: ` : ""}<span class="task">${esc(a.task)}</span> ${a.done ? '<span class="due">· done</span>' : a.due ? `<span class="due">· due ${esc(a.due)}</span>` : '<span class="nodue">· no due date</span>'}</span></div>`).join("") || '<p class="help" style="margin:0">None agreed on this call.</p>'}
@@ -850,7 +862,8 @@ function editForm() {
 document.addEventListener("change", async e => {
   const d = e.target.closest("[data-done]"); if (!d) return;
   const all = items(); all[+d.dataset.done].done = d.checked;
-  try { flash = ""; await saveCall({action_items: all}); } catch (err) { d.checked = !d.checked; alert(err.message); }
+  flash = d.checked ? (shown.approved_by != null && shown.monday_item_id ? "Marked done, and noted on the Monday item." : "Marked done.") : "Reopened.";
+  try { await saveCall({action_items: all}); } catch (err) { flash = ""; d.checked = !d.checked; alert(err.message); }
 });
 document.addEventListener("click", async e => {
   if (e.target.closest("#editBtn")) { dtab("overview"); editForm(); $("#eSum").focus(); }
@@ -858,7 +871,7 @@ document.addEventListener("click", async e => {
   b.disabled = true; b.textContent = "Approving...";
   try {
     const r = await api(`/api/calls/${encodeURIComponent(shown.id)}/approve`, {method: "POST"});
-    flash = r.monday_item_id ? `Approved and sent to Monday (item ${r.monday_item_id})${r.connected.ghl ? " and GHL" : ""}.`
+    flash = r.monday_item_id ? `Approved and sent to Monday: item #${r.monday_item_id}, with the follow-ups as subitems. Use "Open in Monday" above to see it.`
       : r.connected.monday || r.connected.ghl ? "Approved. The CRM write didn't go through; it's in the server log."
       : "Approved. This demo isn't connected to Monday or GHL, so nothing was sent; in a real setup this is when it would be.";
     renderCall(r); loadCalls();
@@ -907,7 +920,7 @@ function actionRows(list) {
   return list.map(a => `<div class="todo ${a.done ? "done" : ""}"><input type="checkbox" data-act="${a.id}" ${a.done ? "checked" : ""} aria-label="Done: ${esc(a.text)}">
     <span class="owner ${a.kind === "task" ? "o-us" : "o-client"}">${a.kind}</span>
     <span>${a.assignee ? `<span class="who-name">${esc(a.assignee)}</span>: ` : ""}<span class="task">${esc(a.text)}</span>
-      <span class="due">${a.client_id ? "· " + esc(CL(a.client_id).name) : ""}${a.due ? " · due " + esc(a.due) : ""}${a.monday_item_id ? ` · Monday #${esc(a.monday_item_id)}` : ""} · ${day(a.created)}${server.admin && a.by !== server.user ? " · by " + esc(a.by) : ""}</span></span></div>`).join("");
+      <span class="due">${a.client_id ? "· " + esc(CL(a.client_id).name) : ""}${a.due ? " · due " + esc(a.due) : ""}${a.monday_item_id ? (server.monday_board ? ` · <a href="${esc(server.monday_board)}/pulses/${esc(a.monday_item_id)}" target="_blank" rel="noopener">Monday #${esc(a.monday_item_id)} &#8599;</a>` : ` · Monday #${esc(a.monday_item_id)}`) : ""} · ${day(a.created)}${server.admin && a.by !== server.user ? " · by " + esc(a.by) : ""}</span></span></div>`).join("");
 }
 document.addEventListener("change", async e => {
   const c = e.target.closest("[data-act]"); if (!c) return;
@@ -953,7 +966,7 @@ document.addEventListener("click", async e => {
   c.disabled = true; c.textContent = "Saving...";
   try {
     const r = await api("/api/actions", json("POST", {kind: a.kind, text: a.text, assignee: a.assignee, client_id: a.client_id, due: a.due}));
-    const where = r.monday_item_id ? `Created Monday item #${esc(r.monday_item_id)}.` : r.ghl ? "Added to the client's GHL contact." :
+    const where = r.monday_item_id ? `Created Monday item <a href="${esc(server.monday_board || "")}/pulses/${esc(r.monday_item_id)}" target="_blank" rel="noopener">#${esc(r.monday_item_id)} &#8599;</a>.` : r.ghl ? "Added to the client's GHL contact." :
       (a.kind === "task" ? r.connected.monday : r.connected.ghl) ? "Saved here; the CRM write didn't go through (see the server log)."
       : `Saved here. This demo isn't connected to ${a.kind === "task" ? "Monday" : "GHL"}; in a real setup it would be ${a.kind === "task" ? "created there" : "added to the client's contact"} now.`;
     card.innerHTML = `<span class="kind">${a.kind === "task" ? "Task" : "Note"} saved</span><p style="margin:6px 0 0">${a.assignee ? `<b>${esc(a.assignee)}</b>: ` : ""}${esc(a.text)}</p><p class="flash">${where}</p>`;

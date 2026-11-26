@@ -72,8 +72,11 @@ def _second_opinion(segments, client, provider, insight, threshold, analyze_fn, 
 
 
 def send(conn, r: CallResult) -> CallResult:
-    """Write the call to Monday and GHL (each is off unless configured)."""
-    if not r.monday_item_id and (item := sinks.to_monday(r)):
+    """Write the call to Monday and GHL (each is off unless configured). Approved again after changes: the item
+    already exists, so the new report goes on it as an update instead of a second item."""
+    if r.monday_item_id:
+        sinks.monday_update(r.monday_item_id, [f"Approved again after changes by {r.approved_by or 'a user'}.", *sinks.report(r)])
+    elif item := sinks.to_monday(r):
         r.monday_item_id = item
         store.save(conn, r)
     sinks.to_ghl(r)
@@ -86,12 +89,19 @@ def edit(conn, r: CallResult, user: str, *, summary: str | None = None, sentimen
     An edit after approval needs approving again."""
     changes = {k: v for k, v in (("summary", summary), ("sentiment", sentiment), ("churn_risk", churn_risk),
                                  ("action_items", action_items)) if v is not None}
+    what = lambda i: (i.summary, i.sentiment, i.churn_risk, [(a.owner, a.speaker, a.task, a.due) for a in i.action_items])
+    before, was_done = what(r.insight), {a.task: a.done for a in r.insight.action_items}
     r.insight = r.insight.model_copy(update=changes)
+    content_changed = what(r.insight) != before  # ticking a follow-up off isn't a change to what the call says
     open_items = r.insight.model_copy(update={"action_items": [a for a in r.insight.action_items if not a.done]})
     threshold = RULES["churn_alert_min"] if r.churn_min is None else r.churn_min
     r.alerts = rules.alerts(open_items, r.checks, CLIENTS[r.client_id], r.segments, r.churn_min) + rules.review_flags(
         r.insight, r.voice, None if churn_risk is not None or sentiment is not None else r.second_opinion, threshold, r.provider)
-    r.edited_by, r.approved_by, r.approved_at = user, None, None
+    if content_changed:
+        r.edited_by, r.approved_by, r.approved_at = user, None, None  # needs approving again
+    ticked = [a for a in r.insight.action_items if a.task in was_done and a.done != was_done[a.task]]
+    if ticked and r.monday_item_id and r.approved_by is not None:  # keep the Monday item in step
+        sinks.monday_update(r.monday_item_id, [f"{'Done' if a.done else 'Reopened'}: {a.task} (ticked by {user or 'a user'})" for a in ticked])
     store.save(conn, r)
     if summary is not None:  # the summary is part of what "ask across calls" searches
         ask.index(conn, r, embed_fn or ask.embed)
