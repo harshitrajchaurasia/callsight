@@ -32,6 +32,9 @@ class ActionItem(BaseModel):
     task: str
     due: str | None = Field(description="Due date or timeframe if one was said, else null")
     quote: str = Field(description=QUOTE)
+    speaker: str | None = Field(None, description="The transcript label (the text before the colon, without any company "
+                                "in brackets, e.g. 'Person 2') of the one person who will do it, if clear; else null")
+    done: bool = Field(False, description="Always false")  # set by a person reviewing the call
 
 
 class Insight(BaseModel):
@@ -65,3 +68,8 @@ class CallResult(BaseModel):
     latency_ms: int
     monday_item_id: str | None = None
     unmasked: list[str] = []  # PII types the user chose to send to the model as said, e.g. ["NAME"]
+    speakers: dict[str, str] = {}  # alias -> name as written ("Person 2" -> "Linda"); kept here, never sent to a model
+    churn_min: float | None = None  # the churn-alert threshold this call was processed with (None = rules.json)
+    edited_by: str | None = None
+    approved_by: str | None = None
+    approved_at: float | None = None  # unix time; Monday/GHL are written only on approval

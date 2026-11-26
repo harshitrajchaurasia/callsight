@@ -73,15 +73,22 @@ def redact(segments: list[Segment], *, post=requests.post, keep: set[str] = froz
     return [s.model_copy(update={"speaker": who.strip(), "text": _mask_long_numbers(t.strip())}) for s, (who, _, t) in zip(segments, parts)]
 
 
+def aliases(segments: list[Segment]) -> dict[str, str]:
+    """Speaker name, as first written -> "Person N" ("Speaker 2" won't do: PII Shield masks the word "Speaker")."""
+    out: dict[str, str] = {}
+    for s in segments:
+        name = s.speaker.split(" (")[0].strip()
+        if (name and name.lower() not in ("speaker", "account manager", "client") and not name.startswith("Person ")
+                and name.lower() not in {k.lower() for k in out}):
+            out[name] = f"Person {len(out) + 1}"
+    return out
+
+
 def alias_speakers(segments: list[Segment]) -> list[Segment]:
     """Pasted transcripts label people by name ("Greg (Summit): ..."). Name-finding models miss a bare first name, but
     the labels say exactly which words are names: swap each for "Person N" in the labels and the text. A company in
     brackets is kept, so the model can still tell our side from the client's."""
-    alias: dict[str, str] = {}
-    for s in segments:
-        name = s.speaker.split(" (")[0].strip()
-        if name and name.lower() not in ("speaker", "account manager", "client") and not name.startswith("Person "):
-            alias.setdefault(name.lower(), f"Person {len(alias) + 1}")  # PII Shield masks "Speaker" in "Speaker 2"
+    alias = {name.lower(): a for name, a in aliases(segments).items()}
     if not alias:
         return segments
     words = re.compile(r"\b(" + "|".join(map(re.escape, sorted(alias, key=len, reverse=True))) + r")\b", re.I)

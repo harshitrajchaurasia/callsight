@@ -12,9 +12,12 @@ from pathlib import Path
 from fastapi import Cookie, Depends, FastAPI, Form, HTTPException, Request, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
-from callsight import ask, extract, pipeline, redact, store
+from callsight import ask, extract, pipeline, redact, store, stt
+from callsight.models import ActionItem, Segment
 from callsight.config import CLIENTS, ROOT
 
 app = FastAPI(title="CallSight", docs_url=None, redoc_url=None, openapi_url=None)
@@ -72,7 +75,8 @@ def _ip(request: Request) -> str:
 
 # Per-IP limits on the endpoints that spend model tokens or CPU. With no login this is what stops one visitor using up
 # the day's budget (DAILY_BUDGET_USD) for everyone.
-LIMITS = {"call": (int(os.getenv("CALLS_PER_HOUR", "10")), 3600), "ask": (int(os.getenv("ASKS_PER_HOUR", "30")), 3600)}
+LIMITS = {"call": (int(os.getenv("CALLS_PER_HOUR", "10")), 3600), "ask": (int(os.getenv("ASKS_PER_HOUR", "30")), 3600),
+          "live": (int(os.getenv("LIVE_CHUNKS_PER_HOUR", "400")), 3600)}  # ~5 s each: 10-min recordings, a few an hour
 _hits: dict[tuple[str, str], list[float]] = {}  # ponytail: in-memory, one worker; never pruned of idle IPs
 
 
@@ -192,24 +196,60 @@ def call(call_id: str):
     return r.model_dump() | {"client": CLIENTS[r.client_id].model_dump()}
 
 
+MAX_CHUNK = 2 * 1024 * 1024  # a 30 s chunk of 16 kHz mono 16-bit WAV is ~1 MB
+
+
+@app.post("/api/live", dependencies=api)
+async def live_chunk(request: Request, audio: UploadFile):
+    """One few-second piece of a microphone recording -> its words, with times from the start of the piece. The browser
+    adds the offset and keeps the running transcript; nothing is stored here, and the audio is deleted at once."""
+    rate_limit("live", request)
+    data = await audio.read(MAX_CHUNK + 1)
+    if len(data) > MAX_CHUNK:
+        raise HTTPException(413, "chunk too large")
+    with tempfile.NamedTemporaryFile(suffix=".wav") as f:
+        f.write(data)
+        f.flush()
+        if _minutes(f.name) > 0.5:
+            raise HTTPException(413, "chunk too long (30 s max)")
+        segs = await run_in_threadpool(stt.transcribe, f.name)
+    return [{"start": s.start, "end": s.end, "text": s.text} for s in segs]
+
+
+class LiveSegment(BaseModel):
+    start: float = Field(ge=0, le=3600)
+    end: float = Field(ge=0, le=3600)
+    text: str = Field(max_length=2000)
+
+
 @app.post("/api/calls", dependencies=api)
 async def new_call(request: Request, user: str = Depends(require_session), client_id: str = Form(...), transcript: str | None = Form(None),
-                   audio: UploadFile | None = None, provider: str | None = Form(None),
+                   audio: UploadFile | None = None, segments: str | None = Form(None), provider: str | None = Form(None),
                    keep: str = Form(""), churn_alert: float | None = Form(None, ge=0.3, le=0.9)):
     if client_id not in CLIENTS:
         raise HTTPException(422, "unknown client")
     if provider not in (None, "", "claude", "grok"):
         raise HTTPException(422, "provider must be claude or grok")
-    if bool(transcript and transcript.strip()) == bool(audio and audio.filename):
-        raise HTTPException(422, "send a transcript or an audio file, not both")
+    if [bool(transcript and transcript.strip()), bool(audio and audio.filename), bool(segments)].count(True) != 1:
+        raise HTTPException(422, "send one of: a transcript, an audio file, or a live recording's transcript")
+    live = None
+    if segments:  # a microphone recording, already transcribed piece by piece through /api/live
+        try:
+            live = [Segment(speaker="Speaker", **LiveSegment.model_validate(s).model_dump()) for s in json.loads(segments)]
+        except Exception:
+            raise HTTPException(422, "couldn't read the live transcript")
+        if not live or len(live) > 3000 or sum(len(s.text) for s in live) > 60_000:
+            raise HTTPException(413, "live transcript empty or too long")
     keep_set = {k.strip().upper() for k in keep.split(",") if k.strip()}
     if keep_set - redact.KEEPABLE:
         raise HTTPException(422, f"only {', '.join(sorted(redact.KEEPABLE))} can be left unmasked")
     rate_limit("call", request)
     call_id = f"CALL-{time.strftime('%m%d')}-{uuid.uuid4().hex[:5]}"
-    log.info("call user=%s id=%s client=%s %s", user, call_id, client_id, "audio" if audio and audio.filename else "text")
-    kw = {"provider": provider or None, "keep": keep_set, "churn_min": churn_alert}
+    log.info("call user=%s id=%s client=%s %s", user, call_id, client_id, "live" if live else "audio" if audio and audio.filename else "text")
+    kw = {"provider": provider or None, "keep": keep_set, "churn_min": churn_alert, "write_out": False}  # Monday/GHL on approval
     try:
+        if live:
+            return (await run_in_threadpool(pipeline.process, call_id, client_id, conn, segments=live, **kw)).model_dump()
         if transcript:
             if len(transcript) > 60_000:
                 raise HTTPException(413, "transcript too long (60k characters max)")
@@ -239,6 +279,38 @@ def _minutes(path: str) -> float:
             return (c.duration or 0) / av.time_base / 60  # unknown duration -> 0; Whisper still runs under the CPU cap
     except Exception:
         raise HTTPException(415, "couldn't read that audio file")
+
+
+class Edit(BaseModel):
+    summary: str | None = Field(None, min_length=1, max_length=2000)
+    sentiment: Literal["positive", "neutral", "frustrated", "angry"] | None = None
+    churn_risk: float | None = Field(None, ge=0, le=1)
+    action_items: list[ActionItem] | None = Field(None, max_length=50)
+
+
+def _get(call_id: str):
+    if not (r := store.get(conn, call_id)):
+        raise HTTPException(404, "no such call")
+    return r
+
+
+@app.patch("/api/calls/{call_id}", dependencies=api)
+async def edit_call(call_id: str, body: Edit, user: str = Depends(require_session)):
+    if any(len(a.task) > 300 or len(a.quote) > 500 or len(a.due or "") > 80 or len(a.speaker or "") > 80 for a in body.action_items or []):
+        raise HTTPException(422, "a follow-up is too long")
+    r = await run_in_threadpool(pipeline.edit, conn, _get(call_id), user, **body.model_dump(exclude_none=True, exclude={"action_items"}),
+                                action_items=body.action_items)
+    log.info("edit user=%s id=%s", user, call_id)
+    return r.model_dump() | {"client": CLIENTS[r.client_id].model_dump()}
+
+
+@app.post("/api/calls/{call_id}/approve", dependencies=api)
+async def approve_call(call_id: str, user: str = Depends(require_session)):
+    r = await run_in_threadpool(pipeline.approve, conn, _get(call_id), user)
+    log.info("approve user=%s id=%s monday=%s", user, call_id, r.monday_item_id)
+    return r.model_dump() | {"client": CLIENTS[r.client_id].model_dump(),
+                             "connected": {"monday": bool(os.getenv("MONDAY_API_TOKEN") and os.getenv("MONDAY_CALLS_BOARD_ID")),
+                                           "ghl": bool(os.getenv("GHL_API_KEY") and os.getenv("GHL_CONTACTS"))}}
 
 
 class Question(BaseModel):

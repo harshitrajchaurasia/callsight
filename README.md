@@ -30,6 +30,14 @@ pasted transcript ────────────────────�
   code checks that every citation was actually retrieved.
 - **Web app.** FastAPI and one HTML page: paste a transcript or upload a recording, see the checked quotes with
   click-to-highlight in the transcript, ask questions across calls. Light and dark themes.
+- **Record in the browser, with a live transcript.** The page records from the microphone (phone or laptop), sends
+  a few seconds at a time, cut at the quietest moment, and shows the words as they're transcribed. When you stop, the
+  analysis runs on what's already transcribed, so results come back in seconds. No audio is kept.
+- **A person approves before anything reaches the CRM.** Each call starts as a draft: tick off follow-ups, correct
+  the summary, score or tasks (the alerts are re-run from the rules), then approve. Monday and GHL are written only on
+  approval. The CLI and the evals still write straight away.
+- **Follow-ups name who will do them.** The model returns the speaker label it saw ("Person 2"); the real name stays
+  on the server and is put back only for display and the Monday subitem.
 - **Settings per user** (kept in the browser, sent with each call): the AI model, the churn-alert threshold, and
   whether names or places may reach the model as said. Phones, emails, card and ID numbers are always masked; the
   server rejects any other type. Company names are always put back after masking, since "(Acme)" in a speaker label

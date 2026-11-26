@@ -163,6 +163,34 @@ input[type=range] { flex:1; max-width:340px; accent-color:var(--brand) }
 .who-tag { font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; height:fit-content; justify-self:start; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px }
 .s0 { background:var(--brand-soft); color:var(--brand) } .s1 { background:var(--sun-soft); color:var(--warn) } .s2 { background:var(--ok-soft); color:var(--ok) }
 .line .t { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; margin-right:6px }
+/* recording */
+.rec { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:16px 0 12px }
+.rec .btn { display:inline-flex; align-items:center; gap:8px }
+.rec .dot { width:10px; height:10px; border-radius:50%; background:currentColor }
+.rec.on #recBtn { background:var(--bad); border-color:var(--bad); color:#fff }
+.rec.on .dot { animation:blink 1s steps(2) infinite } @keyframes blink { 50% { opacity:.2 } }
+@media (prefers-reduced-motion:reduce) { .rec.on .dot { animation:none } }
+.rectime { font-variant-numeric:tabular-nums; font-weight:700; font-size:18px }
+.level { width:90px; height:8px; border-radius:4px; background:var(--line); overflow:hidden } .level i { display:block; height:100%; width:0; background:var(--ok); transition:width .1s }
+.livebox { border:1px solid var(--line); border-radius:12px; background:var(--bg); padding:10px 12px; max-height:260px; min-height:90px; overflow:auto; font-size:14.5px }
+.livebox .ln { padding:3px 0 } .livebox .t { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; margin-right:8px }
+.livebox .wait { color:var(--muted); font-style:italic }
+
+/* review */
+.status { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:16px; padding-top:14px; border-top:1px solid var(--line); font-size:13.5px; color:var(--ink2) }
+.status .grow { flex:1 } .status .btn { padding:8px 14px; font-size:14px }
+.flash { margin:10px 0 0; font-size:13.5px; color:var(--ok); font-weight:600 }
+.todo input[type=checkbox] { margin-top:5px; accent-color:var(--ok); flex:none; width:16px; height:16px }
+.todo.done .task { text-decoration:line-through; color:var(--muted) }
+.who-name { font-weight:650 }
+.erow { display:grid; grid-template-columns:110px 150px 1fr 140px 36px; gap:8px; align-items:center; margin-bottom:8px }
+.erow select, .erow input { padding:7px 9px; font-size:14px }
+.erow .x { font:inherit; border:1px solid var(--line); background:none; color:var(--muted); border-radius:8px; height:36px; cursor:pointer }
+.erow .x:hover { color:var(--bad); border-color:var(--bad) }
+@media (max-width:760px) { .erow { grid-template-columns:1fr 1fr; padding-bottom:10px; border-bottom:1px solid var(--line) } .erow .task { grid-column:1 / -1 } }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 14px } @media (max-width:480px) { .grid2 { grid-template-columns:1fr } }
+input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink) }
+
 .foot { border-top:1px solid var(--line); padding:22px 0 40px; color:var(--muted); font-size:13.5px }
 </style>
 </head>
@@ -212,11 +240,13 @@ input[type=range] { flex:1; max-width:340px; accent-color:var(--brand) }
 
   <div>
     <section data-view="new">
-      <div class="vhead"><h2>Process a call</h2><p>Paste a transcript or upload a recording. Text takes about 10 seconds; audio about 20 seconds per minute.</p></div>
+      <div class="vhead"><h2>Process a call</h2><p>Paste a transcript, upload a recording, or record one here. Results take about 10 seconds; an uploaded recording about 20 seconds more per minute.</p></div>
       <form class="card" id="callForm">
-        <div class="tabs" role="tablist">
-          <button type="button" role="tab" aria-selected="true" data-tab="text">Paste transcript</button>
-          <button type="button" role="tab" aria-selected="false" data-tab="audio">Upload recording</button></div>
+        <label for="clients" style="margin-top:0">Client on the call</label><select name="client_id" id="clients"></select>
+        <div class="tabs" role="tablist" style="margin-top:16px">
+          <button type="button" role="tab" aria-selected="true" data-tab="text">Paste</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="audio">Upload</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="mic">Record</button></div>
         <div id="tab-text">
           <label for="sample">Start from a test call <span class="due">(optional)</span></label>
           <select id="sample"><option value="">Choose a test call...</option></select>
@@ -229,7 +259,14 @@ input[type=range] { flex:1; max-width:340px; accent-color:var(--brand) }
           <p class="help" style="margin:10px 0 0">No recording? Download a test call: <a href="/api/sample-audio">short (1 min)</a>,
             <a href="/api/sample-audio?call=21">quarterly review (4 min)</a>, <a href="/api/sample-audio?call=22">consent complaint (3 min)</a>,
             <a href="/api/sample-audio?call=23">expansion (3 min)</a>.</p></div>
-        <label for="clients">Client on the call</label><select name="client_id" id="clients"></select>
+        <div id="tab-mic" hidden>
+          <div class="rec" id="rec"><button type="button" class="btn" id="recBtn"><span class="dot"></span><span>Start recording</span></button>
+            <span class="rectime" id="recTime">0:00</span><span class="level" aria-hidden="true"><i id="recLevel"></i></span>
+            <button type="button" class="btn ghost" id="recDiscard" hidden>Discard</button></div>
+          <div class="livebox" id="liveText" aria-live="polite"><p class="help" style="margin:0">Words appear here a few seconds after you say them.
+            Stop when you're done and the analysis runs straight away.</p></div>
+          <p class="help" style="margin:10px 0 0">Uses this device's microphone, up to 10 minutes. One microphone hears everyone as one speaker,
+            so the AI works out who is who; for a phone call, put it on speaker. Audio isn't kept: each few seconds is transcribed and deleted.</p></div>
         <div class="using"><span id="using"></span><a href="#settings">Change</a></div>
         <button id="callBtn" class="btn wide">Process call</button><div class="err" id="callErr" role="alert"></div>
         <p class="note"><b>Shared demo:</b> anything you process is visible to every visitor. Use a test call or a made-up one,
@@ -392,11 +429,90 @@ function route() {
 }
 window.onhashchange = route;
 
+let mode = "text";
 function tab(name) {
+  if (rec.on) return;  // finish or discard the recording first
+  mode = name;
   $$("[data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
-  $("#tab-text").hidden = name !== "text"; $("#tab-audio").hidden = name !== "audio";
-  if (name === "text") $("#audio").value = ""; else { $("#transcript").value = ""; $("#sample").value = ""; }
+  ["text", "audio", "mic"].forEach(t => $("#tab-" + t).hidden = t !== name);
+  if (name !== "audio") $("#audio").value = "";
+  if (name !== "text") { $("#transcript").value = ""; $("#sample").value = ""; }
+  $("#callBtn").hidden = name === "mic";  // a recording is analysed when it stops
 }
+
+// --- microphone: 16 kHz mono pieces of ~5 s, cut at the quietest moment, transcribed one after another --------
+const SR = 16000, MAX_REC = 10 * 60;
+const rec = {on: false};
+const wav = x => {  // Float32 samples -> 16-bit PCM WAV
+  const b = new DataView(new ArrayBuffer(44 + x.length * 2)), str = (o, t) => [...t].forEach((c, i) => b.setUint8(o + i, c.charCodeAt(0)));
+  str(0, "RIFF"); b.setUint32(4, 36 + x.length * 2, true); str(8, "WAVEfmt "); b.setUint32(16, 16, true); b.setUint16(20, 1, true);
+  b.setUint16(22, 1, true); b.setUint32(24, SR, true); b.setUint32(28, SR * 2, true); b.setUint16(32, 2, true); b.setUint16(34, 16, true);
+  str(36, "data"); b.setUint32(40, x.length * 2, true);
+  x.forEach((v, i) => b.setInt16(44 + i * 2, Math.max(-1, Math.min(1, v)) * 0x7fff, true));
+  return new Blob([b], {type: "audio/wav"});
+};
+const rms = (x, a = 0, b = x.length) => { let e = 0; for (let i = a; i < b; i++) e += x[i] * x[i]; return Math.sqrt(e / Math.max(1, b - a)); };
+function drawLive(extra = "") {
+  const lines = rec.segs.map(s => `<div class="ln"><span class="t">${mmss(s.start)}</span>${esc(s.text)}</div>`).join("");
+  $("#liveText").innerHTML = (lines || (rec.on ? "" : '<p class="help" style="margin:0">Nothing transcribed yet.</p>')) + extra;
+  $("#liveText").scrollTop = $("#liveText").scrollHeight;
+}
+function cut(final) {
+  const all = new Float32Array(rec.len); let o = 0; rec.buf.forEach(b => { all.set(b, o); o += b.length; });
+  let end = all.length;
+  if (!final) {  // the quietest 100 ms between 4 and 6 s, so a word is rarely split in two
+    let best = Infinity; const w = SR / 10;
+    for (let i = 4 * SR; i + w <= all.length; i += w / 2) { const e = rms(all, i, i + w); if (e < best) { best = e; end = i + w / 2; } }
+  }
+  const piece = all.slice(0, end), offset = rec.offset;
+  rec.offset += end / SR; rec.buf = [all.slice(end)]; rec.len = all.length - end;
+  if (piece.length < SR * 0.3 || rms(piece) < 0.004) return;  // silence: don't spend CPU on it
+  rec.pending++;
+  rec.queue = rec.queue.then(async () => {
+    const fd = new FormData(); fd.append("audio", wav(piece), "piece.wav");
+    try { (await api("/api/live", {method: "POST", body: fd})).forEach(s => rec.segs.push({start: +(s.start + offset).toFixed(2), end: +(s.end + offset).toFixed(2), text: s.text})); }
+    catch (err) { rec.errors = err.message; }
+    rec.pending--; drawLive(rec.on && rec.pending ? '<div class="ln wait">listening...</div>' : "");
+  });
+}
+async function recStart() {
+  $("#callErr").textContent = "";
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: 1, echoCancellation: true, noiseSuppression: true}}); }
+  catch (e) { $("#callErr").textContent = "Couldn't use the microphone: " + (e.name === "NotAllowedError" ? "permission was refused." : e.message); return; }
+  const ctx = new AudioContext(), src = ctx.createMediaStreamSource(stream), node = ctx.createScriptProcessor(4096, 1, 1);
+  const ratio = ctx.sampleRate / SR; let pos = 0, last = 0;
+  Object.assign(rec, {on: true, stream, ctx, node, buf: [], len: 0, offset: 0, segs: [], pending: 0, errors: "", queue: Promise.resolve(), t0: Date.now()});
+  node.onaudioprocess = e => {  // resample to 16 kHz (linear; Whisper doesn't mind) and keep the samples
+    if (!rec.on) return;
+    const x = e.inputBuffer.getChannelData(0), out = [];
+    for (; pos < x.length; pos += ratio) { const i = Math.floor(pos), f = pos - i, a = i < 0 ? last : x[i], b = x[Math.min(i + 1, x.length - 1)]; out.push(a + (b - a) * f); }
+    pos -= x.length; last = x[x.length - 1];
+    const y = Float32Array.from(out); rec.buf.push(y); rec.len += y.length;
+    $("#recLevel").style.width = Math.min(100, rms(y) * 600) + "%";
+    if (rec.len >= 6 * SR) cut(false);
+  };
+  src.connect(node); node.connect(ctx.destination);
+  $("#rec").classList.add("on"); $("#recBtn span:last-child").textContent = "Stop and analyse"; $("#recDiscard").hidden = false;
+  drawLive('<div class="ln wait">listening...</div>');
+  rec.timer = setInterval(() => { const t = (Date.now() - rec.t0) / 1000; $("#recTime").textContent = mmss(t).replace(/^0/, "");
+    if (t >= MAX_REC) recStop(true); }, 250);
+}
+async function recStop(analyse) {
+  if (!rec.on) return;
+  rec.on = false; clearInterval(rec.timer);
+  rec.stream.getTracks().forEach(t => t.stop()); rec.node.disconnect(); rec.ctx.close();
+  $("#rec").classList.remove("on"); $("#recBtn span:last-child").textContent = "Start recording"; $("#recDiscard").hidden = true; $("#recLevel").style.width = "0";
+  if (!analyse) { rec.segs = []; drawLive(); $("#recTime").textContent = "0:00"; return; }
+  cut(true);
+  $("#recBtn").disabled = true; $("#recBtn span:last-child").textContent = "Finishing the transcript...";
+  await rec.queue;
+  $("#recBtn").disabled = false; $("#recBtn span:last-child").textContent = "Start recording"; drawLive();
+  if (!rec.segs.length) { $("#callErr").textContent = rec.errors || "No speech was heard. Check the microphone and try again."; return; }
+  $("#callForm").requestSubmit();
+}
+$("#recBtn").onclick = () => rec.on ? recStop(true) : recStart();
+$("#recDiscard").onclick = () => recStop(false);
 $$("[data-tab]").forEach(b => b.onclick = () => tab(b.dataset.tab));
 $("#sample").onchange = e => { const s = samples[e.target.value]; if (!s) return;
   $("#clients").value = s.client_id; $("#transcript").value = s.transcript; };
@@ -420,12 +536,16 @@ $("#callForm").onsubmit = async e => {
   e.preventDefault(); $("#callErr").textContent = ""; $("#callBtn").disabled = true;
   const p = pick(), fd = new FormData(e.target);
   if (!fd.get("audio")?.name) fd.delete("audio"); if (!fd.get("transcript")) fd.delete("transcript");
+  if (mode === "mic") fd.set("segments", JSON.stringify(rec.segs || []));
   if (p.provider) fd.set("provider", p.provider); fd.set("keep", p.keep.join(",")); fd.set("churn_alert", p.churn);
   $("#callBtn").textContent = fd.has("audio") ? "Transcribing, then analysing..." : "Masking and analysing...";
+  if (mode === "mic") drawLive('<div class="ln wait">Masking and analysing...</div>');
   try { const r = await api("/api/calls", {method:"POST", body:fd}); e.target.transcript.value = ""; e.target.audio.value = ""; $("#sample").value = "";
+        if (mode === "mic") { rec.segs = []; drawLive(); $("#recTime").textContent = "0:00"; }
         await loadCalls(); location.hash = r.id; }
   catch (err) { $("#callErr").textContent = err.message; }
-  finally { $("#callBtn").disabled = false; $("#callBtn").textContent = "Process call"; }
+  finally { $("#callBtn").disabled = false; $("#callBtn").textContent = "Process call";
+            $("#callBtn").hidden = mode === "mic" && !rec.segs?.length; }  // a failed analysis of a recording can be retried
 };
 
 // --- one call ----------------------------------------------------------------------------------------------------
@@ -440,7 +560,7 @@ function dtab(name) {
 }
 async function openCall(id, at) {
   if (id !== current || !$("#detail [data-dtab]")) {
-    current = id; drawCalls();
+    current = id; drawCalls(); flash = "";
     $("#detail").innerHTML = '<div class="card"><p class="help" style="margin:0">Loading the call...</p></div>';
     let r;
     try { r = await api(`/api/calls/${encodeURIComponent(id)}`); }
@@ -449,7 +569,10 @@ async function openCall(id, at) {
   }
   if (at != null) { dtab("transcript"); highlight(at); } else window.scrollTo(0, 0);
 }
+let shown = null, flash = "";
+const ago = t => new Date(t * 1000).toLocaleString([], {dateStyle: "medium", timeStyle: "short"});
 function renderCall(r) {
+  shown = r;
   const i = r.insight, timed = r.segments.some(s => s.end > s.start);
   const where = at => timed ? mmss(at) : "line " + (Number(at) + 1);
   const [rl, , rc] = risk(i.churn_risk), pct = Math.round(i.churn_risk * 100);
@@ -457,6 +580,11 @@ function renderCall(r) {
   const speakers = [...new Set(r.segments.map(base))];
   const unmasked = (r.unmasked || []).map(k => KEEP[k] || k.toLowerCase());
   const missing = r.checks.filter(c => !c.found).length;
+  const person = a => { const n = a.speaker ? (r.speakers?.[a.speaker] || a.speaker) : ""; return /^(speaker|client|account manager)?$/i.test(n) ? "" : n; };
+  const by = u => u ? ` by <b>${esc(u)}</b>` : "";
+  const status = r.approved_by != null
+    ? `<span class="badge b-low">Approved</span><span>${by(r.approved_by)} · ${ago(r.approved_at)}</span>`
+    : `<span class="badge b-med">Draft</span><span>${r.edited_by != null ? `Edited${by(r.edited_by)}. ` : ""}Check it, correct anything wrong, then approve to send it to Monday and GHL.</span>`;
   const ev = r.checks.map(c => `<div class="ev ${c.found ? "found" : "miss"}"><span class="k">${esc(c.kind.replace("_", " "))}</span>${esc(c.text)}
       ${c.found ? `<span class="tick b-low">&#10003; found</span><button class="ts" data-at="${c.at}" title="Show in transcript">${where(c.at)}</button>`
                 : '<span class="tick b-high">unverified</span>'}
@@ -469,7 +597,10 @@ function renderCall(r) {
         <div class="tile"><small>Sentiment</small><b>${esc(i.sentiment)}</b></div>
         <div class="tile"><small>Alerts</small><b>${r.alerts.length}</b></div>
         <div class="tile"><small>Analysed by</small><b>${esc(r.provider)}</b> <span class="due">${(r.latency_ms / 1000).toFixed(1)} s</span></div>
-      </div></section>
+      </div>
+      <div class="status">${status}<span class="grow"></span><button type="button" class="btn ghost" id="editBtn">Edit</button>
+        ${r.approved_by != null ? "" : '<button type="button" class="btn" id="approveBtn">Approve</button>'}</div>
+      ${flash ? `<p class="flash" role="status">${esc(flash)}</p>` : ""}</section>
     <div class="tabs dtabs" role="tablist">
       <button type="button" role="tab" data-to="overview" aria-selected="true">Overview</button>
       <button type="button" role="tab" data-to="evidence">Evidence (${r.checks.length}${missing ? `, ${missing} unverified` : ""})</button>
@@ -477,9 +608,10 @@ function renderCall(r) {
     <section class="card" data-dtab="overview">
       <h3 class="sub">Alerts</h3><p class="help">Raised by rules in code, not by the AI. A churn or upsell alert needs a quote that was found in the transcript.</p>
       ${r.alerts.map(alertHtml).join("") || `<div class="alert a-ok">${ICON.check}<span>No alerts: nothing on this call needs action.</span></div>`}
-      <h3 class="sub">Follow-ups</h3><p class="help">What each side agreed to do. "Us" is Acme Leads; "client" is the agency.</p>
-      ${i.action_items.map(a => `<div class="todo"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "Us" : "Client"}</span>
-        <span>${esc(a.task)} ${a.due ? `<span class="due">· due ${esc(a.due)}</span>` : '<span class="nodue">· no due date</span>'}</span></div>`).join("") || '<p class="help" style="margin:0">None agreed on this call.</p>'}</section>
+      <h3 class="sub">Follow-ups</h3><p class="help">What each side agreed to do, and who said they'd do it. "Us" is Acme Leads; "client" is the agency. Tick one off when it's done.</p>
+      ${i.action_items.map((a, n) => `<div class="todo ${a.done ? "done" : ""}"><input type="checkbox" data-done="${n}" ${a.done ? "checked" : ""} aria-label="Done: ${esc(a.task)}">
+        <span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "Us" : "Client"}</span>
+        <span>${person(a) ? `<span class="who-name">${esc(person(a))}</span>: ` : ""}<span class="task">${esc(a.task)}</span> ${a.done ? '<span class="due">· done</span>' : a.due ? `<span class="due">· due ${esc(a.due)}</span>` : '<span class="nodue">· no due date</span>'}</span></div>`).join("") || '<p class="help" style="margin:0">None agreed on this call.</p>'}</section>
     <section class="card" data-dtab="evidence" hidden><p class="help">Every point the AI made, with the words it quoted. <b>Found</b> means code found that
       quote in the transcript; click the ${timed ? "time" : "line"} to see it. <b>Unverified</b> points are ignored by the alerts.</p>
       ${ev || '<p class="help" style="margin:0">The AI found nothing to report on this call.</p>'}</section>
@@ -489,6 +621,61 @@ function renderCall(r) {
       <div class="chat">${r.segments.map(s => `<div class="line" data-at="${s.start}"><span class="who-tag s${Math.min(speakers.indexOf(base(s)), 2)}" title="${esc(s.speaker)}">${esc(s.speaker)}</span>
         <span>${timed ? `<span class="t">${mmss(s.start)}</span>` : ""}${esc(s.text)}</span></div>`).join("")}</div></section>`;
 }
+// --- review: tick off, edit, approve -----------------------------------------------------------------------------
+async function saveCall(body) {
+  const r = await api(`/api/calls/${encodeURIComponent(shown.id)}`, {method: "PATCH", headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
+  renderCall(r); loadCalls(); return r;
+}
+const items = () => shown.insight.action_items.map(a => ({...a}));
+function editForm() {
+  const r = shown, i = r.insight, labels = [...new Set(r.segments.map(s => s.speaker.split(" (")[0]))];
+  const draft = items();
+  const row = (a, n) => `<div class="erow" data-n="${n}">
+      <select data-k="owner" aria-label="Side"><option value="us" ${a.owner === "us" ? "selected" : ""}>Us</option><option value="client" ${a.owner === "client" ? "selected" : ""}>Client</option></select>
+      <select data-k="speaker" aria-label="Person"><option value="">Who? (unclear)</option>${labels.map(l => `<option value="${esc(l)}" ${a.speaker === l ? "selected" : ""}>${esc(r.speakers?.[l] || l)}</option>`).join("")}</select>
+      <input type="text" class="task" data-k="task" value="${esc(a.task)}" aria-label="Task" maxlength="300" required>
+      <input type="text" data-k="due" value="${esc(a.due || "")}" placeholder="Due (optional)" aria-label="Due" maxlength="80">
+      <button type="button" class="x" data-del="${n}" aria-label="Remove">&times;</button></div>`;
+  const sec = $("#detail [data-dtab=overview]");
+  sec.innerHTML = `<form id="editForm"><h3 class="sub">Edit this call</h3><p class="help">Your changes replace the AI's. Alerts are re-run from the rules when you save; the quote checks stay as they were.</p>
+    <label for="eSum">Summary</label><textarea id="eSum" name="summary" style="min-height:110px" maxlength="2000" required>${esc(i.summary)}</textarea>
+    <div class="grid2"><div><label for="eSent">Sentiment</label><select id="eSent" name="sentiment">${["positive", "neutral", "frustrated", "angry"].map(v => `<option ${v === i.sentiment ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+      <div><label for="eRisk">Churn risk (%)</label><input id="eRisk" type="number" name="risk" min="0" max="100" step="1" value="${Math.round(i.churn_risk * 100)}" required></div></div>
+    <h3 class="sub">Follow-ups</h3><div id="eItems"></div>
+    <button type="button" class="btn ghost" id="eAdd">Add a follow-up</button>
+    <div class="row" style="margin-top:18px"><button class="btn">Save changes</button><button type="button" class="btn ghost" id="eCancel">Cancel</button></div>
+    <div class="err" id="eErr" role="alert"></div></form>`;
+  const draw = () => $("#eItems").innerHTML = draft.map(row).join("") || '<p class="help">No follow-ups.</p>';
+  draw();
+  $("#eItems").oninput = $("#eItems").onchange = e => { const el = e.target, n = el.closest(".erow")?.dataset.n; if (n != null && el.dataset.k) draft[n][el.dataset.k] = el.value || (el.dataset.k === "task" ? "" : null); };
+  $("#eItems").onclick = e => { const d = e.target.closest("[data-del]"); if (d) { draft.splice(+d.dataset.del, 1); draw(); } };
+  $("#eAdd").onclick = () => { draft.push({owner: "us", speaker: null, task: "", due: null, quote: "", done: false}); draw(); $("#eItems .erow:last-child .task").focus(); };
+  $("#eCancel").onclick = () => renderCall(shown);
+  $("#editForm").onsubmit = async e => {
+    e.preventDefault(); const f = e.target;
+    try { flash = "Saved. Approve it when it's right."; await saveCall({summary: f.summary.value.trim(), sentiment: f.sentiment.value,
+                      churn_risk: Number(f.risk.value) / 100, action_items: draft.filter(a => a.task.trim())}); }
+    catch (err) { flash = ""; $("#eErr").textContent = err.message; }
+  };
+}
+document.addEventListener("change", async e => {
+  const d = e.target.closest("[data-done]"); if (!d) return;
+  const all = items(); all[+d.dataset.done].done = d.checked;
+  try { flash = ""; await saveCall({action_items: all}); } catch (err) { d.checked = !d.checked; alert(err.message); }
+});
+document.addEventListener("click", async e => {
+  if (e.target.closest("#editBtn")) { dtab("overview"); editForm(); $("#eSum").focus(); }
+  const b = e.target.closest("#approveBtn"); if (!b) return;
+  b.disabled = true; b.textContent = "Approving...";
+  try {
+    const r = await api(`/api/calls/${encodeURIComponent(shown.id)}/approve`, {method: "POST"});
+    flash = r.monday_item_id ? `Approved and sent to Monday (item ${r.monday_item_id})${r.connected.ghl ? " and GHL" : ""}.`
+      : r.connected.monday || r.connected.ghl ? "Approved. The CRM write didn't go through; it's in the server log."
+      : "Approved. This demo isn't connected to Monday or GHL, so nothing was sent; in a real setup this is when it would be.";
+    renderCall(r); loadCalls();
+  } catch (err) { b.disabled = false; b.textContent = "Approve"; alert(err.message); }
+});
+
 function highlight(at) {
   $$(".line").forEach(el => el.classList.toggle("hl", Number(el.dataset.at) === Number(at)));
   document.querySelector(".line.hl")?.scrollIntoView({block:"center", behavior:"smooth"});

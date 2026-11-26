@@ -13,7 +13,9 @@ def connect(path: str = DB_PATH) -> sqlite3.Connection:
 
 
 def save(conn, r: CallResult) -> None:
-    conn.execute("INSERT OR REPLACE INTO calls (id, client_id, result) VALUES (?, ?, ?)", (r.id, r.client_id, r.model_dump_json()))
+    # an upsert, not INSERT OR REPLACE: re-saving an edited call keeps its place (and created time) in the list
+    conn.execute("INSERT INTO calls (id, client_id, result) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET "
+                 "client_id = excluded.client_id, result = excluded.result", (r.id, r.client_id, r.model_dump_json()))
     conn.commit()
 
 
@@ -23,4 +25,4 @@ def get(conn, call_id: str) -> CallResult | None:
 
 
 def all_calls(conn) -> list[CallResult]:
-    return [CallResult.model_validate_json(r[0]) for r in conn.execute("SELECT result FROM calls ORDER BY created DESC")]
+    return [CallResult.model_validate_json(r[0]) for r in conn.execute("SELECT result FROM calls ORDER BY created DESC, rowid DESC")]

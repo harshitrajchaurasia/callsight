@@ -66,7 +66,8 @@ def to_monday(r: CallResult, *, post=requests.post) -> str | None:
         return None
     try:  # the item exists now: a failed subitem/update is logged, not retried into a duplicate item
         for a in i.action_items:
-            gql("subitem", parent=item, name=f"[{a.owner}] {a.task}" + (f" (due {a.due})" if a.due else ""))
+            who = r.speakers.get(a.speaker or "", a.speaker) or a.owner
+            gql("subitem", parent=item, name=f"[{who}] {a.task}" + (f" (due {a.due})" if a.due else ""))
         gql("update", item=item, body="".join(f"<p>{escape(x)}</p>" for x in report(r)))
     except Exception as e:
         log.warning("monday item %s incomplete: %r", item, e)

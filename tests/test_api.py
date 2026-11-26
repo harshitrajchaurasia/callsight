@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 
 import api
 from callsight import ask, extract, redact, store
+from callsight.models import ActionItem
 from tests.test_core import fake_embed, insight
 
 
@@ -81,3 +82,59 @@ def test_session_cookie_names_the_user(monkeypatch, caplog):
     assert api._user(api._token(int(time.time()) + 60, "nobody")) is None  # signed, but not a current login
     monkeypatch.setenv("EXTRA_LOGINS", "")
     assert api._user(tok) is None  # removing a login signs it out
+
+
+def _open_app(tmp_path, monkeypatch, model=lambda segs, client: insight()):
+    monkeypatch.setattr(api, "conn", store.connect(str(tmp_path / "t.db")))
+    monkeypatch.setattr(redact, "redact", lambda segs, **kw: segs)
+    monkeypatch.setattr(ask, "embed", fake_embed)
+    monkeypatch.setitem(extract.PROVIDERS, "claude", model)
+    monkeypatch.setenv("DEMO_PASS", ""); monkeypatch.delenv("EXTRA_LOGINS", raising=False)
+    api._hits.clear()
+    return TestClient(api.app, base_url="https://testserver")
+
+
+def test_follow_up_owner_names_stay_on_our_side(tmp_path, monkeypatch):
+    sent = []
+    def model(segs, client):
+        sent.append(" ".join(f"{s.speaker}: {s.text}" for s in segs))
+        return insight(action_items=[ActionItem(owner="client", speaker="Person 2", task="send the list", due=None, quote="x")])
+    c = _open_app(tmp_path, monkeypatch, model)
+    r = c.post("/api/calls", data={"client_id": "C-03", "provider": "claude",
+                                    "transcript": "Marcus (Acme): hi Linda\nLinda (Summit): I'll send the list"}).json()
+    assert "Linda" not in sent[0] and "Marcus" not in sent[0]  # the model only ever sees the aliases
+    assert r["speakers"] == {"Person 1": "Marcus", "Person 2": "Linda"}
+    assert r["insight"]["action_items"][0]["speaker"] == "Person 2"
+
+
+def test_edit_then_approve(tmp_path, monkeypatch):
+    c = _open_app(tmp_path, monkeypatch)
+    first = c.post("/api/calls", data={"client_id": "C-03", "provider": "claude", "transcript": "AM: hi"}).json()["id"]
+    r = c.post("/api/calls", data={"client_id": "C-03", "provider": "claude", "transcript": "AM: hi"}).json()
+    assert r["approved_by"] is None and any(a.startswith("Churn risk 80%") for a in r["alerts"])
+    item = r["insight"]["action_items"][0] | {"done": True}
+    e = c.patch(f"/api/calls/{r['id']}", json={"churn_risk": 0.1, "summary": "fixed", "action_items": [item]}).json()
+    assert e["insight"]["summary"] == "fixed" and e["insight"]["action_items"][0]["done"]
+    assert not any(a.startswith("Churn risk 80%") for a in e["alerts"])  # alerts re-run from the edited score
+    assert c.patch(f"/api/calls/{r['id']}", json={"churn_risk": 2}).status_code == 422
+    assert [x["id"] for x in c.get("/api/calls").json()][:2] == [r["id"], first]  # an edit keeps the call's place
+    a = c.post(f"/api/calls/{r['id']}/approve").json()
+    assert a["approved_by"] == "" and a["approved_at"] and a["connected"] == {"monday": False, "ghl": False}
+    assert c.patch(f"/api/calls/{r['id']}", json={"summary": "again"}).json()["approved_by"] is None
+    assert c.post("/api/calls/NOPE/approve").status_code == 404
+
+
+def test_live_recording(tmp_path, monkeypatch):
+    import io, json, wave
+    c = _open_app(tmp_path, monkeypatch)
+    monkeypatch.setattr(api.stt, "transcribe", lambda path: [api.Segment(start=0.5, end=2, speaker="Speaker", text="hello there")])
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000); w.writeframes(b"\0\0" * 16000 * 3)
+    assert c.post("/api/live", files={"audio": ("c.wav", buf.getvalue())}).json() == [{"start": 0.5, "end": 2.0, "text": "hello there"}]
+    segs = [{"start": 0.5, "end": 2, "text": "hello there"}, {"start": 5.1, "end": 7, "text": "we may cancel"}]
+    r = c.post("/api/calls", data={"client_id": "C-03", "provider": "claude", "segments": json.dumps(segs)}).json()
+    assert [(s["start"], s["text"]) for s in r["segments"]] == [(0.5, "hello there"), (5.1, "we may cancel")]
+    bad = {"client_id": "C-03", "segments": json.dumps([{"start": -1, "end": 2, "text": "x"}])}
+    assert c.post("/api/calls", data=bad).status_code == 422
+    assert c.post("/api/calls", data={"client_id": "C-03", "segments": "[]", "transcript": "a: b"}).status_code == 422
