@@ -1,0 +1,27 @@
+Priya (Acme): Good morning, Dev. Good morning, Sam. Thanks for setting this up. You said you wanted to talk about growth for next year?
+Dev (Northstar): Morning, Priya. Yes. 2026 was our best year so far, and a big part of that was your retirement planning leads. We booked 61 seminar seats from your leads in Illinois last quarter alone.
+Priya: That's wonderful. What's working best for you?
+Dev: The seminar registration leads. People who sign up for a dinner seminar show up, and they're ready to talk. The plain web form leads are fine, but the seminar ones close at about twice the rate.
+Sam (Northstar): That said, Wisconsin is a different story. Our show rate at the Milwaukee events dropped to around 45 percent. In Illinois it's closer to 70.
+Priya: Do you have a sense of why?
+Sam: Two things, I think. The reminder texts go out two days before, and people forget. And the Milwaukee venue changed in October, so some people went to the old address.
+Priya: The venue I can fix today on our side. I'll update the event details in every reminder. And we could add a second reminder, the morning of the event. Would that help?
+Sam: Yes, please. Both of those.
+Dev: Now the bigger topic. We're opening an office in Minneapolis in February. We'd like seminar leads for Minnesota from day one, about 40 a month.
+Priya: Congratulations. Minnesota is in your plan's region, so that's straightforward. I'll send you a quote for 40 Minnesota seminar leads a month.
+Dev: We're also curious about your webinar product. Some of our older prospects in rural areas won't drive an hour to a dinner. What does that cost?
+Priya: Webinar registrations are 22 dollars a lead, and the seminar ones are 45.
+Dev: Hmm. 22 is fine, but we've never tried webinars, so I don't want to commit to big volume. Could we do a trial?
+Priya: We can do a trial. How about 50 webinar leads over six weeks, and if your cost per appointment is worse than the seminars, you stop with no penalty.
+Dev: That's fair. Let's do it.
+Sam: The last piece is operational. We moved our calendar to Go High Level last month. Right now someone on my team copies every registration from your email into our calendar by hand. That's about five hours a week.
+Priya: We can send registrations straight to your Go High Level account, so they land on the right calendar with the lead's details. I'll need an API key from you, and our integration team will set it up.
+Sam: I'll send the API key through your secure portal, not email.
+Priya: Perfect, thank you. Once we have it, setup usually takes about a week.
+Dev: One honest concern. When we grow this fast, quality usually drops. I don't want 40 Minnesota leads a month if half are junk.
+Priya: That's fair. Let's start Minnesota at 25 a month for the first month, review the contact and show rates together, and step up to 40 if the numbers hold.
+Dev: I like that better.
+Priya: Great. So my list is: fix the Milwaukee venue in the reminders today, add a morning of reminder, a quote for Minnesota starting at 25 and stepping up to 40, set up the 50 lead webinar trial, and the Go High Level integration once Sam sends the key. I'll send the quote and the trial terms by Thursday.
+Sam: And I'll send the key this week.
+Dev: Sounds like a plan. Thanks, Priya.
+Priya: Thank you both. Talk soon.

@@ -7,3 +7,4 @@ data/*.db
 data/usage.jsonl
 data/outbox*.jsonl
 TRACKER.md
+samples/*.mp3

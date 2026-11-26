@@ -92,6 +92,12 @@ textarea { min-height:150px; resize:vertical; line-height:1.5 }
 .list a:hover { background:var(--soft) } .list a.on { background:var(--brand-soft) }
 .list .who { flex:1; min-width:0 } .list .who b { display:block; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
 .list small { color:var(--muted); font-size:12.5px }
+.fold > summary { list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:12px }
+.fold > summary::-webkit-details-marker { display:none }
+.fold > summary h2 { margin:0 } .fold > summary h2 small { color:var(--muted); font-weight:500; font-size:14px }
+.fold > summary::after { content:""; width:9px; height:9px; border:solid var(--muted); border-width:0 2px 2px 0; transform:rotate(45deg); margin:0 6px 4px 0; transition:transform .15s }
+.fold[open] > summary::after { transform:rotate(-135deg); margin-bottom:-4px }
+.fold[open] > summary { margin-bottom:10px }
 .badge { font-size:12px; font-weight:650; padding:3px 9px; border-radius:999px; white-space:nowrap }
 .b-high { background:var(--bad-soft); color:var(--bad) } .b-med { background:var(--warn-soft); color:var(--warn) } .b-low { background:var(--ok-soft); color:var(--ok) }
 
@@ -182,7 +188,7 @@ textarea { min-height:150px; resize:vertical; line-height:1.5 }
         <p class="note"><b>Shared demo:</b> anything you process is visible to every visitor. Use a sample or a made-up call,
           never real customer data. Up to 10 calls and 30 questions an hour.</p>
         <label for="sample">Quick start: pick a sample call</label>
-        <select id="sample"><option value="">Choose one of 20 test calls...</option></select>
+        <select id="sample"><option value="">Choose a test call...</option></select>
         <label for="clients">Client on the call</label><select name="client_id" id="clients"></select>
         <div class="tabs" role="tablist">
           <button type="button" role="tab" aria-selected="true" data-tab="text">Paste transcript</button>
@@ -192,13 +198,15 @@ textarea { min-height:150px; resize:vertical; line-height:1.5 }
         <div id="tab-audio" hidden><label for="audio">Recording, up to 10 minutes</label>
           <div class="drop">Stereo works best: one speaker per channel tells it who said what.
             <input id="audio" type="file" name="audio" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm">
-            <div style="margin-top:10px">No recording? <a href="/api/sample-audio">Download a 1-minute test call</a></div></div></div>
+            <div style="margin-top:10px">No recording? Download a test call: <a href="/api/sample-audio">short (1 min)</a>,
+              <a href="/api/sample-audio?call=21">quarterly review (4 min)</a>, <a href="/api/sample-audio?call=22">consent complaint (3 min)</a>,
+              <a href="/api/sample-audio?call=23">expansion (3 min)</a></div></div></div>
         <label for="prov">AI model</label><select id="prov" name="provider"><option value="">Claude (default)</option><option value="claude">Claude</option><option value="grok">Grok</option></select>
         <button id="callBtn" class="btn wide">Process call</button><div class="err" id="callErr" role="alert"></div>
       </form>
-      <section class="card"><h2>Processed calls</h2>
+      <section class="card"><details class="fold" open><summary><h2>Processed calls <small id="ncalls"></small></h2></summary>
         <p class="help">Open one to see what was found. The badge is the AI's churn risk: how likely the client is to leave.</p>
-        <div class="list" id="calls"><p class="help">None yet. Process a call above.</p></div></section>
+        <div class="list" id="calls"><p class="help">None yet. Process a call above.</p></div></details></section>
     </div>
     <div>
       <section class="card"><h2><span class="step">2</span>Ask across all calls</h2>
@@ -265,7 +273,7 @@ async function start() {
   $("#logout").hidden = !me.login_required;
   $("#clients").innerHTML = cs.map(c => `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.plan)})</option>`).join("");
   samples = await api("/api/samples");
-  $("#sample").innerHTML = '<option value="">Choose one of 20 test calls...</option>' + samples.map((s, n) => `<option value="${n}">${esc(s.title)}</option>`).join("");
+  $("#sample").innerHTML = `<option value="">Choose one of ${samples.length} test calls...</option>` + samples.map((s, n) => `<option value="${n}">${esc(s.title)}</option>`).join("");
   await loadCalls();
 }
 function tab(name) {
@@ -279,6 +287,7 @@ $("#sample").onchange = e => { const s = samples[e.target.value]; if (!s) return
 
 async function loadCalls() {
   const calls = await api("/api/calls");
+  $("#ncalls").textContent = calls.length ? `(${calls.length})` : "";
   if (calls.length) $("#calls").innerHTML = calls.map(c => { const [l, cls] = risk(c.churn_risk);
     return `<a href="#${esc(c.id)}" class="${c.id === current ? "on" : ""}"><span class="who"><b>${esc(c.client)}</b>
       <small>${esc(c.id)} · ${esc(c.sentiment)} · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}</small></span>

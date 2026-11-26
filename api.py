@@ -138,7 +138,7 @@ def clients():
 
 
 SAMPLES = [{k: c[k] for k in ("id", "client_id", "title", "transcript")}
-           for f in ("calls.json", "calls_new.json") for c in json.loads((ROOT / "data" / f).read_text())]
+           for f in ("calls_long.json", "calls.json", "calls_new.json") for c in json.loads((ROOT / "data" / f).read_text())]
 
 
 @app.get("/api/samples", dependencies=api)
@@ -146,12 +146,15 @@ def samples():
     return SAMPLES
 
 
+SAMPLE_AUDIO = {"1": "c1.wav", "21": "c21.mp3", "22": "c22.mp3", "23": "c23.mp3"}  # stereo test calls (tools/make_audio.py)
+
+
 @app.get("/api/sample-audio", dependencies=api)
-def sample_audio():  # a two-voice stereo test recording of CALL-01 (tools/make_audio.py)
-    wav = ROOT / "samples" / "c1.wav"
-    if not wav.exists():
-        raise HTTPException(404, "no sample recording on this server")
-    return FileResponse(wav, media_type="audio/wav", filename="callsight-sample-call.wav")
+def sample_audio(call: str = "1"):
+    path = ROOT / "samples" / SAMPLE_AUDIO.get(call, "missing")
+    if not path.is_file():
+        raise HTTPException(404, "no such sample recording on this server")
+    return FileResponse(path, filename=f"callsight-sample-call-{call}{path.suffix}")
 
 
 @app.get("/api/calls", dependencies=api)

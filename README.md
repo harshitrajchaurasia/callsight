@@ -35,7 +35,7 @@ pasted transcript ────────────────────�
   cores.
 
 ## Results
-20 made-up calls (`data/calls*.json`), each with expected outcomes written before the run: a churn band, whether
+20 made-up calls (`data/calls.json`, `data/calls_new.json`), each with expected outcomes written before the run: a churn band, whether
 there's an upsell, a minimum number of follow-ups, acceptable sentiments, and for one call the personal details read
 out on it. Two of the calls contain instructions aimed at the AI. Run on 27 Nov 2026 with `evals/run_eval.py`.
 
@@ -58,6 +58,10 @@ out on it. Two of the calls contain instructions aimed at the AI. Run on 27 Nov 
   injection, which says "cancelling").
 - **Ask across calls** (10 questions, Claude): the right calls were retrieved for 18 of 19 expected answers and cited
   for 17. One of the misses was my citation parser not reading "[S2, S5]"; that's fixed but not re-measured.
+- **Spoken details slip past pattern matching.** On three longer demo calls (`data/calls_long.json`, 3-4 minutes, three
+  speakers; not in the table above), Whisper wrote an email as "name at example.com" and a card number as
+  "4,111,1,100,...", and PII Shield missed both. CallSight now rewrites spoken emails before masking and masks any run of
+  9+ digits left afterwards.
 - The one sentiment miss both models share (a billing complaint from a client who also wants a new product) is
   arguable either way.
 

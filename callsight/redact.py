@@ -14,12 +14,23 @@ class RedactionUnavailable(RuntimeError):
     pass
 
 
+# Speech-to-text writes details the way they're spoken, which PII Shield's patterns don't expect:
+# "jo52 at example.com" and card digits as "4,111,1,100,11,...". Emails are rewritten to the written form before
+# masking; any run of 9+ digits still left afterwards (a misheard card or account number) is masked here.
+SPOKEN_EMAIL = re.compile(r"\b([\w.+-]+) at ([\w-]+(?:\.[a-z]{2,})+)\b", re.I)
+LONG_NUMBER = re.compile(r"\d(?:[\d,. -]*\d)?")
+
+
+def _mask_long_numbers(text: str) -> str:
+    return LONG_NUMBER.sub(lambda m: "[NUMBER]" if sum(ch.isdigit() for ch in m.group()) >= 9 else m.group(), text)
+
+
 def redact(segments: list[Segment], *, post=requests.post) -> list[Segment]:
     url = os.getenv("PII_SHIELD_URL", "http://127.0.0.1:18081") + "/api/redact-text"
     # one request per call: PII Shield keeps line breaks, so line n of the answer is segment n. The speaker label is
     # sent too (a pasted transcript labels people by name) and split back off at the first ": ".
     # all whitespace collapsed: PII Shield turns a stray \r into a line break and trims trailing spaces
-    lines = [" ".join(f"{s.speaker}: {s.text}".split()) for s in segments]
+    lines = [" ".join(SPOKEN_EMAIL.sub(r"\1@\2", f"{s.speaker}: {s.text}").split()) for s in segments]
     try:
         r = post(url, json={"text": "\n".join(lines)}, timeout=30)
         r.raise_for_status()
@@ -31,7 +42,7 @@ def redact(segments: list[Segment], *, post=requests.post) -> list[Segment]:
     parts = [line.partition(":") for line in out]
     if not all(sep for _, sep, _ in parts):
         raise RedactionUnavailable("PII Shield changed a speaker label; call not processed")
-    return [s.model_copy(update={"speaker": who.strip(), "text": t.strip()}) for s, (who, _, t) in zip(segments, parts)]
+    return [s.model_copy(update={"speaker": who.strip(), "text": _mask_long_numbers(t.strip())}) for s, (who, _, t) in zip(segments, parts)]
 
 
 def alias_speakers(segments: list[Segment]) -> list[Segment]:

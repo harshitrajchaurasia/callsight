@@ -1,0 +1,27 @@
+Marcus (Acme): Thanks for making time, both of you. This is our quarterly review, so I'd like to cover lead quality, the billing question Linda raised, and what next year looks like. Does that work?
+Greg (Summit): That works. I'll be straight with you, Marcus, it's been a mixed quarter. Texas has been excellent. Oklahoma is fine. Louisiana has been a real problem since about mid October.
+Marcus: Okay. Tell me what you're seeing in Louisiana.
+Linda (Summit): So I pulled the numbers before the call. In Texas our contact rate is around 42 percent. In Louisiana it dropped from 38 percent in September to 19 percent in November. And we're getting duplicates. Last week alone we had nine leads that were the same people we bought in October.
+Marcus: Nine duplicates in a week is not acceptable, and I'm sorry. That shouldn't get past our dedupe check at all.
+Linda: I'll give you one example so your team can trace it. Dorothy Hale, phone 504-555-0187, email dhale1952@example.com. We got her on October 9th and again on November 18th, same annuity form, same answers.
+Marcus: That's really helpful, thank you. My guess is the Louisiana campaign was moved to a new form vendor in October and their records are not running through our dedupe. I'll confirm that with our data team rather than guess.
+Greg: Here's my concern. A competitor reached out last month offering exclusive annuity leads at 28 dollars. We're paying you 35. I've been loyal for two years because the quality was worth it, but if Louisiana keeps looking like this, I can't justify it to my partners.
+Marcus: That's fair, and I appreciate you telling me instead of just leaving. What would you need to see?
+Greg: Louisiana fixed by the end of January. Contact rate back over 30 percent and zero duplicates. If that doesn't happen, we'll move the Louisiana budget to the other vendor and keep you on Texas and Oklahoma only.
+Marcus: Understood. Now the billing question.
+Linda: Right. We returned 14 leads in October through the portal, all bad phone numbers or duplicates. We were told they'd be credited. The November invoice still charged us for all of them. That's 490 dollars.
+Marcus: You're right, that should have been credited. I'll get the 490 dollar credit applied by this Friday and send you a corrected invoice.
+Linda: Thank you. And going forward, can returns show up on the invoice as a line item? Right now I'm matching spreadsheets by hand every month.
+Marcus: I'll ask billing if we can do that. I won't promise it today, but I'll tell you by our next call.
+Greg: Okay. Now the good news, because there is some. Our two new agents in Houston are closing well, and Texas is carrying us. I'd like to raise Texas from 50 leads a month to 80, starting in January.
+Marcus: That's great to hear. 30 more Texas leads a month is very doable. I'll send you a quote for the higher volume.
+Greg: And we've been talking about final expense. Some of our agents are licensed for it. Would you do a small test, say 20 final expense leads in Texas, just to see?
+Marcus: Yes, we can run a 20 lead pilot. I'll put a proposal together with pricing, and we can start it alongside the Texas increase.
+Linda: One more thing on operations. Our appointment no shows are up. Could your team send the appointment reminder text the morning of, instead of the night before?
+Marcus: We can change that setting on your account. I'll have it switched to morning reminders this week.
+Greg: Good. So to sum up, Louisiana is the thing that decides whether we stay at full volume. Everything else is going well.
+Marcus: Got it. Let me play back what I've got. I'll get the 490 dollar credit applied by Friday. I'll have the data team trace the Louisiana duplicates and send you a written root cause by December 12th. Morning reminders this week. A quote for 80 Texas leads and a final expense pilot proposal by next Wednesday. Linda, could you send me the full list of the nine duplicates?
+Linda: I'll send the list today.
+Marcus: And let's book a check in for January 15th to look at the Louisiana numbers together.
+Greg: January 15th works. Thanks, Marcus.
+Marcus: Thank you both. Talk soon.

@@ -1,0 +1,26 @@
+Marcus (Acme): Hi Ruth, thanks for calling. My notes say you wanted to talk about a consumer complaint?
+Ruth (Golden Years): Yes, and I'll be honest, I'm upset. On Monday one of my agents called a lead from your feed, a Mr. Albert Kessler, and he told her he never filled out any form. He threatened to report us. Then on Wednesday a second person said the same thing.
+Marcus: I'm sorry, that's serious. Thank you for bringing it straight to me.
+Ruth: Serious is the right word. If we're calling people without consent, that's a TCPA problem, and the fines are per call. My compliance person says one lawsuit could cost more than everything we've ever spent with you.
+Marcus: I understand. Every lead we sell should have a consent record: the form, the time stamp, the IP address and the exact consent wording they agreed to. I can pull those records for both leads today.
+Ruth: I want more than those two. I want consent records for every lead you've sent us since September. That's about 360 leads.
+Marcus: That's a reasonable ask. I'll need to check how quickly we can export that many, but you'll have them. Let me give you a date after I talk to the compliance team this afternoon.
+Ruth: And I need to know where these leads came from. Were they bought from someone else and resold to us?
+Marcus: Our final expense leads come from our own forms, but in October we added a partner site to fill volume in Tennessee. If these two came from that partner, I'll find out and tell you plainly.
+Ruth: They were both Tennessee numbers.
+Marcus: Then that's where I'll look first. Until I know, I'll pause the partner traffic on your account so you only get leads from our own forms.
+Ruth: Do that today, please. Not next week.
+Marcus: Today. I'll email you when it's done.
+Ruth: There's something else. My best agent quit two weeks ago, so I'm down to three people. Honestly, even before this, I wasn't sure I could use 120 leads a month.
+Marcus: Would it help to drop to a smaller plan for a while? I'd rather you have fewer leads you can work than leads going cold.
+Ruth: Maybe. Let's not talk about that until the consent thing is settled. Our renewal is in February, and I'm not renewing unless I see clean consent records for every lead.
+Marcus: That's completely fair. I'll make sure you have everything well before February.
+Ruth: Also, my office manager asked me to give you the new card for billing, since the old one expired. It's 4111 1111 1111 1111, expiry 09 28.
+Marcus: Thank you. Actually, please don't read card numbers on calls. They get recorded. I'll send you a secure payment link instead, and please ignore the number you just read, I won't use it.
+Ruth: Oh. Fine, send the link.
+Marcus: I'll send the payment link right after this call. To recap: consent records for the two complaints today, the partner traffic paused today, and a date for the full export of all leads since September once I've spoken to compliance.
+Ruth: And a written answer on where those two leads came from.
+Marcus: Yes, a written answer on the source of both leads by Friday.
+Ruth: Okay. I'm not happy, Marcus, but I appreciate that you're not dodging it.
+Marcus: I understand. I'll call you Friday either way, even if I don't have every answer yet.
+Ruth: Fine. Talk Friday.

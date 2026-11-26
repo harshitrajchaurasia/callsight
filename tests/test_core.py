@@ -91,6 +91,15 @@ def test_redact_survives_odd_whitespace():
     assert [(s.speaker, s.text) for s in out] == [("Client", "hi there"), ("Account manager", "")]
 
 
+def test_redact_masks_details_as_whisper_writes_them():
+    sent = []
+    shield = lambda url, **kw: sent.append(kw["json"]["text"]) or Resp({"redacted_text": kw["json"]["text"].replace("dhale52@example.com", "[EMAIL]")})
+    segs = [Segment(start=0, end=1, speaker="Client", text="email dhale52 at example.com. Card 4,111,1,100,11,1,111, $490 on 10/9, 30 to 80")]
+    out = redact.redact(segs, post=shield)
+    assert "dhale52@example.com" in sent[0]
+    assert out[0].text == "email [EMAIL]. Card [NUMBER], $490 on 10/9, 30 to 80"
+
+
 @pytest.mark.parametrize("post", [lambda url, **kw: Resp({}, 503), lambda url, **kw: Resp({"redacted_text": "one line"}),
                                   lambda url, **kw: (_ for _ in ()).throw(ConnectionError())])
 def test_redact_fails_closed(post):
