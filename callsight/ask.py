@@ -62,6 +62,7 @@ def search(conn, question: str, k: int = TOP_K, embed_fn=embed) -> list[dict]:
 
 
 def _complete(system: str, user: str, provider: str) -> str:
+    extract.check_budget()
     started = time.perf_counter()
     if provider == "claude":
         c = extract.anthropic_client()

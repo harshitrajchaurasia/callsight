@@ -105,7 +105,25 @@ def default_provider() -> str:
     return os.getenv("CALL_PROVIDER") or ("claude" if os.getenv("ANTHROPIC_API_KEY") else "grok")
 
 
+def check_budget() -> None:
+    """DAILY_BUDGET_USD caps the app's own spend per UTC day (eval runs don't count). Unset = no cap."""
+    cap = float(os.getenv("DAILY_BUDGET_USD") or 0)
+    if not cap:
+        return
+    day = time.strftime("%Y-%m-%d", time.gmtime())
+    try:
+        with open(USAGE_PATH, encoding="utf-8") as f:
+            rows = [json.loads(x) for x in f if x.strip()]
+    except FileNotFoundError:
+        rows = []
+    spent = sum(r["usd"] for r in rows if r.get("tag") == "app" and time.strftime("%Y-%m-%d", time.gmtime(r["ts"])) == day)
+    if spent >= cap:  # ponytail: rereads the log each call; fine at demo volume
+        raise ModelUnavailable("today's model budget for this demo is used up; try again tomorrow")
+
+
 def analyze(segments: list[Segment], client: Client, provider: str, fn=None) -> Insight:
+    if fn is None:
+        check_budget()
     fn = fn or PROVIDERS[provider]
     for attempt in range(ATTEMPTS):
         try:

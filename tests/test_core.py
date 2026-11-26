@@ -186,3 +186,15 @@ def test_stt_splits_segments_on_pauses(monkeypatch):
     monkeypatch.setattr(stt, "_model", lambda: fake)
     out = stt._run("x.wav", "AM")
     assert [(s.start, s.end, s.text) for s in out] == [(0, 1, "Hi Ellen."), (9.5, 11, "Let me check.")]
+
+
+def test_daily_budget_stops_model_calls(tmp_path, monkeypatch):
+    import json, time
+    log = tmp_path / "u.jsonl"
+    log.write_text(json.dumps({"ts": time.time(), "tag": "app", "usd": 0.6}) + "\n" + json.dumps({"ts": time.time(), "tag": "eval", "usd": 5}) + "\n")
+    monkeypatch.setattr(extract, "USAGE_PATH", str(log))
+    monkeypatch.setenv("DAILY_BUDGET_USD", "1")
+    extract.check_budget()  # 0.6 of app spend: still fine, eval spend ignored
+    log.write_text(log.read_text() + json.dumps({"ts": time.time(), "tag": "app", "usd": 0.5}) + "\n")
+    with pytest.raises(extract.ModelUnavailable):
+        extract.check_budget()

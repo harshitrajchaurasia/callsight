@@ -147,4 +147,7 @@ class Question(BaseModel):
 
 @app.post("/api/ask", dependencies=api)
 async def ask_calls(q: Question):
-    return await run_in_threadpool(ask.answer, conn, q.question, q.provider if q.provider in ("claude", "grok") else None)
+    try:
+        return await run_in_threadpool(ask.answer, conn, q.question, q.provider if q.provider in ("claude", "grok") else None)
+    except extract.ModelUnavailable as e:
+        raise HTTPException(502, str(e))
