@@ -43,7 +43,7 @@ def test_public_mode_rate_limits_spending(tmp_path, monkeypatch):
     monkeypatch.setattr(redact, "redact", lambda segs: segs)
     monkeypatch.setattr(ask, "embed", fake_embed)
     monkeypatch.setitem(extract.PROVIDERS, "claude", lambda segs, client: insight())
-    monkeypatch.setenv("DEMO_PASS", "")
+    monkeypatch.setenv("DEMO_PASS", ""); monkeypatch.delenv("EXTRA_LOGINS", raising=False)
     monkeypatch.setitem(api.LIMITS, "call", (2, 3600))
     api._hits.clear()
     c = TestClient(api.app, base_url="https://testserver")
@@ -56,7 +56,10 @@ def test_public_mode_rate_limits_spending(tmp_path, monkeypatch):
 
 
 def test_extra_logins(monkeypatch):
-    monkeypatch.setenv("DEMO_USER", "u"); monkeypatch.setenv("DEMO_PASS", "p"); monkeypatch.setenv("EXTRA_LOGINS", "g:q,h:")
+    monkeypatch.setenv("DEMO_USER", "u"); monkeypatch.setenv("DEMO_PASS", "p"); monkeypatch.setenv("EXTRA_LOGINS", "g:q, h2:r ,h:,:x")
     api._fails.clear()
     assert api._login_ok("u", "p") and api._login_ok("g", "q")
     assert not api._login_ok("g", "p") and not api._login_ok("h", "") and not api._login_ok("u", "q")
+    assert api._login_ok("h2", "r") and not api._login_ok("", "x")
+    monkeypatch.setenv("DEMO_PASS", "")
+    assert not api._authed(None)  # EXTRA_LOGINS alone still means a login is required
