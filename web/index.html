@@ -167,7 +167,7 @@ input[type=range] { flex:1; max-width:340px; accent-color:var(--brand) }
 .rec { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:16px 0 12px }
 .rec .btn { display:inline-flex; align-items:center; gap:8px }
 .rec .dot { width:10px; height:10px; border-radius:50%; background:currentColor }
-.rec.on #recBtn { background:var(--bad); border-color:var(--bad); color:#fff }
+.rec.on .recBtn { background:var(--bad); border-color:var(--bad); color:#fff }
 .rec.on .dot { animation:blink 1s steps(2) infinite } @keyframes blink { 50% { opacity:.2 } }
 @media (prefers-reduced-motion:reduce) { .rec.on .dot { animation:none } }
 .rectime { font-variant-numeric:tabular-nums; font-weight:700; font-size:18px }
@@ -191,14 +191,44 @@ input[type=range] { flex:1; max-width:340px; accent-color:var(--brand) }
 .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 14px } @media (max-width:480px) { .grid2 { grid-template-columns:1fr } }
 input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink) }
 
+/* today, clients, compare, usage, voice */
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:0 20px } @media (max-width:1100px) { .grid { grid-template-columns:1fr } }
+.card h3.sub:first-child { margin-top:0 }
+.kpis { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:20px } @media (max-width:640px) { .kpis { grid-template-columns:repeat(2, 1fr) } }
+.kpis a { text-decoration:none; color:inherit } .kpis .tile:hover { border-color:var(--brand) }
+.rowlink { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); color:inherit; text-decoration:none; font-size:14.5px }
+.rowlink:last-child { border:0 } .rowlink:hover b { color:var(--brand) } .rowlink .grow { flex:1; min-width:0 }
+.muted { color:var(--muted); font-size:13px }
+.tbl { width:100%; border-collapse:collapse; font-size:14px } .tbl th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600; padding:8px 8px 8px 0; border-bottom:1px solid var(--line) }
+.tbl td { padding:10px 8px 10px 0; border-bottom:1px solid var(--line); vertical-align:middle } .tbl tr:last-child td { border:0 }
+.tbl .num { text-align:right; font-variant-numeric:tabular-nums }
+.scroll { overflow-x:auto }
+.spark { display:block } .chart { width:100%; height:auto; display:block }
+.chart text { font-size:11px; fill:var(--muted); font-family:inherit }
+.cmp { display:grid; grid-template-columns:1fr 1fr; gap:20px } @media (max-width:760px) { .cmp { grid-template-columns:1fr } }
+.cmp .card { margin:0 } .cmp h3 { margin:0 0 6px; font-size:16px } .diff { background:var(--sun-soft); border-radius:6px; padding:0 4px }
+.bars { display:flex; align-items:flex-end; gap:6px; height:120px; padding-top:8px } .bars div { flex:1; max-width:56px; display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0 }
+.bars i { display:block; width:100%; background:var(--brand); border-radius:4px 4px 0 0; min-height:2px } .bars small { font-size:10.5px; color:var(--muted); white-space:nowrap }
+.act { border:1px solid var(--line); border-radius:12px; padding:14px; margin-top:12px; background:var(--bg) }
+.act .kind { font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--brand) }
+.act .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0 10px } @media (max-width:640px) { .act .grid3 { grid-template-columns:1fr } }
+.act .row { margin-top:12px } .warn { color:var(--warn); font-size:13px; margin-top:6px }
+.toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px } .toolbar .btn { padding:7px 12px; font-size:13.5px }
+.btn.danger { background:none; color:var(--bad); border-color:var(--line) } .btn.danger:hover { border-color:var(--bad) }
+.tag { font-size:11px; font-weight:700; padding:1px 6px; border-radius:5px; background:var(--soft); color:var(--muted); margin-left:4px; vertical-align:1px }
+@media (max-width:760px) { .bar .appnav { gap:0; overflow-x:auto; scrollbar-width:none } .appnav::-webkit-scrollbar { display:none }
+  .bar .appnav a { flex:1 0 auto; padding:7px 5px; font-size:13px; white-space:nowrap; justify-content:center } }
+.shell > * { min-width:0 }
+
 .foot { border-top:1px solid var(--line); padding:22px 0 40px; color:var(--muted); font-size:13.5px }
 </style>
 </head>
 <body>
 <header class="bar"><div class="wrap">
-  <a class="logo" href="#new" aria-label="CallSight home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2b59c3"/>
+  <a class="logo" href="#today" aria-label="CallSight home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2b59c3"/>
     <path d="M8 16h2M12 11v10M16 7v18M20 12v8M24 15v2" stroke="#ffc65c" stroke-width="2.6" stroke-linecap="round"/></svg>CallSight</a>
-  <nav class="appnav" id="appnav" aria-label="App" hidden><a href="#new">New call</a><a href="#ask">Ask</a><a href="#settings">Settings</a></nav>
+  <nav class="appnav" id="appnav" aria-label="App" hidden><a href="#today">Today</a><a href="#new">New<span class="hide-sm"> call</span></a><a href="#voice">Voice</a>
+    <a href="#clients">Clients</a><a href="#ask">Ask</a><a href="#settings">Settings</a></nav>
   <nav class="tools" aria-label="Site"><a href="#how" class="hide-sm">How it works</a>
     <a href="https://github.com/harshitrajchaurasia/callsight" class="hide-sm">GitHub</a>
     <button id="theme" type="button"></button><button id="logout" type="button" hidden>Sign out</button></nav>
@@ -210,8 +240,8 @@ input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12p
     <span class="eyebrow"><i></i>Free and open source · demo with made-up clients</span>
     <h1>Every client call, turned into <em>checked facts</em> and next steps.</h1>
     <p class="lead">Account managers at a lead agency talk to clients all day. After each call someone has to write notes,
-      spot who is about to leave or ready to buy more, and log what was promised. CallSight does it in seconds, and shows
-      the exact words behind every point, so nobody has to take the AI's word for it.</p>
+      spot who is about to leave or ready to buy more, and log what was promised. CallSight does it in seconds, shows
+      the exact words behind every point, and lets a person check it before anything reaches the CRM.</p>
     <ul class="stats">
       <li><b>20 / 20</b>test calls with churn risk in the right range</li>
       <li><b>0</b>personal details sent to the AI</li>
@@ -234,12 +264,14 @@ input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12p
 <main class="wrap shell" id="app" hidden>
   <aside class="side"><details class="fold card" id="callsFold" open>
     <summary><h2>Calls <small id="ncalls"></small></h2></summary>
-    <input type="search" id="filter" aria-label="Filter calls" placeholder="Filter: client, ID, high risk...">
+    <input type="search" id="filter" aria-label="Filter calls" placeholder="Filter: client, ID, high risk, draft...">
     <div class="list" id="calls"><p class="help">None yet. Process a call to see it here.</p></div>
   </details></aside>
 
   <div>
-    <section data-view="new">
+    <section data-view="today" hidden><div class="vhead"><h2>Today</h2><p id="todaySub">What needs you, across the calls you can see.</p></div><div id="todayBody"></div></section>
+
+    <section data-view="new" hidden>
       <div class="vhead"><h2>Process a call</h2><p>Paste a transcript, upload a recording, or record one here. Results take about 10 seconds; an uploaded recording about 20 seconds more per minute.</p></div>
       <form class="card" id="callForm">
         <label for="clients" style="margin-top:0">Client on the call</label><select name="client_id" id="clients"></select>
@@ -259,23 +291,40 @@ input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12p
           <p class="help" style="margin:10px 0 0">No recording? Download a test call: <a href="/api/sample-audio">short (1 min)</a>,
             <a href="/api/sample-audio?call=21">quarterly review (4 min)</a>, <a href="/api/sample-audio?call=22">consent complaint (3 min)</a>,
             <a href="/api/sample-audio?call=23">expansion (3 min)</a>.</p></div>
-        <div id="tab-mic" hidden>
-          <div class="rec" id="rec"><button type="button" class="btn" id="recBtn"><span class="dot"></span><span>Start recording</span></button>
-            <span class="rectime" id="recTime">0:00</span><span class="level" aria-hidden="true"><i id="recLevel"></i></span>
-            <button type="button" class="btn ghost" id="recDiscard" hidden>Discard</button></div>
-          <div class="livebox" id="liveText" aria-live="polite"><p class="help" style="margin:0">Words appear here a few seconds after you say them.
-            Stop when you're done and the analysis runs straight away.</p></div>
+        <div id="tab-mic" hidden><div id="callRec"></div>
           <p class="help" style="margin:10px 0 0">Uses this device's microphone, up to 10 minutes. One microphone hears everyone as one speaker,
             so the AI works out who is who; for a phone call, put it on speaker. Audio isn't kept: each few seconds is transcribed and deleted.</p></div>
         <div class="using"><span id="using"></span><a href="#settings">Change</a></div>
         <button id="callBtn" class="btn wide">Process call</button><div class="err" id="callErr" role="alert"></div>
-        <p class="note"><b>Shared demo:</b> anything you process is visible to every visitor. Use a test call or a made-up one,
+        <p class="note"><b>Demo:</b> calls you process are visible to you and the admin; the test calls are shared. Use a test call or a made-up one,
           never real customer data. Up to 10 calls and 30 questions an hour.</p>
       </form>
     </section>
 
+    <section data-view="voice" hidden>
+      <div class="vhead"><h2>Voice to action</h2><p>Say what needs doing. CallSight works out the tasks and notes, you check them, and only what you confirm goes to Monday (tasks) or the client's GHL contact (notes).</p></div>
+      <div class="card">
+        <div id="voiceRec"></div>
+        <label for="vText">What was heard (or type it)</label>
+        <textarea id="vText" style="min-height:84px" maxlength="1000" placeholder="Create a task for Priya to send Summit Annuity the Texas quote by Friday, and note that Golden Years wants a call next week."></textarea>
+        <div class="chips" id="vExamples"></div>
+        <button type="button" class="btn wide" id="vGo" style="margin-top:16px">Understand</button><div class="err" id="vErr" role="alert"></div>
+        <p class="help" style="margin:12px 0 0">People are matched to the team list (<span id="vTeam"></span>) and clients to the client list in code, never guessed.
+          A person is named in the Monday item's title, not set in a people column, so nobody is notified.</p>
+      </div>
+      <div id="vPlan"></div>
+      <section class="card"><h3 class="sub">Tasks and notes from voice</h3><div id="vList"></div></section>
+    </section>
+
+    <section data-view="clients" hidden>
+      <div class="vhead"><h2>Clients</h2><p>Churn risk across each client's calls, oldest to newest, and the promises still open.</p></div>
+      <div class="card scroll" id="clientsBody"></div>
+    </section>
+    <section data-view="client" hidden id="clientBody"></section>
+    <section data-view="compare" hidden id="compareBody"></section>
+
     <section data-view="ask" hidden>
-      <div class="vhead"><h2>Ask across all calls</h2><p>Answers come only from what was said on the calls, with a link to each source.</p></div>
+      <div class="vhead"><h2>Ask across all calls</h2><p>Answers come only from what was said on the calls you can see, with a link to each source.</p></div>
       <div class="card">
         <form id="askForm" class="askrow"><input type="text" name="question" aria-label="Question" placeholder="Which clients mentioned budget cuts?" minlength="3" maxlength="500" required>
           <button class="btn">Ask</button></form>
@@ -284,7 +333,7 @@ input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12p
     </section>
 
     <section data-view="settings" hidden>
-      <div class="vhead"><h2>Settings</h2><p>Saved in this browser and used for every call and question you send from it. <span class="saved" id="saved"></span></p></div>
+      <div class="vhead"><h2>Settings</h2><p><span id="whoami"></span> Saved in this browser and used for every call and question you send from it. <span class="saved" id="saved"></span></p></div>
       <form class="card" id="setForm">
         <div class="set"><div><h3>Theme</h3><p>Also on the button in the top bar.</p></div>
           <div class="opts"><label class="opt"><input type="radio" name="theme" value="light">Light</label>
@@ -293,15 +342,18 @@ input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12p
           <div class="opts" id="provOpts"></div></div>
         <div class="set"><div><h3>Masking</h3><p>What PII Shield hides before the AI sees a call.</p></div>
           <div class="opts">
-            <label class="opt"><input type="checkbox" name="keep" value="NAME"><span>Send names as said<small>Follow-ups and summaries can then name people. Off by default.</small></span></label>
+            <label class="opt"><input type="checkbox" name="keep" value="NAME"><span>Send names as said<small>Off by default: names are swapped for "Person 1, 2..." and put back on our side, so follow-ups still show who.</small></span></label>
             <label class="opt"><input type="checkbox" name="keep" value="LOCATION"><span>Send places as said<small>Cities and states, e.g. "leads in Austin".</small></span></label>
             <p class="help" style="margin:4px 0 0">Phone numbers, emails, card, account and ID numbers are always masked. Company names are never masked.</p></div></div>
         <div class="set"><div><h3>Churn alert</h3><p>Alert the account manager when the churn risk is at or above this.</p></div>
           <div><div class="row"><input type="range" name="churn" min="30" max="90" step="5" aria-label="Churn alert threshold"><b id="churnVal"></b></div>
             <p class="help" style="margin:4px 0 0">Applies to calls processed from now on. Default <span id="churnDef"></span>.</p></div></div>
+        <div class="set" id="usageRow" hidden><div><h3>Usage and cost</h3><p>Admins only.</p></div><div><a class="btn ghost" href="#usage">Open the usage page</a></div></div>
         <div class="set"><div></div><div><button type="button" class="btn ghost" id="reset">Reset to defaults</button></div></div>
       </form>
     </section>
+
+    <section data-view="usage" hidden><div class="vhead"><h2>Usage and cost</h2><p>AI spend from the app's own log (tests and evals not included). Times are UTC.</p></div><div id="usageBody"></div></section>
 
     <section data-view="how" hidden>
       <div class="vhead"><h2>How it works</h2><p>Every call goes through the same five steps. Only step 3 uses an outside AI.</p></div>
@@ -332,18 +384,25 @@ const ICON = {
   moon: svg('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'),
 };
 const STEPS = [
-  ["listen", "1. Listen", "Speech-to-text on this server. In a stereo recording each speaker has a channel, so it knows who said what."],
+  ["listen", "1. Listen", "Speech-to-text on this server, from an upload or live from the microphone. In a stereo recording each speaker has a channel."],
   ["mask", "2. Mask", "Names, phones, emails and card numbers become [NAME], [PHONE]... before any AI sees the call. No masking, no call."],
   ["extract", "3. Extract", "Claude or Grok writes the summary, churn risk, upsell signals and follow-ups, quoting the words behind each."],
   ["check", "4. Check", "Code looks for every quote in the transcript. A point whose quote isn't there is marked unverified."],
-  ["act", "5. Act", "Rules in code, not the AI, raise the alerts. In a real setup each call becomes a Monday.com item."]];
+  ["act", "5. Review and act", "Rules in code raise the alerts. A person corrects and approves; only then does the call go to Monday.com and GHL."]];
 $$(".flow").forEach(el => el.innerHTML = STEPS.map(([i, t, d]) => `<li><span class="ic">${ICON[i]}</span><h3>${t}</h3><p>${d}</p></li>`).join(""));
 const EXAMPLES = ["Which clients are thinking about leaving?", "Who wants to expand to new states?", "What did we promise to send, and to whom?"];
 $("#examples").innerHTML = EXAMPLES.map(q => `<button type="button">${esc(q)}</button>`).join("");
+const VEXAMPLES = ["Create a task for Priya to send Summit Annuity the Texas quote by Friday.",
+  "Remind me to call Golden Years back tomorrow morning, and note that they want a consent export.",
+  "Which clients asked for new states?"];
+$("#vExamples").innerHTML = VEXAMPLES.map(q => `<button type="button">${esc(q)}</button>`).join("");
 const PROVIDER = {claude: "Claude", grok: "Grok"}, KEEP = {NAME: "names", LOCATION: "places"};
-const VIEWS = ["new", "ask", "settings", "how"];
+const VIEWS = ["today", "new", "voice", "clients", "ask", "settings", "usage", "how"];
 const narrow = matchMedia("(max-width:900px)");
-let current = null, samples = [], calls = [], server = {providers: [], keepable: [], churn_alert: .6};
+let current = null, samples = [], calls = [], clientsList = [], server = {providers: [], keepable: [], churn_alert: .6, team: []};
+const CL = id => clientsList.find(c => c.id === id) || {name: id};
+const when = t => t ? new Date(t * 1000).toLocaleString([], {dateStyle: "medium", timeStyle: "short"}) : "";
+const day = t => t ? new Date(t * 1000).toLocaleDateString([], {month: "short", day: "numeric"}) : "";
 
 // --- settings, kept in this browser (they're conveniences, not data) -------------------------------------------
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
@@ -373,6 +432,9 @@ function renderSettings() {
   $("#churnDef").textContent = Math.round(server.churn_alert * 100) + "%";
   const keep = p.keep.map(k => KEEP[k]);
   $("#using").innerHTML = `<b>${PROVIDER[p.provider] || "No model"}</b> · ${keep.length ? `${keep.join(" and ")} sent as said` : "names and places masked"} · churn alert at ${Math.round(p.churn * 100)}%`;
+  $("#whoami").innerHTML = server.user ? `Signed in as <b>${esc(server.user)}</b> (${server.admin ? "admin" : "member"}).` : "";
+  $("#usageRow").hidden = !server.admin;
+  $("#vTeam").textContent = server.team.join(", ");
 }
 let savedTimer;
 $("#setForm").onchange = e => {
@@ -393,13 +455,14 @@ async function api(path, opts) {
   if (!r.ok) throw new Error(Array.isArray(body.detail) ? body.detail.map(d => d.msg).join("; ") : body.detail || `HTTP ${r.status}`);
   return body;
 }
+const json = (method, body) => ({method, headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
 function show(authed) { $("#app").hidden = $("#appnav").hidden = !authed; $("#landing").hidden = authed; }
 const risk = v => v >= .6 ? ["High", "b-high", "var(--bad)"] : v >= .3 ? ["Medium", "b-med", "var(--warn)"] : ["Low", "b-low", "var(--ok)"];
+const badge = v => { const [l, cls] = risk(v); return `<span class="badge ${cls}">${l} ${Math.round(v * 100)}%</span>`; };
 
 $("#loginForm").onsubmit = async e => {
   e.preventDefault(); $("#loginErr").textContent = "";
-  try { await api("/api/login", {method:"POST", headers:{"content-type":"application/json"},
-          body: JSON.stringify(Object.fromEntries(new FormData(e.target)))}); e.target.password.value = ""; await start(); route(); }
+  try { await api("/api/login", json("POST", Object.fromEntries(new FormData(e.target)))); e.target.password.value = ""; await start(); route(); }
   catch (err) { $("#loginErr").textContent = err.message; }
 };
 $("#logout").onclick = async () => { await fetch("/api/logout", {method:"POST"}).catch(() => {}); history.replaceState(null, "", "/"); show(false); };
@@ -408,7 +471,7 @@ async function start() {
   const me = await api("/api/me");
   if (!me.signed_in) return show(false);
   const [cs, st, sm] = await Promise.all([api("/api/clients"), api("/api/settings"), api("/api/samples")]);
-  show(true); server = st; samples = sm;
+  show(true); server = st; samples = sm; clientsList = cs;
   $("#logout").hidden = !me.login_required;
   $("#clients").innerHTML = cs.map(c => `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.plan)})</option>`).join("");
   $("#sample").innerHTML = `<option value="">Choose one of ${samples.length} test calls...</option>` + samples.map((s, n) => `<option value="${n}">${esc(s.title)}</option>`).join("");
@@ -416,33 +479,28 @@ async function start() {
   await loadCalls();
 }
 
-// --- views: #new #ask #settings #how, or #CALL-ID[@time] ---------------------------------------------------------
+// --- views: #today #new #voice #clients #client/ID #compare/A/B #ask #settings #usage #how, or #CALL-ID[@time] ----
 function view(name) {
   $$("[data-view]").forEach(v => v.hidden = v.dataset.view !== name);
-  $$("#appnav a").forEach(a => a.getAttribute("href") === "#" + name ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+  const nav = {client: "clients", compare: "clients", usage: "settings"}[name] || name;
+  $$("#appnav a").forEach(a => a.getAttribute("href") === "#" + nav ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
 }
 function route() {
   if ($("#app").hidden) return;
-  const [id, at] = decodeURIComponent(location.hash.slice(1)).split("@");
-  if (!id || VIEWS.includes(id)) { current = null; drawCalls(); view(id || "new"); window.scrollTo(0, 0); return; }
+  const h = decodeURIComponent(location.hash.slice(1)), [id, at] = h.split("@"), parts = h.split("/");
+  if (parts[0] === "client") return go("client", () => renderClient(parts[1]));
+  if (parts[0] === "compare") return go("compare", () => renderCompare(parts[1], parts[2]));
+  if (!id || VIEWS.includes(id)) {
+    const name = id || "today";
+    return go(name, {today: renderToday, voice: renderActions, clients: renderClients, usage: renderUsage}[name]);
+  }
   view("call"); openCall(id, at);
 }
+function go(name, render) { current = null; drawCalls(); view(name); window.scrollTo(0, 0); if (render) render(); }
 window.onhashchange = route;
 
-let mode = "text";
-function tab(name) {
-  if (rec.on) return;  // finish or discard the recording first
-  mode = name;
-  $$("[data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
-  ["text", "audio", "mic"].forEach(t => $("#tab-" + t).hidden = t !== name);
-  if (name !== "audio") $("#audio").value = "";
-  if (name !== "text") { $("#transcript").value = ""; $("#sample").value = ""; }
-  $("#callBtn").hidden = name === "mic";  // a recording is analysed when it stops
-}
-
 // --- microphone: 16 kHz mono pieces of ~5 s, cut at the quietest moment, transcribed one after another --------
-const SR = 16000, MAX_REC = 10 * 60;
-const rec = {on: false};
+const SR = 16000;
 const wav = x => {  // Float32 samples -> 16-bit PCM WAV
   const b = new DataView(new ArrayBuffer(44 + x.length * 2)), str = (o, t) => [...t].forEach((c, i) => b.setUint8(o + i, c.charCodeAt(0)));
   str(0, "RIFF"); b.setUint32(4, 36 + x.length * 2, true); str(8, "WAVEfmt "); b.setUint32(16, 16, true); b.setUint16(20, 1, true);
@@ -452,67 +510,92 @@ const wav = x => {  // Float32 samples -> 16-bit PCM WAV
   return new Blob([b], {type: "audio/wav"});
 };
 const rms = (x, a = 0, b = x.length) => { let e = 0; for (let i = a; i < b; i++) e += x[i] * x[i]; return Math.sqrt(e / Math.max(1, b - a)); };
-function drawLive(extra = "") {
-  const lines = rec.segs.map(s => `<div class="ln"><span class="t">${mmss(s.start)}</span>${esc(s.text)}</div>`).join("");
-  $("#liveText").innerHTML = (lines || (rec.on ? "" : '<p class="help" style="margin:0">Nothing transcribed yet.</p>')) + extra;
-  $("#liveText").scrollTop = $("#liveText").scrollHeight;
-}
-function cut(final) {
-  const all = new Float32Array(rec.len); let o = 0; rec.buf.forEach(b => { all.set(b, o); o += b.length; });
-  let end = all.length;
-  if (!final) {  // the quietest 100 ms between 4 and 6 s, so a word is rarely split in two
-    let best = Infinity; const w = SR / 10;
-    for (let i = 4 * SR; i + w <= all.length; i += w / 2) { const e = rms(all, i, i + w); if (e < best) { best = e; end = i + w / 2; } }
+let recording = null;  // only one recorder at a time
+function recorder(el, {label, maxSec, onDone, onError}) {
+  el.innerHTML = `<div class="rec"><button type="button" class="btn recBtn"><span class="dot"></span><span>${label}</span></button>
+      <span class="rectime">0:00</span><span class="level" aria-hidden="true"><i></i></span>
+      <button type="button" class="btn ghost recDiscard" hidden>Discard</button></div>
+    <div class="livebox" aria-live="polite"><p class="help" style="margin:0">Words appear here a few seconds after you say them.</p></div>`;
+  const q = s => el.querySelector(s), btn = q(".recBtn"), btnText = q(".recBtn span:last-child"), box = q(".livebox");
+  const r = {on: false, segs: []};
+  const draw = (extra = "") => { box.innerHTML = r.segs.map(s => `<div class="ln"><span class="t">${mmss(s.start)}</span>${esc(s.text)}</div>`).join("") + extra
+    || '<p class="help" style="margin:0">Nothing transcribed yet.</p>'; box.scrollTop = box.scrollHeight; };
+  function cut(final) {
+    const all = new Float32Array(r.len); let o = 0; r.buf.forEach(b => { all.set(b, o); o += b.length; });
+    let end = all.length;
+    if (!final) {  // the quietest 100 ms between 4 and 6 s, so a word is rarely split in two
+      let best = Infinity; const w = SR / 10;
+      for (let i = 4 * SR; i + w <= all.length; i += w / 2) { const e = rms(all, i, i + w); if (e < best) { best = e; end = i + w / 2; } }
+    }
+    const piece = all.slice(0, end), offset = r.offset;
+    r.offset += end / SR; r.buf = [all.slice(end)]; r.len = all.length - end;
+    if (piece.length < SR * 0.3 || rms(piece) < 0.004) return;  // silence: don't spend CPU on it
+    r.pending++;
+    r.queue = r.queue.then(async () => {
+      const fd = new FormData(); fd.append("audio", wav(piece), "piece.wav");
+      try { (await api("/api/live", {method: "POST", body: fd})).forEach(s => r.segs.push({start: +(s.start + offset).toFixed(2), end: +(s.end + offset).toFixed(2), text: s.text})); }
+      catch (err) { r.error = err.message; }
+      r.pending--; draw(r.on && r.pending ? '<div class="ln wait">listening...</div>' : "");
+    });
   }
-  const piece = all.slice(0, end), offset = rec.offset;
-  rec.offset += end / SR; rec.buf = [all.slice(end)]; rec.len = all.length - end;
-  if (piece.length < SR * 0.3 || rms(piece) < 0.004) return;  // silence: don't spend CPU on it
-  rec.pending++;
-  rec.queue = rec.queue.then(async () => {
-    const fd = new FormData(); fd.append("audio", wav(piece), "piece.wav");
-    try { (await api("/api/live", {method: "POST", body: fd})).forEach(s => rec.segs.push({start: +(s.start + offset).toFixed(2), end: +(s.end + offset).toFixed(2), text: s.text})); }
-    catch (err) { rec.errors = err.message; }
-    rec.pending--; drawLive(rec.on && rec.pending ? '<div class="ln wait">listening...</div>' : "");
-  });
+  async function begin() {
+    if (recording) return;
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: 1, echoCancellation: true, noiseSuppression: true}}); }
+    catch (e) { return onError("Couldn't use the microphone: " + (e.name === "NotAllowedError" ? "permission was refused." : e.message)); }
+    const ctx = new AudioContext(), src = ctx.createMediaStreamSource(stream), node = ctx.createScriptProcessor(4096, 1, 1);
+    const ratio = ctx.sampleRate / SR; let pos = 0;
+    Object.assign(r, {on: true, stream, ctx, node, buf: [], len: 0, offset: 0, segs: [], pending: 0, error: "", queue: Promise.resolve(), t0: Date.now()});
+    recording = r;
+    node.onaudioprocess = e => {  // resample to 16 kHz (linear; Whisper doesn't mind) and keep the samples
+      if (!r.on) return;
+      const x = e.inputBuffer.getChannelData(0), out = [];
+      for (; pos < x.length; pos += ratio) { const i = Math.floor(pos), f = pos - i; out.push(x[i] + (x[Math.min(i + 1, x.length - 1)] - x[i]) * f); }
+      pos -= x.length;
+      const y = Float32Array.from(out); r.buf.push(y); r.len += y.length;
+      q(".level i").style.width = Math.min(100, rms(y) * 600) + "%";
+      if (r.len >= 6 * SR) cut(false);
+    };
+    src.connect(node); node.connect(ctx.destination);
+    q(".rec").classList.add("on"); btnText.textContent = "Stop"; q(".recDiscard").hidden = false;
+    draw('<div class="ln wait">listening...</div>');
+    r.timer = setInterval(() => { const t = (Date.now() - r.t0) / 1000; q(".rectime").textContent = mmss(t).replace(/^0/, ""); if (t >= maxSec) end(true); }, 250);
+  }
+  async function end(keep) {
+    if (!r.on) return;
+    r.on = false; recording = null; clearInterval(r.timer);
+    r.stream.getTracks().forEach(t => t.stop()); r.node.disconnect(); r.ctx.close();
+    q(".rec").classList.remove("on"); btnText.textContent = label; q(".recDiscard").hidden = true; q(".level i").style.width = "0";
+    if (!keep) { r.reset(); return; }
+    cut(true);
+    btn.disabled = true; btnText.textContent = "Finishing the transcript...";
+    await r.queue;
+    btn.disabled = false; btnText.textContent = label; draw();
+    if (!r.segs.length) return onError(r.error || "No speech was heard. Check the microphone and try again.");
+    onDone(r);
+  }
+  r.reset = () => { r.segs = []; draw(); box.innerHTML = '<p class="help" style="margin:0">Words appear here a few seconds after you say them.</p>'; q(".rectime").textContent = "0:00"; };
+  r.say = html => draw(html);
+  btn.onclick = () => r.on ? end(true) : begin();
+  q(".recDiscard").onclick = () => end(false);
+  return r;
 }
-async function recStart() {
-  $("#callErr").textContent = "";
-  let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: 1, echoCancellation: true, noiseSuppression: true}}); }
-  catch (e) { $("#callErr").textContent = "Couldn't use the microphone: " + (e.name === "NotAllowedError" ? "permission was refused." : e.message); return; }
-  const ctx = new AudioContext(), src = ctx.createMediaStreamSource(stream), node = ctx.createScriptProcessor(4096, 1, 1);
-  const ratio = ctx.sampleRate / SR; let pos = 0, last = 0;
-  Object.assign(rec, {on: true, stream, ctx, node, buf: [], len: 0, offset: 0, segs: [], pending: 0, errors: "", queue: Promise.resolve(), t0: Date.now()});
-  node.onaudioprocess = e => {  // resample to 16 kHz (linear; Whisper doesn't mind) and keep the samples
-    if (!rec.on) return;
-    const x = e.inputBuffer.getChannelData(0), out = [];
-    for (; pos < x.length; pos += ratio) { const i = Math.floor(pos), f = pos - i, a = i < 0 ? last : x[i], b = x[Math.min(i + 1, x.length - 1)]; out.push(a + (b - a) * f); }
-    pos -= x.length; last = x[x.length - 1];
-    const y = Float32Array.from(out); rec.buf.push(y); rec.len += y.length;
-    $("#recLevel").style.width = Math.min(100, rms(y) * 600) + "%";
-    if (rec.len >= 6 * SR) cut(false);
-  };
-  src.connect(node); node.connect(ctx.destination);
-  $("#rec").classList.add("on"); $("#recBtn span:last-child").textContent = "Stop and analyse"; $("#recDiscard").hidden = false;
-  drawLive('<div class="ln wait">listening...</div>');
-  rec.timer = setInterval(() => { const t = (Date.now() - rec.t0) / 1000; $("#recTime").textContent = mmss(t).replace(/^0/, "");
-    if (t >= MAX_REC) recStop(true); }, 250);
+const callRec = recorder($("#callRec"), {label: "Start recording", maxSec: 600,
+  onDone: () => $("#callForm").requestSubmit(), onError: m => $("#callErr").textContent = m});
+const voiceRec = recorder($("#voiceRec"), {label: "Speak a command", maxSec: 90,
+  onDone: r => { $("#vText").value = r.segs.map(s => s.text).join(" "); understand(); }, onError: m => $("#vErr").textContent = m});
+
+// --- new call ------------------------------------------------------------------------------------------------------
+let mode = "text";
+function tab(name) {
+  if (recording) return;  // finish or discard the recording first
+  mode = name;
+  $$("[data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
+  ["text", "audio", "mic"].forEach(t => $("#tab-" + t).hidden = t !== name);
+  if (name !== "audio") $("#audio").value = "";
+  if (name !== "text") { $("#transcript").value = ""; $("#sample").value = ""; }
+  $("#callBtn").hidden = name === "mic";  // a recording is analysed when it stops
 }
-async function recStop(analyse) {
-  if (!rec.on) return;
-  rec.on = false; clearInterval(rec.timer);
-  rec.stream.getTracks().forEach(t => t.stop()); rec.node.disconnect(); rec.ctx.close();
-  $("#rec").classList.remove("on"); $("#recBtn span:last-child").textContent = "Start recording"; $("#recDiscard").hidden = true; $("#recLevel").style.width = "0";
-  if (!analyse) { rec.segs = []; drawLive(); $("#recTime").textContent = "0:00"; return; }
-  cut(true);
-  $("#recBtn").disabled = true; $("#recBtn span:last-child").textContent = "Finishing the transcript...";
-  await rec.queue;
-  $("#recBtn").disabled = false; $("#recBtn span:last-child").textContent = "Start recording"; drawLive();
-  if (!rec.segs.length) { $("#callErr").textContent = rec.errors || "No speech was heard. Check the microphone and try again."; return; }
-  $("#callForm").requestSubmit();
-}
-$("#recBtn").onclick = () => rec.on ? recStop(true) : recStart();
-$("#recDiscard").onclick = () => recStop(false);
 $$("[data-tab]").forEach(b => b.onclick = () => tab(b.dataset.tab));
 $("#sample").onchange = e => { const s = samples[e.target.value]; if (!s) return;
   $("#clients").value = s.client_id; $("#transcript").value = s.transcript; };
@@ -521,31 +604,36 @@ async function loadCalls() { calls = await api("/api/calls"); drawCalls(); }
 function drawCalls() {
   $("#ncalls").textContent = calls.length ? `(${calls.length})` : "";
   const q = $("#filter").value.trim().toLowerCase();
-  const shown = calls.filter(c => !q || `${c.client} ${c.id} ${c.sentiment} ${risk(c.churn_risk)[0]} risk`.toLowerCase().includes(q));
-  $("#calls").innerHTML = shown.map(c => { const [l, cls] = risk(c.churn_risk);
-    return `<a href="#${esc(c.id)}" class="${c.id === current ? "on" : ""}"><span class="who"><b>${esc(c.client)}</b>
-      <small>${esc(c.id)} · ${esc(c.sentiment)} · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}</small></span>
-      <span class="badge ${cls}">${l} ${Math.round(c.churn_risk * 100)}%</span></a>`; }).join("")
+  const shown = calls.filter(c => !q || `${c.client} ${c.id} ${c.sentiment} ${risk(c.churn_risk)[0]} risk ${c.approved ? "approved" : "draft"} ${c.owner === server.user ? "mine" : ""}`.toLowerCase().includes(q));
+  $("#calls").innerHTML = shown.map(c => `<a href="#${esc(c.id)}" class="${c.id === current ? "on" : ""}"><span class="who"><b>${esc(c.client)}</b>
+      <small>${esc(c.id)}${c.rerun_of ? '<span class="tag">re-run</span>' : ""} · ${c.approved ? "approved" : "draft"} · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}</small></span>
+      ${badge(c.churn_risk)}</a>`).join("")
     || `<p class="help" style="margin:0 8px">${calls.length ? "No calls match." : "None yet. Process a call to see it here."}</p>`;
 }
 $("#filter").oninput = drawCalls;
 $("#calls").onclick = e => { if (e.target.closest("a") && narrow.matches) $("#callsFold").open = false; };
 if (narrow.matches) $("#callsFold").open = false;
 
+const STAGE = {starting: "Starting...", masking: "Masking personal details...", checking: "Checking the quotes...", waiting: "Waiting..."};
 $("#callForm").onsubmit = async e => {
   e.preventDefault(); $("#callErr").textContent = ""; $("#callBtn").disabled = true;
-  const p = pick(), fd = new FormData(e.target);
+  const p = pick(), fd = new FormData(e.target), job = Math.random().toString(36).slice(2, 12).padEnd(10, "0");
   if (!fd.get("audio")?.name) fd.delete("audio"); if (!fd.get("transcript")) fd.delete("transcript");
-  if (mode === "mic") fd.set("segments", JSON.stringify(rec.segs || []));
-  if (p.provider) fd.set("provider", p.provider); fd.set("keep", p.keep.join(",")); fd.set("churn_alert", p.churn);
-  $("#callBtn").textContent = fd.has("audio") ? "Transcribing, then analysing..." : "Masking and analysing...";
-  if (mode === "mic") drawLive('<div class="ln wait">Masking and analysing...</div>');
+  if (mode === "mic") fd.set("segments", JSON.stringify(callRec.segs));
+  if (p.provider) fd.set("provider", p.provider); fd.set("keep", p.keep.join(",")); fd.set("churn_alert", p.churn); fd.set("job", job);
+  const say = t => { $("#callBtn").textContent = t; if (mode === "mic") callRec.say(`<div class="ln wait">${esc(t)}</div>`); };
+  say(fd.has("audio") ? "Uploading..." : "Masking and analysing...");
+  const poll = setInterval(async () => {  // live progress: transcribing 1:20 of 3:45, then masking, analysing, checking
+    try { const s = await api(`/api/progress/${job}`);
+      say(s.stage === "transcribing" ? `Transcribing ${mmss(s.fraction * s.seconds)} of ${mmss(s.seconds)}...`
+        : s.stage === "analysing" ? `Analysing with ${PROVIDER[s.provider] || s.provider}...` : STAGE[s.stage] || "Working..."); } catch {}
+  }, 1000);
   try { const r = await api("/api/calls", {method:"POST", body:fd}); e.target.transcript.value = ""; e.target.audio.value = ""; $("#sample").value = "";
-        if (mode === "mic") { rec.segs = []; drawLive(); $("#recTime").textContent = "0:00"; }
+        if (mode === "mic") callRec.reset();
         await loadCalls(); location.hash = r.id; }
-  catch (err) { $("#callErr").textContent = err.message; }
-  finally { $("#callBtn").disabled = false; $("#callBtn").textContent = "Process call";
-            $("#callBtn").hidden = mode === "mic" && !rec.segs?.length; }  // a failed analysis of a recording can be retried
+  catch (err) { $("#callErr").textContent = err.message; if (mode === "mic") callRec.say(""); }
+  finally { clearInterval(poll); $("#callBtn").disabled = false; $("#callBtn").textContent = "Process call";
+            $("#callBtn").hidden = mode === "mic" && !callRec.segs.length; }  // a failed analysis of a recording can be retried
 };
 
 // --- one call ----------------------------------------------------------------------------------------------------
@@ -570,7 +658,8 @@ async function openCall(id, at) {
   if (at != null) { dtab("transcript"); highlight(at); } else window.scrollTo(0, 0);
 }
 let shown = null, flash = "";
-const ago = t => new Date(t * 1000).toLocaleString([], {dateStyle: "medium", timeStyle: "short"});
+const person = (r, a) => { const n = a.speaker ? (r.speakers?.[a.speaker] || a.speaker) : ""; return /^(speaker|client|account manager)?$/i.test(n) ? "" : n; };
+const canDelete = r => server.admin || (r.owner != null && r.owner === server.user);
 function renderCall(r) {
   shown = r;
   const i = r.insight, timed = r.segments.some(s => s.end > s.start);
@@ -580,17 +669,19 @@ function renderCall(r) {
   const speakers = [...new Set(r.segments.map(base))];
   const unmasked = (r.unmasked || []).map(k => KEEP[k] || k.toLowerCase());
   const missing = r.checks.filter(c => !c.found).length;
-  const person = a => { const n = a.speaker ? (r.speakers?.[a.speaker] || a.speaker) : ""; return /^(speaker|client|account manager)?$/i.test(n) ? "" : n; };
   const by = u => u ? ` by <b>${esc(u)}</b>` : "";
+  const other = r.provider === "claude" ? "grok" : "claude";
   const status = r.approved_by != null
-    ? `<span class="badge b-low">Approved</span><span>${by(r.approved_by)} · ${ago(r.approved_at)}</span>`
+    ? `<span class="badge b-low">Approved</span><span>${by(r.approved_by)} · ${when(r.approved_at)}</span>`
     : `<span class="badge b-med">Draft</span><span>${r.edited_by != null ? `Edited${by(r.edited_by)}. ` : ""}Check it, correct anything wrong, then approve to send it to Monday and GHL.</span>`;
   const ev = r.checks.map(c => `<div class="ev ${c.found ? "found" : "miss"}"><span class="k">${esc(c.kind.replace("_", " "))}</span>${esc(c.text)}
       ${c.found ? `<span class="tick b-low">&#10003; found</span><button class="ts" data-at="${c.at}" title="Show in transcript">${where(c.at)}</button>`
                 : '<span class="tick b-high">unverified</span>'}
       <blockquote>&ldquo;${esc(c.quote)}&rdquo;</blockquote></div>`).join("");
   $("#detail").innerHTML = `
-    <section class="card"><div class="dhead"><h2>${esc(r.client.name)}</h2><span>${esc(r.id)} · ${esc(r.client.plan)} · account manager ${esc(r.client.account_manager)}</span></div>
+    <section class="card"><div class="dhead"><h2><a href="#client/${esc(r.client_id)}" style="color:inherit;text-decoration:none">${esc(r.client.name)}</a></h2>
+      <span>${esc(r.id)} · ${day(r.created)} · ${esc(r.client.plan)} · account manager ${esc(r.client.account_manager)}</span></div>
+      ${r.rerun_of ? `<p class="help" style="margin:8px 0 0">A re-run of <a href="#${esc(r.rerun_of)}">${esc(r.rerun_of)}</a> with ${PROVIDER[r.provider] || esc(r.provider)}. <a href="#compare/${esc(r.rerun_of)}/${esc(r.id)}">Compare the two</a></p>` : ""}
       <p class="summary">${esc(i.summary)}</p>
       <div class="tiles">
         <div class="tile"><small>Churn risk</small><b style="color:${rc}">${pct}%</b> <span class="due">${rl}</span><div class="meter"><i style="width:${pct}%;background:${rc}"></i></div></div>
@@ -600,6 +691,10 @@ function renderCall(r) {
       </div>
       <div class="status">${status}<span class="grow"></span><button type="button" class="btn ghost" id="editBtn">Edit</button>
         ${r.approved_by != null ? "" : '<button type="button" class="btn" id="approveBtn">Approve</button>'}</div>
+      <div class="toolbar"><button type="button" class="btn ghost" data-x="copy">Copy report</button><button type="button" class="btn ghost" data-x="email">Email the client a recap</button>
+        <button type="button" class="btn ghost" data-x="csv">Follow-ups as CSV</button>
+        ${server.providers.includes(other) ? `<button type="button" class="btn ghost" data-x="rerun" data-p="${other}">Re-run with ${PROVIDER[other]} and compare</button>` : ""}
+        ${canDelete(r) ? '<button type="button" class="btn danger" data-x="delete">Delete</button>' : ""}</div>
       ${flash ? `<p class="flash" role="status">${esc(flash)}</p>` : ""}</section>
     <div class="tabs dtabs" role="tablist">
       <button type="button" role="tab" data-to="overview" aria-selected="true">Overview</button>
@@ -611,7 +706,7 @@ function renderCall(r) {
       <h3 class="sub">Follow-ups</h3><p class="help">What each side agreed to do, and who said they'd do it. "Us" is Acme Leads; "client" is the agency. Tick one off when it's done.</p>
       ${i.action_items.map((a, n) => `<div class="todo ${a.done ? "done" : ""}"><input type="checkbox" data-done="${n}" ${a.done ? "checked" : ""} aria-label="Done: ${esc(a.task)}">
         <span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "Us" : "Client"}</span>
-        <span>${person(a) ? `<span class="who-name">${esc(person(a))}</span>: ` : ""}<span class="task">${esc(a.task)}</span> ${a.done ? '<span class="due">· done</span>' : a.due ? `<span class="due">· due ${esc(a.due)}</span>` : '<span class="nodue">· no due date</span>'}</span></div>`).join("") || '<p class="help" style="margin:0">None agreed on this call.</p>'}</section>
+        <span>${person(r, a) ? `<span class="who-name">${esc(person(r, a))}</span>: ` : ""}<span class="task">${esc(a.task)}</span> ${a.done ? '<span class="due">· done</span>' : a.due ? `<span class="due">· due ${esc(a.due)}</span>` : '<span class="nodue">· no due date</span>'}</span></div>`).join("") || '<p class="help" style="margin:0">None agreed on this call.</p>'}</section>
     <section class="card" data-dtab="evidence" hidden><p class="help">Every point the AI made, with the words it quoted. <b>Found</b> means code found that
       quote in the transcript; click the ${timed ? "time" : "line"} to see it. <b>Unverified</b> points are ignored by the alerts.</p>
       ${ev || '<p class="help" style="margin:0">The AI found nothing to report on this call.</p>'}</section>
@@ -621,9 +716,55 @@ function renderCall(r) {
       <div class="chat">${r.segments.map(s => `<div class="line" data-at="${s.start}"><span class="who-tag s${Math.min(speakers.indexOf(base(s)), 2)}" title="${esc(s.speaker)}">${esc(s.speaker)}</span>
         <span>${timed ? `<span class="t">${mmss(s.start)}</span>` : ""}${esc(s.text)}</span></div>`).join("")}</div></section>`;
 }
+function highlight(at) {
+  $$(".line").forEach(el => el.classList.toggle("hl", Number(el.dataset.at) === Number(at)));
+  document.querySelector(".line.hl")?.scrollIntoView({block:"center", behavior:"smooth"});
+}
+
+// --- export: copy, email recap, CSV -------------------------------------------------------------------------------
+const csvCell = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+function download(name, text) {
+  const a = Object.assign(document.createElement("a"), {href: URL.createObjectURL(new Blob([text], {type: "text/csv"})), download: name});
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const followRows = r => r.insight.action_items.map(a => [r.id, r.client.name, a.owner === "us" ? "us" : "client", person(r, a), a.task, a.due, a.done ? "yes" : "no"]);
+const CSV_HEAD = ["call", "client", "side", "person", "task", "due", "done"];
+function report(r) {
+  const i = r.insight, who = a => person(r, a) || (a.owner === "us" ? "Us" : "Client");
+  return [`${r.client.name}, call ${r.id} (${day(r.created)})`, "", i.summary, "", `Sentiment: ${i.sentiment}. Churn risk: ${Math.round(i.churn_risk * 100)}%.`,
+    ...(r.alerts.length ? ["", "Alerts:", ...r.alerts.map(a => "- " + a)] : []),
+    "", "Follow-ups:", ...i.action_items.map(a => `- [${a.done ? "x" : " "}] ${who(a)}: ${a.task}${a.due ? ` (due ${a.due})` : ""}`)].join("\n");
+}
+function recap(r) {
+  const ours = r.insight.action_items.filter(a => a.owner === "us" && !a.done), theirs = r.insight.action_items.filter(a => a.owner === "client" && !a.done);
+  const body = ["Hi,", "", "Thanks for the call today. Here's what we agreed.", "",
+    ...(ours.length ? ["From our side:", ...ours.map(a => `- ${a.task}${a.due ? ` (by ${a.due})` : ""}`), ""] : []),
+    ...(theirs.length ? ["From your side:", ...theirs.map(a => `- ${a.task}${a.due ? ` (by ${a.due})` : ""}`), ""] : []),
+    "Let me know if I missed anything.", "", "Best,", r.client.account_manager, "Acme Leads"].join("\n");
+  return `mailto:?subject=${encodeURIComponent("Recap of our call: " + r.client.name)}&body=${encodeURIComponent(body)}`;
+}
+document.addEventListener("click", async e => {
+  const t = e.target.closest(".ts"); if (t) { dtab("transcript"); highlight(t.dataset.at); }
+  const d = e.target.closest(".dtabs button"); if (d) dtab(d.dataset.to);
+  const x = e.target.closest("[data-x]"); if (!x || !shown) return;
+  const r = shown;
+  if (x.dataset.x === "copy") { try { await navigator.clipboard.writeText(report(r)); x.textContent = "Copied"; } catch { prompt("Copy the report:", report(r)); } }
+  if (x.dataset.x === "email") location.href = recap(r);
+  if (x.dataset.x === "csv") download(`${r.id}-follow-ups.csv`, [CSV_HEAD, ...followRows(r)].map(row => row.map(csvCell).join(",")).join("\n"));
+  if (x.dataset.x === "delete" && confirm(`Delete ${r.id}? This can't be undone.`)) {
+    try { await api(`/api/calls/${encodeURIComponent(r.id)}`, {method: "DELETE"}); await loadCalls(); location.hash = "today"; } catch (err) { alert(err.message); }
+  }
+  if (x.dataset.x === "rerun") {
+    x.disabled = true; x.textContent = `Running ${PROVIDER[x.dataset.p]}...`;
+    try { const n = await api(`/api/calls/${encodeURIComponent(r.id)}/rerun`, json("POST", {provider: x.dataset.p}));
+          await loadCalls(); location.hash = `compare/${r.rerun_of || r.id}/${n.id}`; }
+    catch (err) { x.disabled = false; x.textContent = "Re-run failed"; alert(err.message); }
+  }
+});
+
 // --- review: tick off, edit, approve -----------------------------------------------------------------------------
 async function saveCall(body) {
-  const r = await api(`/api/calls/${encodeURIComponent(shown.id)}`, {method: "PATCH", headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
+  const r = await api(`/api/calls/${encodeURIComponent(shown.id)}`, json("PATCH", body));
   renderCall(r); loadCalls(); return r;
 }
 const items = () => shown.insight.action_items.map(a => ({...a}));
@@ -676,27 +817,192 @@ document.addEventListener("click", async e => {
   } catch (err) { b.disabled = false; b.textContent = "Approve"; alert(err.message); }
 });
 
-function highlight(at) {
-  $$(".line").forEach(el => el.classList.toggle("hl", Number(el.dataset.at) === Number(at)));
-  document.querySelector(".line.hl")?.scrollIntoView({block:"center", behavior:"smooth"});
+// --- today: the daily digest ---------------------------------------------------------------------------------------
+let actions = [];
+async function renderToday() {
+  try { actions = await api("/api/actions"); } catch { actions = []; }
+  const firsts = calls.filter(c => !c.rerun_of), latest = {};
+  firsts.forEach(c => { if (!latest[c.client_id] || c.created > latest[c.client_id].created) latest[c.client_id] = c; });
+  const atRisk = Object.values(latest).filter(c => c.churn_risk >= pick().churn).sort((a, b) => b.churn_risk - a.churn_risk);
+  const drafts = firsts.filter(c => !c.approved);
+  const ours = firsts.flatMap(c => c.open.filter(a => a.owner === "us").map(a => ({...a, call: c})));
+  const todo = actions.filter(a => a.kind === "task" && !a.done);
+  const recent = firsts.filter(c => c.created > Date.now() / 1000 - 86400);
+  const tile = (href, label, n, note) => `<a href="${href}"><div class="tile"><small>${label}</small><b>${n}</b> <span class="due">${note}</span></div></a>`;
+  $("#todaySub").textContent = `${new Date().toLocaleDateString([], {weekday: "long", month: "long", day: "numeric"})}: what needs you, across the calls you can see.`;
+  $("#todayBody").innerHTML = `<div class="kpis">
+      ${tile("#clients", "Clients at risk", atRisk.length, `churn ≥ ${Math.round(pick().churn * 100)}%`)}
+      ${tile("#today", "Drafts to approve", drafts.length, "not in the CRM yet")}
+      ${tile("#today", "Our open follow-ups", ours.length, `${ours.filter(a => !a.due).length} without a date`)}
+      ${tile("#voice", "Tasks from voice", todo.length, "open")}</div>
+    <div class="grid">
+      <section class="card"><h3 class="sub">Clients at risk</h3><p class="help">From each client's latest call.</p>
+        ${atRisk.map(c => `<a class="rowlink" href="#${esc(c.id)}"><span class="grow"><b>${esc(c.client)}</b><br><span class="muted">${esc(c.id)} · ${day(c.created)} · ${esc(c.sentiment)}</span></span>${badge(c.churn_risk)}</a>`).join("")
+          || '<p class="help" style="margin:0">None above the alert threshold.</p>'}</section>
+      <section class="card"><h3 class="sub">Drafts to approve</h3><p class="help">Checked by nobody yet, so not sent to Monday or GHL.</p>
+        ${drafts.slice(0, 8).map(c => `<a class="rowlink" href="#${esc(c.id)}"><span class="grow"><b>${esc(c.client)}</b><br><span class="muted">${esc(c.id)} · ${day(c.created)} · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}</span></span>${badge(c.churn_risk)}</a>`).join("")
+          || '<p class="help" style="margin:0">Nothing waiting.</p>'}${drafts.length > 8 ? `<p class="help" style="margin:8px 0 0">and ${drafts.length - 8} more (filter the calls list by "draft").</p>` : ""}</section>
+      <section class="card"><h3 class="sub">What we promised</h3><p class="help">Our open follow-ups from calls, by person.</p>
+        ${ours.slice(0, 12).map(a => `<a class="rowlink" href="#${esc(a.call.id)}"><span class="grow">${a.person ? `<span class="who-name">${esc(a.person)}</span>: ` : ""}${esc(a.task)}<br><span class="muted">${esc(a.call.client)} · ${a.due ? "due " + esc(a.due) : '<span class="nodue">no due date</span>'}</span></span></a>`).join("")
+          || '<p class="help" style="margin:0">Nothing open.</p>'}${ours.length > 12 ? `<p class="help" style="margin:8px 0 0">and ${ours.length - 12} more: see Clients.</p>` : ""}</section>
+      <section class="card"><h3 class="sub">Tasks from voice</h3><p class="help">Open tasks you (or your team) said out loud. <a href="#voice">Add one</a></p>
+        ${actionRows(todo.slice(0, 8)) || '<p class="help" style="margin:0">None yet. Try the Voice page.</p>'}</section>
+    </div>
+    <section class="card"><h3 class="sub">Calls in the last 24 hours</h3>
+      ${recent.map(c => `<a class="rowlink" href="#${esc(c.id)}"><span class="grow"><b>${esc(c.client)}</b> <span class="muted">${esc(c.id)} · ${when(c.created)}</span></span>${badge(c.churn_risk)}</a>`).join("") || '<p class="help" style="margin:0">None.</p>'}</section>`;
 }
-document.addEventListener("click", e => {
-  const t = e.target.closest(".ts"); if (t) { dtab("transcript"); highlight(t.dataset.at); }
-  const d = e.target.closest(".dtabs button"); if (d) dtab(d.dataset.to);
+function actionRows(list) {
+  return list.map(a => `<div class="todo ${a.done ? "done" : ""}"><input type="checkbox" data-act="${a.id}" ${a.done ? "checked" : ""} aria-label="Done: ${esc(a.text)}">
+    <span class="owner ${a.kind === "task" ? "o-us" : "o-client"}">${a.kind}</span>
+    <span>${a.assignee ? `<span class="who-name">${esc(a.assignee)}</span>: ` : ""}<span class="task">${esc(a.text)}</span>
+      <span class="due">${a.client_id ? "· " + esc(CL(a.client_id).name) : ""}${a.due ? " · due " + esc(a.due) : ""}${a.monday_item_id ? ` · Monday #${esc(a.monday_item_id)}` : ""} · ${day(a.created)}${server.admin && a.by !== server.user ? " · by " + esc(a.by) : ""}</span></span></div>`).join("");
+}
+document.addEventListener("change", async e => {
+  const c = e.target.closest("[data-act]"); if (!c) return;
+  try { await api(`/api/actions/${c.dataset.act}`, json("PATCH", {done: c.checked})); c.closest(".todo").classList.toggle("done", c.checked); }
+  catch (err) { c.checked = !c.checked; alert(err.message); }
 });
 
-// --- ask ---------------------------------------------------------------------------------------------------------
+// --- voice to action -------------------------------------------------------------------------------------------------
+$("#vExamples").onclick = e => { if (e.target.tagName === "BUTTON") { $("#vText").value = e.target.textContent; understand(); } };
+$("#vGo").onclick = () => understand();
+let plan = [];
+async function understand() {
+  const text = $("#vText").value.trim(); $("#vErr").textContent = "";
+  if (text.length < 3) return $("#vErr").textContent = "Say or type an instruction first.";
+  $("#vGo").disabled = true; $("#vGo").textContent = "Understanding...";
+  try {
+    const r = await api("/api/command", json("POST", {text, provider: pick().provider}));
+    plan = r.actions;
+    $("#vPlan").innerHTML = `<section class="card"><h3 class="sub">Here's what I understood</h3><p class="help">${esc(r.reply)}
+        ${r.heard !== text ? `<br>Sent to the AI as: <i>${esc(r.heard)}</i>` : ""}</p>${plan.map(actionCard).join("") || ""}</section>`;
+  } catch (err) { $("#vErr").textContent = err.message; }
+  finally { $("#vGo").disabled = false; $("#vGo").textContent = "Understand"; }
+}
+function actionCard(a, n) {
+  if (a.kind === "question") return `<div class="act"><span class="kind">Question</span><p style="margin:6px 0">${esc(a.text)}</p>${answerHtml(a.answer)}</div>`;
+  const people = [...new Set([...server.team, server.user || "me", ...(a.assignee && !a.known ? [a.assignee] : [])])];
+  return `<div class="act" data-a="${n}"><span class="kind">${a.kind === "task" ? "New task" : "Note on a client"}</span>
+    <label>${a.kind === "task" ? "Task" : "Note"}</label><input type="text" data-k="text" value="${esc(a.text)}" maxlength="500">
+    <div class="grid3">
+      ${a.kind === "task" ? `<div><label>For</label><select data-k="assignee"><option value="">Unassigned</option>${people.map(p => `<option ${p === a.assignee ? "selected" : ""}>${esc(p)}</option>`).join("")}</select></div>` : ""}
+      <div><label>Client</label><select data-k="client_id"><option value="">None</option>${clientsList.map(c => `<option value="${esc(c.id)}" ${c.id === a.client_id ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select></div>
+      ${a.kind === "task" ? `<div><label>Due</label><input type="text" data-k="due" value="${esc(a.due || "")}" placeholder="optional" maxlength="80"></div>` : ""}</div>
+    ${a.known === false ? `<p class="warn">"${esc(a.assignee)}" isn't on the team list. Pick the right person, or leave it.</p>` : ""}
+    ${a.client && !a.client_id ? `<p class="warn">Couldn't match "${esc(a.client)}" to a client. Pick one, or leave it.</p>` : ""}
+    ${a.kind === "note" && !a.client_id ? '<p class="warn">A note needs a client to go on.</p>' : ""}
+    <div class="row"><button type="button" class="btn" data-confirm="${n}">Confirm</button><button type="button" class="btn ghost" data-skip="${n}">Skip</button></div></div>`;
+}
+document.addEventListener("click", async e => {
+  const s = e.target.closest("[data-skip]"); if (s) s.closest(".act").outerHTML = '<p class="help" style="margin:12px 0 0">Skipped.</p>';
+  const c = e.target.closest("[data-confirm]"); if (!c) return;
+  const card = c.closest(".act"), a = {...plan[+c.dataset.confirm]};
+  card.querySelectorAll("[data-k]").forEach(el => a[el.dataset.k] = el.value || null);
+  c.disabled = true; c.textContent = "Saving...";
+  try {
+    const r = await api("/api/actions", json("POST", {kind: a.kind, text: a.text, assignee: a.assignee, client_id: a.client_id, due: a.due}));
+    const where = r.monday_item_id ? `Created Monday item #${esc(r.monday_item_id)}.` : r.ghl ? "Added to the client's GHL contact." :
+      (a.kind === "task" ? r.connected.monday : r.connected.ghl) ? "Saved here; the CRM write didn't go through (see the server log)."
+      : `Saved here. This demo isn't connected to ${a.kind === "task" ? "Monday" : "GHL"}; in a real setup it would be ${a.kind === "task" ? "created there" : "added to the client's contact"} now.`;
+    card.innerHTML = `<span class="kind">${a.kind === "task" ? "Task" : "Note"} saved</span><p style="margin:6px 0 0">${a.assignee ? `<b>${esc(a.assignee)}</b>: ` : ""}${esc(a.text)}</p><p class="flash">${where}</p>`;
+    renderActions();
+  } catch (err) { c.disabled = false; c.textContent = "Confirm"; alert(err.message); }
+});
+async function renderActions() {
+  try { actions = await api("/api/actions"); } catch { actions = []; }
+  $("#vList").innerHTML = actionRows(actions) || '<p class="help" style="margin:0">Nothing yet.</p>';
+}
+
+// --- clients: risk over time, open promises --------------------------------------------------------------------------
+function riskChart(list, w = 120, h = 28, big = false) {
+  if (!list.length) return "";
+  const pad = big ? 28 : 3, left = big ? 44 : 3, x = i => list.length === 1 ? (left + w - pad) / 2 : left + i * (w - left - pad) / (list.length - 1), y = v => h - pad - v * (h - 2 * pad);
+  const pts = list.map((c, i) => `${x(i).toFixed(1)},${y(c.churn_risk).toFixed(1)}`).join(" "), th = pick().churn;
+  return `<svg class="${big ? "chart" : "spark"}" viewBox="0 0 ${w} ${h}" ${big ? "" : `width="${w}" height="${h}"`} role="img" aria-label="Churn risk per call: ${list.map(c => Math.round(c.churn_risk * 100) + "%").join(", ")}">
+    <line x1="${left}" x2="${w - pad}" y1="${y(th)}" y2="${y(th)}" stroke="var(--bad)" stroke-dasharray="3 3" stroke-width="1" opacity=".6"/>
+    ${big ? `<text x="${w - pad}" y="${y(th) - 4}" text-anchor="end">alert ${Math.round(th * 100)}%</text><text x="${left - 8}" y="${y(1) + 4}" text-anchor="end">100%</text><text x="${left - 8}" y="${y(0) + 4}" text-anchor="end">0%</text>` : ""}
+    <polyline points="${pts}" fill="none" stroke="var(--brand)" stroke-width="${big ? 2 : 1.5}" stroke-linejoin="round"/>
+    ${list.map((c, i) => `<circle cx="${x(i)}" cy="${y(c.churn_risk)}" r="${big ? 4 : 2.2}" fill="${risk(c.churn_risk)[2]}"><title>${esc(c.id)}: ${Math.round(c.churn_risk * 100)}%</title></circle>
+      ${big ? `<text x="${x(i)}" y="${h - 8}" text-anchor="middle">${day(c.created)}</text>` : ""}`).join("")}</svg>`;
+}
+const clientCalls = id => calls.filter(c => c.client_id === id && !c.rerun_of).sort((a, b) => a.created - b.created);
+function allOpenCsv(list) {
+  const rows = list.flatMap(c => c.open.map(a => [c.id, c.client, a.owner, a.person, a.task, a.due, "no"]));
+  download("open-follow-ups.csv", [CSV_HEAD, ...rows].map(r => r.map(csvCell).join(",")).join("\n"));
+}
+function renderClients() {
+  const rows = clientsList.map(c => ({c, list: clientCalls(c.id)}));
+  $("#clientsBody").innerHTML = `<table class="tbl"><thead><tr><th>Client</th><th>Account manager</th><th class="num">Calls</th><th>Risk over time</th><th>Latest</th><th class="num">Open follow-ups</th></tr></thead><tbody>
+    ${rows.map(({c, list}) => `<tr><td><a href="#client/${esc(c.id)}"><b>${esc(c.name)}</b></a><br><span class="muted">${esc(c.plan)}</span></td><td>${esc(c.account_manager)}</td>
+      <td class="num">${list.length}</td><td>${riskChart(list)}</td><td>${list.length ? badge(list[list.length - 1].churn_risk) : '<span class="muted">no calls</span>'}</td>
+      <td class="num">${list.reduce((n, x) => n + x.open.length, 0)}</td></tr>`).join("")}</tbody></table>
+    <div class="toolbar"><button type="button" class="btn ghost" id="csvAll">All open follow-ups as CSV</button></div>`;
+  $("#csvAll").onclick = () => allOpenCsv(calls.filter(c => !c.rerun_of));
+}
+async function renderClient(id) {
+  const c = CL(id), list = clientCalls(id);
+  if (!actions.length) { try { actions = await api("/api/actions"); } catch {} }
+  const open = list.flatMap(x => x.open.map(a => ({...a, call: x})));
+  $("#clientBody").innerHTML = `<div class="vhead"><h2>${esc(c.name)}</h2><p>${esc(c.plan)} · ${esc((c.states || []).join(", "))} · account manager ${esc(c.account_manager)} · <a href="#clients">all clients</a></p></div>
+    <section class="card"><h3 class="sub">Churn risk, call by call</h3>${list.length ? riskChart(list, 640, 200, true) : '<p class="help" style="margin:0">No calls yet.</p>'}</section>
+    <div class="grid">
+      <section class="card"><h3 class="sub">Open follow-ups</h3><p class="help">Across all this client's calls.</p>
+        ${open.map(a => `<a class="rowlink" href="#${esc(a.call.id)}"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "Us" : "Client"}</span><span class="grow">${a.person ? `<span class="who-name">${esc(a.person)}</span>: ` : ""}${esc(a.task)}<br><span class="muted">${esc(a.call.id)} · ${a.due ? "due " + esc(a.due) : '<span class="nodue">no due date</span>'}</span></span></a>`).join("") || '<p class="help" style="margin:0">Nothing open.</p>'}
+        ${open.length ? '<div class="toolbar"><button type="button" class="btn ghost" id="csvClient">These as CSV</button></div>' : ""}</section>
+      <section class="card"><h3 class="sub">Calls</h3>
+        ${list.slice().reverse().map(x => `<a class="rowlink" href="#${esc(x.id)}"><span class="grow"><b>${esc(x.id)}</b><br><span class="muted">${when(x.created)} · ${esc(x.sentiment)} · ${x.approved ? "approved" : "draft"}</span></span>${badge(x.churn_risk)}</a>`).join("") || '<p class="help" style="margin:0">None.</p>'}
+        ${actionRows(actions.filter(a => a.client_id === id)) ? `<h3 class="sub">From voice</h3>${actionRows(actions.filter(a => a.client_id === id))}` : ""}</section>
+    </div>`;
+  $("#csvClient")?.addEventListener("click", () => allOpenCsv(list));
+}
+
+// --- compare two runs of the same call -------------------------------------------------------------------------------
+async function renderCompare(a, b) {
+  $("#compareBody").innerHTML = '<div class="card"><p class="help" style="margin:0">Loading...</p></div>';
+  let x, y;
+  try { [x, y] = await Promise.all([api(`/api/calls/${encodeURIComponent(a)}`), api(`/api/calls/${encodeURIComponent(b)}`)]); }
+  catch (err) { $("#compareBody").innerHTML = `<div class="card"><p class="err" style="margin:0">${esc(err.message)}</p></div>`; return; }
+  const differ = (f) => f(x) !== f(y) ? "diff" : "";
+  const col = r => { const i = r.insight, found = r.checks.filter(c => c.found).length;
+    return `<div class="card"><h3>${PROVIDER[r.provider] || esc(r.provider)} <span class="muted">· <a href="#${esc(r.id)}">${esc(r.id)}</a> · ${(r.latency_ms / 1000).toFixed(1)} s</span></h3>
+      <p><span class="${differ(r => Math.round(r.insight.churn_risk * 20))}">Churn risk ${badge(i.churn_risk)}</span> · <span class="${differ(r => r.insight.sentiment)}">${esc(i.sentiment)}</span></p>
+      <p class="summary" style="margin:8px 0">${esc(i.summary)}</p>
+      <p class="muted">Quotes found <b>${found}/${r.checks.length}</b> · alerts <b>${r.alerts.length}</b> · follow-ups <b>${i.action_items.length}</b></p>
+      <h3 class="sub">Alerts</h3>${r.alerts.map(alertHtml).join("") || '<p class="help">None.</p>'}
+      <h3 class="sub">Follow-ups</h3>${i.action_items.map(a => `<div class="todo"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "Us" : "Client"}</span><span>${person(r, a) ? `<span class="who-name">${esc(person(r, a))}</span>: ` : ""}${esc(a.task)}${a.due ? ` <span class="due">· ${esc(a.due)}</span>` : ""}</span></div>`).join("") || '<p class="help">None.</p>'}</div>`; };
+  $("#compareBody").innerHTML = `<div class="vhead"><h2>${esc(x.client.name)}: two models, one call</h2><p>The same masked transcript, read by each model. Highlighted values differ. Quotes are checked in code for both.</p></div>
+    <div class="cmp">${col(x)}${col(y)}</div>`;
+}
+
+// --- usage (admin) ----------------------------------------------------------------------------------------------------
+async function renderUsage() {
+  let u;
+  try { u = await api("/api/usage"); } catch (err) { $("#usageBody").innerHTML = `<div class="card"><p class="err" style="margin:0">${esc(err.message)}</p></div>`; return; }
+  const usd = v => "$" + (v || 0).toFixed(v < 1 ? 3 : 2), days = Object.entries(u.by_day), max = Math.max(...days.map(([, v]) => v.usd), 0.001);
+  const table = (title, o, label) => `<section class="card"><h3 class="sub">${title}</h3><table class="tbl"><thead><tr><th>${label}</th><th class="num">Requests</th><th class="num">Tokens in / out</th><th class="num">Cost</th></tr></thead><tbody>
+    ${Object.entries(o).sort((a, b) => b[1].usd - a[1].usd).map(([k, v]) => `<tr><td>${label === "Call" && k !== "-" ? `<a href="#${esc(k)}">${esc(k)}</a>` : esc(k === "-" ? "(none)" : k === "" ? "(open mode)" : k)}</td><td class="num">${v.requests}</td><td class="num">${v.tokens_in.toLocaleString()} / ${v.tokens_out.toLocaleString()}</td><td class="num">${usd(v.usd)}</td></tr>`).join("") || '<tr><td colspan="4" class="muted">Nothing yet.</td></tr>'}</tbody></table></section>`;
+  $("#usageBody").innerHTML = `<div class="kpis"><div class="tile"><small>Today</small><b>${usd(u.today.usd)}</b> <span class="due">${u.cap ? "of " + usd(u.cap) + " cap" : "no cap"}</span>
+      ${u.cap ? `<div class="meter"><i style="width:${Math.min(100, u.today.usd / u.cap * 100)}%;background:var(--brand)"></i></div>` : ""}</div>
+      <div class="tile"><small>Requests today</small><b>${u.today.requests}</b></div>
+      <div class="tile"><small>Last 14 days</small><b>${usd(days.reduce((s, [, v]) => s + v.usd, 0))}</b></div>
+      <div class="tile"><small>Per request</small><b>${usd(days.reduce((s, [, v]) => s + v.usd, 0) / Math.max(1, days.reduce((s, [, v]) => s + v.requests, 0)))}</b></div></div>
+    <section class="card"><h3 class="sub">By day</h3><div class="bars" role="img" aria-label="Spend per day">${days.map(([d, v]) => `<div title="${d}: ${usd(v.usd)}"><i style="height:${Math.max(2, v.usd / max * 100)}px"></i><small>${d.slice(5)}</small></div>`).join("")}</div></section>
+    <div class="grid">${table("By user", u.by_user, "User")}${table("By model", u.by_model, "Model")}</div>${table("By call (latest 50)", u.by_call, "Call")}`;
+}
+
+// --- ask -------------------------------------------------------------------------------------------------------------
+function answerHtml(r) {
+  if (!r) return "";
+  const byN = Object.fromEntries(r.sources.map(s => [s.n, s]));
+  const cite = n => byN[n] ? `<a href="#${esc(byN[n].call_id)}${byN[n].at != null ? "@" + byN[n].at : ""}">${esc(byN[n].call_id)}</a>` : `<span class="nodue">[S${n}?]</span>`;
+  const text = esc(r.answer).replace(/\[(S\d+(?:\s*,\s*S\d+)*)\]/g, (m, g) => g.split(/\s*,\s*/).map(x => cite(x.slice(1))).join(" "));
+  return `<div class="answer">${text}</div>` + (r.unknown_citations.length ? '<p class="err">The answer cited sources that were not retrieved.</p>' : "");
+}
 $("#examples").onclick = e => { if (e.target.tagName === "BUTTON") { $("#askForm").question.value = e.target.textContent; $("#askForm").requestSubmit(); } };
 $("#askForm").onsubmit = async e => {
   e.preventDefault(); const btn = e.target.querySelector("button"); btn.disabled = true; $("#answer").innerHTML = '<div class="answer">Searching the calls...</div>';
-  try {
-    const r = await api("/api/ask", {method:"POST", headers:{"content-type":"application/json"},
-                                     body: JSON.stringify({question: e.target.question.value, provider: pick().provider})});
-    const byN = Object.fromEntries(r.sources.map(s => [s.n, s]));
-    const cite = n => byN[n] ? `<a href="#${esc(byN[n].call_id)}${byN[n].at != null ? "@" + byN[n].at : ""}">${esc(byN[n].call_id)}</a>` : `<span class="nodue">[S${n}?]</span>`;
-    const text = esc(r.answer).replace(/\[(S\d+(?:\s*,\s*S\d+)*)\]/g, (m, g) => g.split(/\s*,\s*/).map(x => cite(x.slice(1))).join(" "));
-    $("#answer").innerHTML = `<div class="answer">${text}</div>` + (r.unknown_citations.length ? '<p class="err">The answer cited sources that were not retrieved.</p>' : "");
-  } catch (err) { $("#answer").innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+  try { $("#answer").innerHTML = answerHtml(await api("/api/ask", json("POST", {question: e.target.question.value, provider: pick().provider}))); }
+  catch (err) { $("#answer").innerHTML = `<p class="err">${esc(err.message)}</p>`; }
   finally { btn.disabled = false; }
 };
 

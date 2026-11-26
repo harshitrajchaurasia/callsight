@@ -9,8 +9,9 @@ from .models import ActionItem, CallResult, Segment
 
 def process(call_id: str, client_id: str, conn, *, audio_path: str | None = None, text: str | None = None,
             segments: list[Segment] | None = None, provider: str | None = None, keep: set[str] = frozenset(),
-            churn_min: float | None = None, write_out: bool = True, analyze_fn=None, redact_fn=None,
-            embed_fn=None) -> CallResult:
+            churn_min: float | None = None, write_out: bool = True, owner: str | None = None,
+            speakers: dict[str, str] | None = None, rerun_of: str | None = None, on_progress=None,
+            analyze_fn=None, redact_fn=None, embed_fn=None) -> CallResult:
     """One of audio_path, text, or segments (already transcribed, e.g. live from a microphone).
     write_out=False leaves Monday/GHL until a person approves the call (the web app); the CLI and evals write at once."""
     client = CLIENTS.get(client_id)
@@ -19,23 +20,28 @@ def process(call_id: str, client_id: str, conn, *, audio_path: str | None = None
     if sum(x is not None for x in (audio_path, text, segments)) != 1:
         raise ValueError("give exactly one of audio_path, text or segments")
     start = time.perf_counter()
-    names = {}
+    extract.WHO.set({"user": owner, "call": call_id})  # for the usage log
+    step = on_progress or (lambda stage, **kw: None)
+    names = speakers or {}
     if audio_path:
-        segments = stt.transcribe(audio_path)
+        segments = stt.transcribe(audio_path, on_progress=lambda f, d: step("transcribing", fraction=f, seconds=d))
     elif text is not None:  # speaker names are only swapped for aliases when names are being masked
         segments = stt.from_text(text)
         if "NAME" not in keep:
             names = {a: name for name, a in redact.aliases(segments).items()}
             segments = redact.alias_speakers(segments)
+    step("masking")
     segments = (redact_fn or partial(redact.redact, keep=keep))(segments)  # raises if PII Shield is down: nothing unmasked goes further
     provider = provider or extract.default_provider()
+    step("analysing", provider=provider)
     insight = extract.analyze(segments, client, provider, analyze_fn)
+    step("checking")
     for a in insight.action_items:
         a.done = False  # a person sets this, never the model
     checks = extract.check_quotes(insight, segments)
     result = CallResult(id=call_id, client_id=client_id, segments=segments, insight=insight, checks=checks,
                         alerts=rules.alerts(insight, checks, client, segments, churn_min), provider=provider,
-                        unmasked=sorted(keep), speakers=names, churn_min=churn_min,
+                        unmasked=sorted(keep), speakers=names, churn_min=churn_min, owner=owner, rerun_of=rerun_of,
                         latency_ms=int((time.perf_counter() - start) * 1000))
     store.save(conn, result)  # saved before any write-out, so a Monday/GHL failure never loses the call
     ask.index(conn, result, embed_fn or ask.embed)

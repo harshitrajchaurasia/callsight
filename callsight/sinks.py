@@ -36,31 +36,52 @@ def report(r: CallResult) -> list[str]:
     return lines
 
 
-def to_monday(r: CallResult, *, post=requests.post) -> str | None:
-    token, board = os.getenv("MONDAY_API_TOKEN"), os.getenv("MONDAY_CALLS_BOARD_ID")
+def _monday(what: str, post):
+    """A gql(kind, **variables) for the configured board, or None if Monday is off or the board isn't safe to write.
+    Creating items can email a board's subscribers, so write only if every subscriber is on the allowlist."""
+    token = os.getenv("MONDAY_API_TOKEN")
+    board = os.getenv("MONDAY_TASKS_BOARD_ID" if what == "task" else "MONDAY_CALLS_BOARD_ID") or os.getenv("MONDAY_CALLS_BOARD_ID")
     if not (token and board):
         return None
-
-    def gql(kind, **variables):
-        resp = post(MONDAY, timeout=15, headers={"Authorization": token, "API-Version": "2024-10"},
-                    json={"query": MUTATIONS[kind], "variables": variables}).json()
-        return str(next(iter(resp["data"].values()))["id"])
-
-    # Creating items can email a board's subscribers. Write only if every subscriber is on the allowlist.
+    headers = {"Authorization": token, "API-Version": "2024-10"}
     allowed = set(filter(None, os.getenv("MONDAY_ALLOWED_SUBSCRIBERS", "").split(",")))
     try:
-        resp = post(MONDAY, timeout=15, headers={"Authorization": token, "API-Version": "2024-10"},
+        resp = post(MONDAY, timeout=15, headers=headers,
                     json={"query": "query ($b: [ID!]) { boards(ids: $b) { subscribers { id } } }", "variables": {"b": [board]}}).json()
         subs = {str(u["id"]) for u in resp["data"]["boards"][0]["subscribers"]}
     except Exception as e:
-        log.warning("monday subscriber check failed, not writing %s: %r", r.id, e)
+        log.warning("monday subscriber check failed, not writing %s: %r", what, e)
         return None
     if not allowed or subs - allowed:
-        log.warning("monday board %s has subscribers outside MONDAY_ALLOWED_SUBSCRIBERS; not writing %s", board, r.id)
+        log.warning("monday board %s has subscribers outside MONDAY_ALLOWED_SUBSCRIBERS; not writing %s", board, what)
+        return None
+
+    def gql(kind, **variables):
+        resp = post(MONDAY, timeout=15, headers=headers, json={"query": MUTATIONS[kind], "variables": variables | (
+            {"board": board} if kind == "item" else {})}).json()
+        return str(next(iter(resp["data"].values()))["id"])
+    return gql
+
+
+def monday_task(name: str, body: str, *, post=requests.post) -> str | None:
+    """One item (a task from a voice command) on the tasks board; the person goes in the name, never a people column."""
+    if not (gql := _monday("task", post)):
+        return None
+    try:
+        item = gql("item", name=name[:250])
+        gql("update", item=item, body=f"<p>{escape(body)}</p>")
+        return item
+    except Exception as e:
+        log.warning("monday task failed: %r", e)
+        return None
+
+
+def to_monday(r: CallResult, *, post=requests.post) -> str | None:
+    if not (gql := _monday(r.id, post)):
         return None
     i = r.insight
     try:
-        item = gql("item", board=board, name=f"{CLIENTS[r.client_id].name}: {r.id} (churn {i.churn_risk:.0%}, {i.sentiment})"[:250])
+        item = gql("item", name=f"{CLIENTS[r.client_id].name}: {r.id} (churn {i.churn_risk:.0%}, {i.sentiment})"[:250])
     except Exception as e:
         log.warning("monday item for %s failed: %r", r.id, e)
         return None
@@ -75,15 +96,19 @@ def to_monday(r: CallResult, *, post=requests.post) -> str | None:
 
 
 def to_ghl(r: CallResult, *, post=requests.post) -> bool:
+    return ghl_note(r.client_id, f"Call {r.id}\n" + "\n".join(report(r)), post=post)
+
+
+def ghl_note(client_id: str, body: str, *, post=requests.post) -> bool:
     """A note on the client's GHL contact. GHL_CONTACTS maps our client ids to contact ids, e.g. {"C-03": "abc"}."""
-    contact = json.loads(os.getenv("GHL_CONTACTS") or "{}").get(r.client_id)
+    contact = json.loads(os.getenv("GHL_CONTACTS") or "{}").get(client_id)
     if not (os.getenv("GHL_API_KEY") and contact):
         return False
     try:
-        post(f"{GHL}/contacts/{contact}/notes", timeout=15, json={"body": f"Call {r.id}\n" + "\n".join(report(r))},
+        post(f"{GHL}/contacts/{contact}/notes", timeout=15, json={"body": body},
              headers={"Authorization": f"Bearer {os.getenv('GHL_API_KEY')}", "Version": os.getenv("GHL_API_VERSION", "v3")}
              ).raise_for_status()
         return True
     except Exception as e:
-        log.warning("ghl note for %s failed: %r", r.id, e)
+        log.warning("ghl note for %s failed: %r", client_id, e)
         return False

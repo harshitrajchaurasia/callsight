@@ -73,3 +73,6 @@ class CallResult(BaseModel):
     edited_by: str | None = None
     approved_by: str | None = None
     approved_at: float | None = None  # unix time; Monday/GHL are written only on approval
+    owner: str | None = None  # who processed it; None = a shared demo call everyone can see
+    rerun_of: str | None = None  # the call this is a re-run of, with another model
+    created: float | None = None  # filled from the database row

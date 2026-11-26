@@ -51,8 +51,9 @@ def index(conn, r: CallResult, embed_fn=embed) -> None:
     conn.commit()
 
 
-def search(conn, question: str, k: int = TOP_K, embed_fn=embed) -> list[dict]:
-    rows = conn.execute("SELECT call_id, at, text, vec FROM chunks").fetchall()
+def search(conn, question: str, k: int = TOP_K, embed_fn=embed, calls: set[str] | None = None) -> list[dict]:
+    """calls limits the search to the calls this user may see (None = all)."""
+    rows = [r for r in conn.execute("SELECT call_id, at, text, vec FROM chunks") if calls is None or r[0] in calls]
     if not rows:
         return []
     m = np.frombuffer(b"".join(r[3] for r in rows), dtype=np.float32).reshape(len(rows), -1)
@@ -76,8 +77,9 @@ def _complete(system: str, user: str, provider: str) -> str:
     return resp.choices[0].message.content
 
 
-def answer(conn, question: str, provider: str | None = None, complete_fn=None, embed_fn=embed) -> dict:
-    hits = search(conn, question, embed_fn=embed_fn)
+def answer(conn, question: str, provider: str | None = None, complete_fn=None, embed_fn=embed,
+           calls: set[str] | None = None) -> dict:
+    hits = search(conn, question, embed_fn=embed_fn, calls=calls)
     if not hits:
         return {"answer": "No calls have been processed yet.", "sources": [], "unknown_citations": []}
     src = "\n".join(f"[S{n}] (call {h['call_id']}) {h['text']}" for n, h in enumerate(hits, 1))

@@ -38,6 +38,19 @@ pasted transcript ────────────────────�
   approval. The CLI and the evals still write straight away.
 - **Follow-ups name who will do them.** The model returns the speaker label it saw ("Person 2"); the real name stays
   on the server and is put back only for display and the Monday subitem.
+- **Voice to action.** Say "create a task for Priya to send Summit the Texas quote by Friday, and note that Golden
+  Years wants a consent export". It's transcribed live, contact details are masked, and the model proposes actions
+  (task, note on a client, or a question about past calls). People and clients are matched to the team and client
+  lists in code, never guessed; an unknown name is flagged. Nothing is written until you confirm each action: then a
+  task becomes a Monday item (the person named in its title, never a people column, so nobody is notified) and a note
+  goes on the client's GHL contact. Questions are answered from the calls, with sources.
+- **Today, Clients, Compare.** A daily digest (clients at risk, drafts to approve, what we promised, open voice tasks);
+  a per-client page with churn risk call by call and the open follow-ups across all its calls; and a re-run of any call
+  with the other model, shown side by side.
+- **Progress, export, roles, usage.** Uploads show "Transcribing 1:20 of 3:45", then masking, analysing, checking. Any
+  call can be copied as a report, sent as an email recap draft, or exported as CSV (one call, one client, or all open
+  follow-ups). The main login is the admin; extra logins see the shared demo calls and their own, and can delete only
+  their own. The usage page (admin) shows model spend by day, model, user and call, from the app's own log.
 - **Settings per user** (kept in the browser, sent with each call): the AI model, the churn-alert threshold, and
   whether names or places may reach the model as said. Phones, emails, card and ID numbers are always masked; the
   server rejects any other type. Company names are always put back after masking, since "(Acme)" in a speaker label
