@@ -188,9 +188,9 @@ def test_sinks_monday_and_ghl(tmp_path, monkeypatch):
 
 def test_alias_speakers_hides_names_from_labels_and_text():
     segs = redact.alias_speakers(stt.from_text("Marcus (Acme): Hey Greg, how did it go?\nGreg (Summit): Fine, thanks Marcus.\nMarcus: Great."))
-    assert [s.speaker for s in segs] == ["Speaker 1 (Acme)", "Speaker 2 (Summit)", "Speaker 1"]
-    assert segs[0].text == "Hey Speaker 2, how did it go?" and segs[1].text == "Fine, thanks Speaker 1."
-    assert redact.alias_speakers(SEGS)[0].speaker == "Speaker 1"  # "AM" is a label too
+    assert [s.speaker for s in segs] == ["Person 1 (Acme)", "Person 2 (Summit)", "Person 1"]
+    assert segs[0].text == "Hey Person 2, how did it go?" and segs[1].text == "Fine, thanks Person 1."
+    assert redact.alias_speakers(SEGS)[0].speaker == "Person 1"  # "AM" is a label too
     unlabeled = stt.from_text("just one block of text")
     assert redact.alias_speakers(unlabeled) == unlabeled
 
@@ -215,3 +215,30 @@ def test_daily_budget_stops_model_calls(tmp_path, monkeypatch):
     log.write_text(log.read_text() + json.dumps({"ts": time.time(), "tag": "app", "usd": 0.5}) + "\n")
     with pytest.raises(extract.ModelUnavailable):
         extract.check_budget()
+
+
+def test_redact_can_leave_names_unmasked():
+    shield = lambda url, **kw: Resp({"redacted_text": kw["json"]["text"].replace("Dorothy Hale", "[NAME]")
+                                     .replace("Austin", "[LOCATION]").replace("504-555-0187", "[PHONE]")})
+    segs = [Segment(start=0, end=1, speaker="Client", text="This is Dorothy Hale in Austin, call 504-555-0187")]
+    out = redact.redact(segs, post=shield, keep={"NAME"})
+    assert out[0].text == "This is Dorothy Hale in [LOCATION], call [PHONE]"
+    assert redact.redact(segs, post=shield)[0].text == "This is [NAME] in [LOCATION], call [PHONE]"
+    with pytest.raises(ValueError):
+        redact.redact(segs, post=shield, keep={"PHONE"})
+
+
+def test_redact_always_puts_company_names_back():
+    shield = lambda url, **kw: Resp({"redacted_text": kw["json"]["text"].replace("Marcus", "[NAME]").replace("Acme Leads", "[NAME]")
+                                     .replace("(Acme)", "([LOCATION])")})
+    segs = [Segment(start=0, end=1, speaker="Marcus (Acme)", text="Marcus here from Acme Leads.")]
+    out = redact.redact(segs, post=shield)
+    assert out[0].speaker == "[NAME] (Acme)" and out[0].text == "[NAME] here from Acme Leads."
+
+
+def test_churn_alert_threshold_can_be_set_per_call():
+    from callsight.models import Insight
+    i = Insight(summary="s", sentiment="neutral", churn_risk=0.5, churn_reasons=[], upsell_signals=[], objections=[], action_items=[])
+    client = next(iter(CLIENTS.values()))
+    assert not any(a.startswith("Churn risk 50%") for a in rules.alerts(i, [], client))
+    assert any(a.startswith("Churn risk 50%") for a in rules.alerts(i, [], client, churn_min=0.4))

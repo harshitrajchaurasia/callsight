@@ -64,3 +64,4 @@ class CallResult(BaseModel):
     provider: str
     latency_ms: int
     monday_item_id: str | None = None
+    unmasked: list[str] = []  # PII types the user chose to send to the model as said, e.g. ["NAME"]

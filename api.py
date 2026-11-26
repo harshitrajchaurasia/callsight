@@ -132,6 +132,15 @@ def me(cs_session: str | None = Cookie(default=None)):
     return {"login_required": bool(_logins()), "signed_in": _authed(cs_session)}
 
 
+@app.get("/api/settings", dependencies=api)
+def settings():
+    """What the settings page can offer, and the server defaults it starts from."""
+    from callsight.config import RULES
+    return {"providers": [p for p, k in (("claude", "ANTHROPIC_API_KEY"), ("grok", "XAI_API_KEY")) if os.getenv(k)],
+            "default_provider": extract.default_provider(), "keepable": sorted(redact.KEEPABLE),
+            "churn_alert": RULES["churn_alert_min"]}
+
+
 @app.get("/api/clients", dependencies=api)
 def clients():
     return [c.model_dump() for c in CLIENTS.values()]
@@ -172,16 +181,20 @@ def call(call_id: str):
 
 @app.post("/api/calls", dependencies=api)
 async def new_call(request: Request, client_id: str = Form(...), transcript: str | None = Form(None),
-                   audio: UploadFile | None = None, provider: str | None = Form(None)):
+                   audio: UploadFile | None = None, provider: str | None = Form(None),
+                   keep: str = Form(""), churn_alert: float | None = Form(None, ge=0.3, le=0.9)):
     if client_id not in CLIENTS:
         raise HTTPException(422, "unknown client")
     if provider not in (None, "", "claude", "grok"):
         raise HTTPException(422, "provider must be claude or grok")
     if bool(transcript and transcript.strip()) == bool(audio and audio.filename):
         raise HTTPException(422, "send a transcript or an audio file, not both")
+    keep_set = {k.strip().upper() for k in keep.split(",") if k.strip()}
+    if keep_set - redact.KEEPABLE:
+        raise HTTPException(422, f"only {', '.join(sorted(redact.KEEPABLE))} can be left unmasked")
     rate_limit("call", request)
     call_id = f"CALL-{time.strftime('%m%d')}-{uuid.uuid4().hex[:5]}"
-    kw = {"provider": provider or None}
+    kw = {"provider": provider or None, "keep": keep_set, "churn_min": churn_alert}
     try:
         if transcript:
             if len(transcript) > 60_000:

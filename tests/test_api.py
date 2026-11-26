@@ -7,7 +7,7 @@ from tests.test_core import fake_embed, insight
 
 def test_api_login_validation_and_a_call(tmp_path, monkeypatch):
     monkeypatch.setattr(api, "conn", store.connect(str(tmp_path / "t.db")))
-    monkeypatch.setattr(redact, "redact", lambda segs: segs)
+    monkeypatch.setattr(redact, "redact", lambda segs, **kw: segs)
     monkeypatch.setattr(ask, "embed", fake_embed)
     monkeypatch.setitem(extract.PROVIDERS, "claude", lambda segs, client: insight())
     monkeypatch.setenv("DEMO_USER", "u"); monkeypatch.setenv("DEMO_PASS", "p")
@@ -16,13 +16,14 @@ def test_api_login_validation_and_a_call(tmp_path, monkeypatch):
     assert c.post("/api/login", json={"username": "u", "password": "no"}).status_code == 401
     assert c.post("/api/login", json={"username": "u", "password": "p"}).status_code == 200
     assert c.post("/api/calls", data={"client_id": "NOPE", "transcript": "a: b"}).status_code == 422
+    assert c.post("/api/calls", data={"client_id": "C-03", "transcript": "a: b", "keep": "NAME,PHONE"}).status_code == 422
     assert c.post("/api/calls", data={"client_id": "C-03"}).status_code == 422  # neither transcript nor audio
     assert c.post("/api/calls", data={"client_id": "C-03"}, files={"audio": ("x.exe", b"MZ")}).status_code == 415
     r = c.post("/api/calls", data={"client_id": "C-03", "provider": "claude",
                                    "transcript": "AM: we're looking at other vendors\nAM: I'll call you back by Friday"})
     assert r.status_code == 200 and r.json()["checks"][0]["found"]
     assert [x["id"] for x in c.get("/api/calls").json()] == [r.json()["id"]]
-    monkeypatch.setattr(redact, "redact", lambda segs: (_ for _ in ()).throw(redact.RedactionUnavailable("down")))
+    monkeypatch.setattr(redact, "redact", lambda segs, **kw: (_ for _ in ()).throw(redact.RedactionUnavailable("down")))
     assert c.post("/api/calls", data={"client_id": "C-03", "transcript": "a: b", "provider": "claude"}).status_code == 503
     assert len(c.get("/api/samples").json()) == 23
     assert c.post("/api/logout").status_code == 200 and c.get("/api/calls").status_code == 401
@@ -40,7 +41,7 @@ def test_login_lockout(monkeypatch):
 
 def test_public_mode_rate_limits_spending(tmp_path, monkeypatch):
     monkeypatch.setattr(api, "conn", store.connect(str(tmp_path / "t.db")))
-    monkeypatch.setattr(redact, "redact", lambda segs: segs)
+    monkeypatch.setattr(redact, "redact", lambda segs, **kw: segs)
     monkeypatch.setattr(ask, "embed", fake_embed)
     monkeypatch.setitem(extract.PROVIDERS, "claude", lambda segs, client: insight())
     monkeypatch.setenv("DEMO_PASS", ""); monkeypatch.delenv("EXTRA_LOGINS", raising=False)

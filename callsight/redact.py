@@ -4,9 +4,11 @@ Fails closed: if PII Shield is down or returns something odd, the call stops her
 """
 import os
 import re
+from difflib import SequenceMatcher
 
 import requests
 
+from .config import CLIENTS
 from .models import Segment
 
 
@@ -25,7 +27,31 @@ def _mask_long_numbers(text: str) -> str:
     return LONG_NUMBER.sub(lambda m: "[NUMBER]" if sum(ch.isdigit() for ch in m.group()) >= 9 else m.group(), text)
 
 
-def redact(segments: list[Segment], *, post=requests.post) -> list[Segment]:
+# Types a caller may choose to send unmasked. Contact, ID and money details are always masked.
+KEEPABLE = {"NAME", "LOCATION"}
+# Company names are not personal data, and "(Acme)" in a speaker label is how the model tells our side from the
+# client's, but PII Shield masks some of them ("Acme" as a [LOCATION]). These are always put back.
+COMPANIES = {c.name.lower() for c in CLIENTS.values()} | {"acme", "acme leads"}
+WORDS = re.compile(r"\[[A-Z_]+\]|\w+|\s+|[^\w\s]")
+TOKENS = re.compile(r"(?:\s*\[[A-Z_]+\]\s*)+")
+
+
+def _unmask(sent: str, got: str, keep: set[str]) -> str:
+    """Put back the original words where PII Shield's only change was a token of a kept type (e.g. [NAME]) or a
+    known company name. Diffed word by word: a character diff lines up the capitals in "Marcus" with "[NAME]"."""
+    kept = re.compile(r"(?:\s*\[(?:" + "|".join(sorted(keep)) + r")\]\s*)+") if keep else None
+    a, b = WORDS.findall(sent), WORDS.findall(got)
+    out = []
+    for op, i1, i2, j1, j2 in SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
+        old, new = "".join(a[i1:i2]), "".join(b[j1:j2])
+        restore = op == "replace" and ((kept and kept.fullmatch(new)) or (TOKENS.fullmatch(new) and old.strip().lower() in COMPANIES))
+        out.append(old if restore else new)
+    return "".join(out)  # ponytail: a token the diff can't pair with its words stays masked, which is the safe side
+
+
+def redact(segments: list[Segment], *, post=requests.post, keep: set[str] = frozenset()) -> list[Segment]:
+    if keep - KEEPABLE:
+        raise ValueError(f"only {', '.join(sorted(KEEPABLE))} can be left unmasked")
     url = os.getenv("PII_SHIELD_URL", "http://127.0.0.1:18081") + "/api/redact-text"
     # one request per call: PII Shield keeps line breaks, so line n of the answer is segment n. The speaker label is
     # sent too (a pasted transcript labels people by name) and split back off at the first ": ".
@@ -35,6 +61,8 @@ def redact(segments: list[Segment], *, post=requests.post) -> list[Segment]:
         r = post(url, json={"text": "\n".join(lines)}, timeout=30)
         r.raise_for_status()
         out = r.json()["redacted_text"].split("\n")
+        if len(out) == len(lines):
+            out = [_unmask(a, b, keep) for a, b in zip(lines, out)]
     except Exception as e:
         raise RedactionUnavailable(f"PII Shield failed ({type(e).__name__}); call not processed") from e
     if len(out) != len(lines):
@@ -47,13 +75,13 @@ def redact(segments: list[Segment], *, post=requests.post) -> list[Segment]:
 
 def alias_speakers(segments: list[Segment]) -> list[Segment]:
     """Pasted transcripts label people by name ("Greg (Summit): ..."). Name-finding models miss a bare first name, but
-    the labels say exactly which words are names: swap each for "Speaker N" in the labels and the text. A company in
+    the labels say exactly which words are names: swap each for "Person N" in the labels and the text. A company in
     brackets is kept, so the model can still tell our side from the client's."""
     alias: dict[str, str] = {}
     for s in segments:
         name = s.speaker.split(" (")[0].strip()
-        if name and name.lower() not in ("speaker", "account manager", "client"):
-            alias.setdefault(name.lower(), f"Speaker {len(alias) + 1}")
+        if name and name.lower() not in ("speaker", "account manager", "client") and not name.startswith("Person "):
+            alias.setdefault(name.lower(), f"Person {len(alias) + 1}")  # PII Shield masks "Speaker" in "Speaker 2"
     if not alias:
         return segments
     words = re.compile(r"\b(" + "|".join(map(re.escape, sorted(alias, key=len, reverse=True))) + r")\b", re.I)

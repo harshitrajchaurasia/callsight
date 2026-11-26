@@ -16,7 +16,7 @@ pasted transcript ────────────────────�
   channel, so each channel is transcribed separately and labelled by speaker without a diarization model. Word
   timestamps split a segment wherever a speaker pauses, so turns stay in order.
 - **PII is masked before any model sees the call,** by [PII Shield](https://github.com/harshitrajchaurasia/pii-shield)
-  running locally. Speaker names in pasted transcripts are swapped for "Speaker N" first, because name-finding models
+  running locally. Speaker names in pasted transcripts are swapped for "Person N" first, because name-finding models
   miss bare first names. If PII Shield is down, the call stops; nothing is sent unmasked.
 - **Extraction with a quote for every claim.** The model returns a summary, sentiment, churn risk with reasons, upsell
   signals, objections and action items, each with a verbatim quote. Code then finds each quote in the masked
@@ -29,7 +29,11 @@ pasted transcript ────────────────────�
 - **Ask across calls.** Local embeddings (fastembed `bge-small-en-v1.5`) over SQLite. The answer cites sources, and
   code checks that every citation was actually retrieved.
 - **Web app.** FastAPI and one HTML page: paste a transcript or upload a recording, see the checked quotes with
-  click-to-highlight in the transcript, ask questions across calls.
+  click-to-highlight in the transcript, ask questions across calls. Light and dark themes.
+- **Settings per user** (kept in the browser, sent with each call): the AI model, the churn-alert threshold, and
+  whether names or places may reach the model as said. Phones, emails, card and ID numbers are always masked; the
+  server rejects any other type. Company names are always put back after masking, since "(Acme)" in a speaker label
+  is how the model tells our side from the client's.
 - **Spending is capped in code** as well as by the optional login (`DEMO_PASS`): a daily model budget
   (`DAILY_BUDGET_USD`), per-IP limits on calls and questions, a 10-minute cap on recordings, and Whisper held to 2 CPU
   cores.

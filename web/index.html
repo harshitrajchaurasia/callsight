@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CallSight</title>
 <meta name="description" content="Turns recorded client calls into checked summaries, alerts and follow-up tasks. Free and open source.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232b59c3'/%3E%3Cpath d='M8 16h2M12 11v10M16 7v18M20 12v8M24 15v2' stroke='%23ffc65c' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>try { document.documentElement.dataset.theme = localStorage.getItem("cs-theme") === "dark" ? "dark" : "light"; } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -13,14 +14,14 @@
   --bg:#f7f5f0; --panel:#ffffff; --ink:#18202f; --ink2:#3c4557; --muted:#6a7282; --line:#e7e3da; --soft:#f2efe8;
   --brand:#2b59c3; --brand-ink:#ffffff; --brand-soft:#e9effc; --sun:#ffc65c; --sun-soft:#fff4dc;
   --ok:#1d8a5f; --ok-soft:#e4f5ec; --warn:#b86e00; --warn-soft:#fff1d6; --bad:#c93b3b; --bad-soft:#fde8e6;
-  --hl:#fff1bf; --shadow:0 1px 2px rgba(24,32,47,.05), 0 4px 16px rgba(24,32,47,.05);
+  --hl:#fff1bf; --shadow:0 1px 2px rgba(24,32,47,.05), 0 4px 16px rgba(24,32,47,.05); color-scheme:light;
 }
-@media (prefers-color-scheme: dark) { :root {
+:root[data-theme=dark] {
   --bg:#12151c; --panel:#1a1e27; --ink:#eef0f4; --ink2:#c9cdd6; --muted:#9299a6; --line:#2b313d; --soft:#20252f;
   --brand:#7ea2f2; --brand-ink:#0f1730; --brand-soft:#1f2a44; --sun:#ffc65c; --sun-soft:#352c19;
   --ok:#5cc996; --ok-soft:#163327; --warn:#f0b357; --warn-soft:#352a17; --bad:#f08a80; --bad-soft:#3a1f1e;
-  --hl:#4a3f17; --shadow:0 1px 2px rgba(0,0,0,.3);
-} }
+  --hl:#4a3f17; --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark;
+}
 [hidden] { display:none !important }
 * { box-sizing:border-box }
 body { margin:0; font:15px/1.6 "Plus Jakarta Sans", system-ui, sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased }
@@ -30,74 +31,85 @@ a { color:var(--brand) } b, strong { font-weight:650 }
 
 /* top bar */
 .bar { background:var(--panel); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5 }
-.bar .wrap { display:flex; align-items:center; gap:18px; height:60px }
+.bar .wrap { display:flex; align-items:center; gap:8px 18px; min-height:60px; flex-wrap:wrap }
 .logo { display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px; letter-spacing:-.01em; color:var(--ink); text-decoration:none }
 .logo svg { width:30px; height:30px; flex:none }
-.bar nav { margin-left:auto; display:flex; gap:6px; align-items:center }
-.bar nav a, .bar nav button { font:inherit; font-size:14px; font-weight:550; color:var(--ink2); text-decoration:none; padding:7px 12px; border-radius:8px; background:none; border:0; cursor:pointer }
+.bar nav { display:flex; gap:4px; align-items:center }
+.bar .tools { margin-left:auto }
+.bar nav a, .bar nav button { font:inherit; font-size:14px; font-weight:600; color:var(--ink2); text-decoration:none; padding:7px 12px; border-radius:8px;
+  background:none; border:0; cursor:pointer; display:inline-flex; align-items:center; gap:6px }
 .bar nav a:hover, .bar nav button:hover { background:var(--soft); color:var(--ink) }
-@media (max-width:640px) { .bar nav .hide-sm { display:none } }
+.bar nav a[aria-current=page] { background:var(--brand-soft); color:var(--brand) }
+.bar nav svg { width:18px; height:18px }
+#theme { padding:7px 9px }
+@media (max-width:760px) { .bar nav .hide-sm { display:none } .appnav { order:3; width:100%; padding-bottom:8px } .appnav a { flex:1; justify-content:center } }
 
-/* hero */
-.hero { padding:44px 0 30px }
+/* landing */
+.hero { padding:44px 0 26px }
 .eyebrow { display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:650; color:var(--ink2); background:var(--sun-soft);
   border:1px solid color-mix(in srgb, var(--sun) 45%, transparent); padding:4px 12px; border-radius:999px }
 .eyebrow i { width:8px; height:8px; border-radius:50%; background:var(--sun) }
 .hero h1 { font-size:clamp(28px, 4.2vw, 44px); line-height:1.12; letter-spacing:-.025em; margin:16px 0 12px; max-width:24ch; font-weight:800 }
 .hero h1 em { font-style:normal; color:var(--brand) }
 .hero p.lead { font-size:17px; color:var(--ink2); max-width:62ch; margin:0 0 22px }
-.stats { display:flex; flex-wrap:wrap; gap:10px 28px; margin:0 0 30px; padding:0; list-style:none }
+.stats { display:flex; flex-wrap:wrap; gap:10px 28px; margin:0; padding:0; list-style:none }
 .stats li { font-size:14px; color:var(--muted) } .stats b { display:block; font-size:22px; color:var(--ink); letter-spacing:-.02em }
-.flow { display:grid; grid-template-columns:repeat(5, 1fr); gap:0; margin:0; padding:0; background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow) }
-.flow li { list-style:none; padding:18px 18px 20px; position:relative; border-right:1px solid var(--line) }
-.flow li:last-child { border-right:0 }
-.flow li:not(:last-child)::after { content:""; position:absolute; right:-7px; top:30px; width:12px; height:12px; background:var(--panel);
-  border-top:1px solid var(--line); border-right:1px solid var(--line); transform:rotate(45deg); z-index:1 }
-.flow .ic { width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:var(--brand-soft); color:var(--brand); margin-bottom:10px }
+.signin { display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start; padding-bottom:60px }
+@media (max-width:900px) { .signin { grid-template-columns:1fr } .signin form { order:-1 } }
+.flow { margin:0; padding:0; background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow) }
+.flow li { list-style:none; padding:16px 18px; border-bottom:1px solid var(--line); display:grid; grid-template-columns:36px 1fr; gap:0 14px }
+.flow li:last-child { border-bottom:0 }
+.flow .ic { width:36px; height:36px; border-radius:10px; display:grid; place-items:center; background:var(--brand-soft); color:var(--brand); grid-row:span 2 }
 .flow .ic svg { width:20px; height:20px }
-.flow h3 { margin:0 0 4px; font-size:15px } .flow p { margin:0; font-size:13.5px; color:var(--muted); line-height:1.5 }
-@media (max-width:980px) { .flow { grid-template-columns:1fr } .flow li { border-right:0; border-bottom:1px solid var(--line); display:grid; grid-template-columns:36px 1fr; gap:0 14px }
-  .flow li:last-child { border-bottom:0 } .flow .ic { margin:0; grid-row:span 2 } .flow li::after { display:none } }
+.flow h3 { margin:0 0 2px; font-size:15px } .flow p { margin:0; font-size:13.5px; color:var(--muted); line-height:1.5 }
 
-/* workspace */
-.work { display:grid; grid-template-columns:380px 1fr; gap:20px; padding:10px 0 60px; align-items:start }
-.work > div { min-width:0 }
-@media (max-width:980px) { .work { grid-template-columns:1fr } }
+/* app shell: calls on the left, one view on the right */
+.shell { display:grid; grid-template-columns:320px minmax(0, 1fr); gap:20px; padding-top:24px; padding-bottom:60px; align-items:start }
+.side { position:sticky; top:84px }
+@media (max-width:900px) { .shell { grid-template-columns:1fr; padding-top:16px } .side { position:static } }
 .card { background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:20px; margin-bottom:20px }
-.card > h2 { display:flex; align-items:center; gap:10px; font-size:17px; margin:0 0 4px; letter-spacing:-.01em }
-.step { width:26px; height:26px; border-radius:50%; background:var(--brand); color:var(--brand-ink); font-size:13px; font-weight:700; display:grid; place-items:center; flex:none }
+.card > h2, .vhead h2 { font-size:18px; margin:0 0 4px; letter-spacing:-.01em }
+.vhead { margin:0 0 14px } .vhead p { margin:0; color:var(--muted); font-size:14px }
 .help { color:var(--muted); font-size:13.5px; margin:0 0 14px }
-.note { font-size:13px; color:var(--ink2); background:var(--sun-soft); border-radius:10px; padding:10px 12px; margin:0 0 4px }
-label { display:block; font-size:13px; font-weight:600; color:var(--ink2); margin:14px 0 6px }
-select, textarea, input[type=text], input[type=password] { width:100%; font:inherit; font-size:14.5px; padding:9px 12px; border:1px solid var(--line);
+.note { font-size:13px; color:var(--ink2); background:var(--sun-soft); border-radius:10px; padding:10px 12px; margin:16px 0 0 }
+label, .lbl { display:block; font-size:13px; font-weight:600; color:var(--ink2); margin:16px 0 6px }
+select, textarea, input[type=text], input[type=password], input[type=search] { width:100%; font:inherit; font-size:14.5px; padding:9px 12px; border:1px solid var(--line);
   border-radius:10px; background:var(--bg); color:var(--ink); transition:border-color .15s, box-shadow .15s }
 select:focus, textarea:focus, input:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft) }
-textarea { min-height:150px; resize:vertical; line-height:1.5 }
+textarea { min-height:190px; resize:vertical; line-height:1.5 }
 .btn { font:inherit; font-weight:650; font-size:14.5px; padding:10px 18px; border-radius:10px; border:1px solid var(--brand); background:var(--brand); color:var(--brand-ink); cursor:pointer; transition:filter .15s }
 .btn:hover { filter:brightness(1.07) } .btn:disabled { opacity:.6; cursor:progress }
-.btn.wide { width:100%; margin-top:18px }
-.tabs { display:flex; gap:4px; background:var(--soft); padding:4px; border-radius:12px; margin-top:16px }
-.tabs button { flex:1; font:inherit; font-size:14px; font-weight:600; padding:8px; border:0; border-radius:9px; background:none; color:var(--muted); cursor:pointer }
+.btn.ghost { background:none; color:var(--ink2); border-color:var(--line) } .btn.ghost:hover { border-color:var(--brand); color:var(--brand) }
+.btn.wide { width:100% }
+.tabs { display:flex; gap:4px; background:var(--soft); padding:4px; border-radius:12px }
+.tabs button { flex:1; font:inherit; font-size:14px; font-weight:600; padding:8px; border:0; border-radius:9px; background:none; color:var(--muted); cursor:pointer; white-space:nowrap }
 .tabs button[aria-selected=true] { background:var(--panel); color:var(--ink); box-shadow:var(--shadow) }
-.drop { border:1.5px dashed var(--line); border-radius:12px; padding:18px; text-align:center; background:var(--bg); font-size:14px; color:var(--muted) }
-.drop input { display:block; margin:10px auto 0; font-size:13px; max-width:100% }
-.err { color:var(--bad); font-size:14px; margin-top:10px }
+@media (max-width:480px) { .tabs button { font-size:13px; padding:8px 4px } }
+.drop { border:1.5px dashed var(--line); border-radius:12px; padding:22px 18px; text-align:center; background:var(--bg); font-size:14px; color:var(--muted) }
+.drop input { display:block; margin:12px auto 0; font-size:13px; max-width:100% }
+.err { color:var(--bad); font-size:14px; margin-top:10px } .err:empty { display:none }
+.row { display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+.using { display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin:18px 0 14px; padding:10px 12px;
+  border-radius:10px; background:var(--soft); font-size:13.5px; color:var(--ink2) }
+.using a { font-weight:600; text-decoration:none }
 .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px }
 .chips button { font:inherit; font-size:13px; font-weight:550; padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:var(--panel); color:var(--ink2); cursor:pointer }
 .chips button:hover { border-color:var(--brand); color:var(--brand) }
 
 /* calls list */
-.list { margin:0 -8px; max-height:560px; overflow:auto }
-.list a { display:flex; align-items:center; gap:12px; padding:10px 8px; border-radius:10px; color:inherit; text-decoration:none }
+.fold > summary { list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:12px }
+.fold > summary::-webkit-details-marker { display:none }
+.fold > summary h2 { margin:0; font-size:17px } .fold > summary h2 small { color:var(--muted); font-weight:500; font-size:14px }
+.fold > summary::after { content:""; width:9px; height:9px; border:solid var(--muted); border-width:0 2px 2px 0; transform:rotate(45deg); margin:0 6px 4px 0; transition:transform .15s }
+.fold[open] > summary::after { transform:rotate(-135deg); margin-bottom:-4px }
+.fold[open] > summary { margin-bottom:12px }
+.side .card { padding:16px }
+.list { margin:10px -8px 0; max-height:calc(100vh - 250px); overflow:auto }
+@media (max-width:900px) { .list { max-height:400px } }
+.list a { display:flex; align-items:center; gap:12px; padding:9px 8px; border-radius:10px; color:inherit; text-decoration:none }
 .list a:hover { background:var(--soft) } .list a.on { background:var(--brand-soft) }
 .list .who { flex:1; min-width:0 } .list .who b { display:block; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
 .list small { color:var(--muted); font-size:12.5px }
-.fold > summary { list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:12px }
-.fold > summary::-webkit-details-marker { display:none }
-.fold > summary h2 { margin:0 } .fold > summary h2 small { color:var(--muted); font-weight:500; font-size:14px }
-.fold > summary::after { content:""; width:9px; height:9px; border:solid var(--muted); border-width:0 2px 2px 0; transform:rotate(45deg); margin:0 6px 4px 0; transition:transform .15s }
-.fold[open] > summary::after { transform:rotate(-135deg); margin-bottom:-4px }
-.fold[open] > summary { margin-bottom:10px }
 .badge { font-size:12px; font-weight:650; padding:3px 9px; border-radius:999px; white-space:nowrap }
 .b-high { background:var(--bad-soft); color:var(--bad) } .b-med { background:var(--warn-soft); color:var(--warn) } .b-low { background:var(--ok-soft); color:var(--ok) }
 
@@ -106,9 +118,18 @@ textarea { min-height:150px; resize:vertical; line-height:1.5 }
 .answer { margin-top:16px; padding:14px 16px; border-radius:12px; background:var(--soft); white-space:pre-wrap; font-size:14.5px }
 .answer a { font-weight:600; text-decoration:none; background:var(--brand-soft); padding:1px 6px; border-radius:6px; font-size:13px }
 
-/* detail */
-.empty { text-align:center; padding:36px 20px; color:var(--muted) }
-.empty svg { width:44px; height:44px; color:var(--sun); margin-bottom:6px }
+/* settings */
+.set { display:grid; grid-template-columns:200px 1fr; gap:6px 24px; padding:18px 0; border-top:1px solid var(--line) }
+.set:first-of-type { border-top:0; padding-top:4px }
+.set h3 { margin:0; font-size:15px } .set > div > p { margin:2px 0 0; color:var(--muted); font-size:13px }
+@media (max-width:640px) { .set { grid-template-columns:1fr } }
+.opts { display:flex; flex-direction:column; gap:8px }
+.opt { display:flex; gap:10px; align-items:flex-start; margin:0; font-weight:500; font-size:14.5px; color:var(--ink); cursor:pointer }
+.opt input { margin-top:5px; accent-color:var(--brand) } .opt small { display:block; color:var(--muted); font-size:13px; font-weight:400 }
+input[type=range] { flex:1; max-width:340px; accent-color:var(--brand) }
+.saved { color:var(--ok); font-size:13px; font-weight:600 }
+
+/* call detail */
 .dhead { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 12px } .dhead h2 { margin:0; font-size:22px; letter-spacing:-.02em }
 .dhead span { color:var(--muted); font-size:13.5px }
 .summary { font-size:15.5px; color:var(--ink2); margin:12px 0 18px }
@@ -118,7 +139,9 @@ textarea { min-height:150px; resize:vertical; line-height:1.5 }
 .tile small { display:block; color:var(--muted); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.05em }
 .tile b { font-size:20px; letter-spacing:-.02em; text-transform:capitalize }
 .meter { height:6px; border-radius:3px; background:var(--line); margin-top:8px; overflow:hidden } .meter i { display:block; height:100%; border-radius:3px }
-.sub { font-size:16px; margin:0 0 4px }
+.dtabs { margin:0 0 16px }
+.sub { font-size:16px; margin:0 0 4px } .sub + .help { margin-bottom:10px }
+.card .sub:not(:first-child) { margin-top:22px }
 .alert { display:flex; gap:10px; align-items:flex-start; padding:11px 14px; border-radius:12px; margin:8px 0; font-size:14.5px; font-weight:550 }
 .alert svg { width:18px; height:18px; flex:none; margin-top:3px }
 .a-bad { background:var(--bad-soft); color:var(--bad) } .a-warn { background:var(--warn-soft); color:var(--warn) } .a-ok { background:var(--ok-soft); color:var(--ok) }
@@ -141,91 +164,121 @@ textarea { min-height:150px; resize:vertical; line-height:1.5 }
 .s0 { background:var(--brand-soft); color:var(--brand) } .s1 { background:var(--sun-soft); color:var(--warn) } .s2 { background:var(--ok-soft); color:var(--ok) }
 .line .t { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; margin-right:6px }
 .foot { border-top:1px solid var(--line); padding:22px 0 40px; color:var(--muted); font-size:13.5px }
-
-/* sign-in */
-.signin { display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start; padding-bottom:60px }
-@media (max-width:980px) { .signin { grid-template-columns:1fr } }
 </style>
 </head>
 <body>
 <header class="bar"><div class="wrap">
-  <a class="logo" href="/" aria-label="CallSight home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2b59c3"/>
+  <a class="logo" href="#new" aria-label="CallSight home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2b59c3"/>
     <path d="M8 16h2M12 11v10M16 7v18M20 12v8M24 15v2" stroke="#ffc65c" stroke-width="2.6" stroke-linecap="round"/></svg>CallSight</a>
-  <nav><a href="#how" class="hide-sm">How it works</a><a href="https://github.com/harshitrajchaurasia/callsight">Code on GitHub</a>
-    <button id="logout" hidden>Sign out</button></nav>
+  <nav class="appnav" id="appnav" aria-label="App" hidden><a href="#new">New call</a><a href="#ask">Ask</a><a href="#settings">Settings</a></nav>
+  <nav class="tools" aria-label="Site"><a href="#how" class="hide-sm">How it works</a>
+    <a href="https://github.com/harshitrajchaurasia/callsight" class="hide-sm">GitHub</a>
+    <button id="theme" type="button"></button><button id="logout" type="button" hidden>Sign out</button></nav>
 </div></header>
 
-<section class="hero" id="how"><div class="wrap">
-  <span class="eyebrow"><i></i>Free and open source · demo with made-up clients</span>
-  <h1>Every client call, turned into <em>checked facts</em> and next steps.</h1>
-  <p class="lead">Account managers at a lead agency talk to clients all day. After each call someone has to write notes,
-    spot who is about to leave or ready to buy more, and log what was promised. CallSight does it in seconds, and shows
-    the exact words behind every point, so nobody has to take the AI's word for it.</p>
-  <ul class="stats">
-    <li><b>20 / 20</b>test calls with churn risk in the right range</li>
-    <li><b>0</b>personal details sent to the AI</li>
-    <li><b>3.6%</b>speech-to-text word error rate</li>
-    <li><b>~1 cent</b>per call</li>
-  </ul>
-  <ol class="flow" id="flow"></ol>
-</div></section>
-
-<main class="wrap">
-  <div class="signin" id="login" hidden>
-    <div class="card"><h2>Why a sign-in?</h2><p class="help" style="margin:0">Each call costs a little in AI usage, so this copy
-      is invite-only right now. Request a login at <a href="https://harshit.saakura.dev/projects/">harshit.saakura.dev/projects</a>,
-      or run it yourself from the code on GitHub.</p></div>
+<!-- signed out -->
+<div id="landing" hidden>
+  <section class="hero"><div class="wrap">
+    <span class="eyebrow"><i></i>Free and open source · demo with made-up clients</span>
+    <h1>Every client call, turned into <em>checked facts</em> and next steps.</h1>
+    <p class="lead">Account managers at a lead agency talk to clients all day. After each call someone has to write notes,
+      spot who is about to leave or ready to buy more, and log what was promised. CallSight does it in seconds, and shows
+      the exact words behind every point, so nobody has to take the AI's word for it.</p>
+    <ul class="stats">
+      <li><b>20 / 20</b>test calls with churn risk in the right range</li>
+      <li><b>0</b>personal details sent to the AI</li>
+      <li><b>3.6%</b>speech-to-text word error rate</li>
+      <li><b>~1 cent</b>per call</li>
+    </ul>
+  </div></section>
+  <div class="wrap signin" id="how">
+    <div><h2 style="font-size:18px;margin:0 0 12px">How it works</h2><ol class="flow"></ol></div>
     <form class="card" id="loginForm"><h2>Sign in</h2>
+      <p class="help">Each call costs a little in AI usage, so this copy is invite-only. Request a login at
+        <a href="https://harshit.saakura.dev/projects/">harshit.saakura.dev/projects</a>, or run it yourself from GitHub.</p>
       <label for="u">Username</label><input id="u" type="text" name="username" autocomplete="username" required>
       <label for="p">Password</label><input id="p" type="password" name="password" autocomplete="current-password" required>
-      <button class="btn wide">Sign in</button><div class="err" id="loginErr" role="alert"></div></form>
+      <button class="btn wide" style="margin-top:18px">Sign in</button><div class="err" id="loginErr" role="alert"></div></form>
   </div>
+</div>
 
-  <div class="work" id="app" hidden>
-    <div>
-      <form class="card" id="callForm"><h2><span class="step">1</span>Process a call</h2>
-        <p class="help">Paste a transcript or upload a recording. Text takes about 10 seconds; audio about 20 seconds per minute.</p>
-        <p class="note"><b>Shared demo:</b> anything you process is visible to every visitor. Use a sample or a made-up call,
-          never real customer data. Up to 10 calls and 30 questions an hour.</p>
-        <label for="sample">Quick start: pick a sample call</label>
-        <select id="sample"><option value="">Choose a test call...</option></select>
-        <label for="clients">Client on the call</label><select name="client_id" id="clients"></select>
+<!-- signed in -->
+<main class="wrap shell" id="app" hidden>
+  <aside class="side"><details class="fold card" id="callsFold" open>
+    <summary><h2>Calls <small id="ncalls"></small></h2></summary>
+    <input type="search" id="filter" aria-label="Filter calls" placeholder="Filter: client, ID, high risk...">
+    <div class="list" id="calls"><p class="help">None yet. Process a call to see it here.</p></div>
+  </details></aside>
+
+  <div>
+    <section data-view="new">
+      <div class="vhead"><h2>Process a call</h2><p>Paste a transcript or upload a recording. Text takes about 10 seconds; audio about 20 seconds per minute.</p></div>
+      <form class="card" id="callForm">
         <div class="tabs" role="tablist">
           <button type="button" role="tab" aria-selected="true" data-tab="text">Paste transcript</button>
           <button type="button" role="tab" aria-selected="false" data-tab="audio">Upload recording</button></div>
-        <div id="tab-text"><label for="transcript">One line per turn, as "Name: words"</label>
+        <div id="tab-text">
+          <label for="sample">Start from a test call <span class="due">(optional)</span></label>
+          <select id="sample"><option value="">Choose a test call...</option></select>
+          <label for="transcript">Transcript: one line per turn, as "Name (Company): words"</label>
           <textarea id="transcript" name="transcript" placeholder="Priya (Acme): Hi Tom, how were the leads this month?&#10;Tom (BlueOak): Honestly, not great..."></textarea></div>
-        <div id="tab-audio" hidden><label for="audio">Recording, up to 10 minutes</label>
+        <div id="tab-audio" hidden>
+          <label for="audio">Recording, up to 10 minutes</label>
           <div class="drop">Stereo works best: one speaker per channel tells it who said what.
-            <input id="audio" type="file" name="audio" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm">
-            <div style="margin-top:10px">No recording? Download a test call: <a href="/api/sample-audio">short (1 min)</a>,
-              <a href="/api/sample-audio?call=21">quarterly review (4 min)</a>, <a href="/api/sample-audio?call=22">consent complaint (3 min)</a>,
-              <a href="/api/sample-audio?call=23">expansion (3 min)</a></div></div></div>
-        <label for="prov">AI model</label><select id="prov" name="provider"><option value="">Claude (default)</option><option value="claude">Claude</option><option value="grok">Grok</option></select>
+            <input id="audio" type="file" name="audio" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm"></div>
+          <p class="help" style="margin:10px 0 0">No recording? Download a test call: <a href="/api/sample-audio">short (1 min)</a>,
+            <a href="/api/sample-audio?call=21">quarterly review (4 min)</a>, <a href="/api/sample-audio?call=22">consent complaint (3 min)</a>,
+            <a href="/api/sample-audio?call=23">expansion (3 min)</a>.</p></div>
+        <label for="clients">Client on the call</label><select name="client_id" id="clients"></select>
+        <div class="using"><span id="using"></span><a href="#settings">Change</a></div>
         <button id="callBtn" class="btn wide">Process call</button><div class="err" id="callErr" role="alert"></div>
+        <p class="note"><b>Shared demo:</b> anything you process is visible to every visitor. Use a test call or a made-up one,
+          never real customer data. Up to 10 calls and 30 questions an hour.</p>
       </form>
-      <section class="card"><details class="fold" open><summary><h2>Processed calls <small id="ncalls"></small></h2></summary>
-        <p class="help">Open one to see what was found. The badge is the AI's churn risk: how likely the client is to leave.</p>
-        <div class="list" id="calls"><p class="help">None yet. Process a call above.</p></div></details></section>
-    </div>
-    <div>
-      <section class="card"><h2><span class="step">2</span>Ask across all calls</h2>
-        <p class="help">Answers come only from what was said on the calls, with a link to each source.</p>
+    </section>
+
+    <section data-view="ask" hidden>
+      <div class="vhead"><h2>Ask across all calls</h2><p>Answers come only from what was said on the calls, with a link to each source.</p></div>
+      <div class="card">
         <form id="askForm" class="askrow"><input type="text" name="question" aria-label="Question" placeholder="Which clients mentioned budget cuts?" minlength="3" maxlength="500" required>
           <button class="btn">Ask</button></form>
         <div class="chips" id="examples"></div>
-        <div id="answer"></div></section>
-      <div id="detail"><section class="card"><h2><span class="step">3</span>Call details</h2>
-        <div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 12h2M8 8v8M12 5v14M16 9v6M20 11v2"/></svg>
-          <p style="margin:0">Open a processed call to see its summary, alerts, follow-ups<br>and the evidence behind each one.</p></div></section></div>
-    </div>
+        <div id="answer"></div></div>
+    </section>
+
+    <section data-view="settings" hidden>
+      <div class="vhead"><h2>Settings</h2><p>Saved in this browser and used for every call and question you send from it. <span class="saved" id="saved"></span></p></div>
+      <form class="card" id="setForm">
+        <div class="set"><div><h3>Theme</h3><p>Also on the button in the top bar.</p></div>
+          <div class="opts"><label class="opt"><input type="radio" name="theme" value="light">Light</label>
+            <label class="opt"><input type="radio" name="theme" value="dark">Dark</label></div></div>
+        <div class="set"><div><h3>AI model</h3><p>Which model reads the masked call and answers questions.</p></div>
+          <div class="opts" id="provOpts"></div></div>
+        <div class="set"><div><h3>Masking</h3><p>What PII Shield hides before the AI sees a call.</p></div>
+          <div class="opts">
+            <label class="opt"><input type="checkbox" name="keep" value="NAME"><span>Send names as said<small>Follow-ups and summaries can then name people. Off by default.</small></span></label>
+            <label class="opt"><input type="checkbox" name="keep" value="LOCATION"><span>Send places as said<small>Cities and states, e.g. "leads in Austin".</small></span></label>
+            <p class="help" style="margin:4px 0 0">Phone numbers, emails, card, account and ID numbers are always masked. Company names are never masked.</p></div></div>
+        <div class="set"><div><h3>Churn alert</h3><p>Alert the account manager when the churn risk is at or above this.</p></div>
+          <div><div class="row"><input type="range" name="churn" min="30" max="90" step="5" aria-label="Churn alert threshold"><b id="churnVal"></b></div>
+            <p class="help" style="margin:4px 0 0">Applies to calls processed from now on. Default <span id="churnDef"></span>.</p></div></div>
+        <div class="set"><div></div><div><button type="button" class="btn ghost" id="reset">Reset to defaults</button></div></div>
+      </form>
+    </section>
+
+    <section data-view="how" hidden>
+      <div class="vhead"><h2>How it works</h2><p>Every call goes through the same five steps. Only step 3 uses an outside AI.</p></div>
+      <ol class="flow"></ol>
+    </section>
+
+    <section data-view="call" hidden id="detail"></section>
   </div>
 </main>
 <footer class="foot"><div class="wrap">CallSight · MIT licence · all clients, people and calls are made up ·
   <a href="https://github.com/harshitrajchaurasia/callsight">source</a> · <a href="https://harshit.saakura.dev/projects/">more projects</a></div></footer>
 
 <script>
-const $ = s => document.querySelector(s);
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const mmss = t => t == null ? "" : `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
 const svg = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -238,86 +291,172 @@ const ICON = {
   warn: svg('<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/>'),
   up: svg('<path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/>'),
   info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/>'),
+  sun: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+  moon: svg('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'),
 };
 const STEPS = [
-  ["listen", "Listen", "Speech-to-text on this server. In a stereo recording each speaker has a channel, so it knows who said what."],
-  ["mask", "Mask", "Names, phones, emails and card numbers become [NAME], [PHONE]... before any AI sees the call. No masking, no call."],
-  ["extract", "Extract", "Claude or Grok writes the summary, churn risk, upsell signals and follow-ups, quoting the words behind each."],
-  ["check", "Check", "Code looks for every quote in the transcript. A point whose quote isn't there is marked unverified."],
-  ["act", "Act", "Rules in code, not the AI, raise the alerts. In a real setup each call becomes a Monday.com item."]];
-$("#flow").innerHTML = STEPS.map(([i, t, d]) => `<li><span class="ic">${ICON[i]}</span><h3>${t}</h3><p>${d}</p></li>`).join("");
+  ["listen", "1. Listen", "Speech-to-text on this server. In a stereo recording each speaker has a channel, so it knows who said what."],
+  ["mask", "2. Mask", "Names, phones, emails and card numbers become [NAME], [PHONE]... before any AI sees the call. No masking, no call."],
+  ["extract", "3. Extract", "Claude or Grok writes the summary, churn risk, upsell signals and follow-ups, quoting the words behind each."],
+  ["check", "4. Check", "Code looks for every quote in the transcript. A point whose quote isn't there is marked unverified."],
+  ["act", "5. Act", "Rules in code, not the AI, raise the alerts. In a real setup each call becomes a Monday.com item."]];
+$$(".flow").forEach(el => el.innerHTML = STEPS.map(([i, t, d]) => `<li><span class="ic">${ICON[i]}</span><h3>${t}</h3><p>${d}</p></li>`).join(""));
 const EXAMPLES = ["Which clients are thinking about leaving?", "Who wants to expand to new states?", "What did we promise to send, and to whom?"];
 $("#examples").innerHTML = EXAMPLES.map(q => `<button type="button">${esc(q)}</button>`).join("");
-let current = null, samples = [];
+const PROVIDER = {claude: "Claude", grok: "Grok"}, KEEP = {NAME: "names", LOCATION: "places"};
+const VIEWS = ["new", "ask", "settings", "how"];
+const narrow = matchMedia("(max-width:900px)");
+let current = null, samples = [], calls = [], server = {providers: [], keepable: [], churn_alert: .6};
 
+// --- settings, kept in this browser (they're conveniences, not data) -------------------------------------------
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+let prefs = load("cs-settings", {});
+const pick = () => ({provider: server.providers.includes(prefs.provider) ? prefs.provider : server.default_provider,
+                     keep: (prefs.keep || []).filter(k => server.keepable.includes(k)), churn: prefs.churn ?? server.churn_alert});
+
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("cs-theme", t); } catch {}
+  const dark = t === "dark", label = dark ? "Switch to light theme" : "Switch to dark theme";
+  $("#theme").innerHTML = dark ? ICON.sun : ICON.moon;
+  $("#theme").setAttribute("aria-label", label); $("#theme").title = label;
+  $$("#setForm [name=theme]").forEach(r => r.checked = r.value === t);
+}
+$("#theme").onclick = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+setTheme(document.documentElement.dataset.theme);
+
+function renderSettings() {
+  const p = pick(), f = $("#setForm");
+  $("#provOpts").innerHTML = server.providers.map(v => `<label class="opt"><input type="radio" name="provider" value="${v}" ${v === p.provider ? "checked" : ""}>
+    <span>${PROVIDER[v] || esc(v)}${v === server.default_provider ? " <small style='display:inline'>(default)</small>" : ""}</span></label>`).join("")
+    || '<p class="help" style="margin:0">No AI model is configured on this server.</p>';
+  $$("#setForm [name=keep]").forEach(c => c.checked = p.keep.includes(c.value));
+  f.churn.value = Math.round(p.churn * 100); $("#churnVal").textContent = f.churn.value + "%";
+  $("#churnDef").textContent = Math.round(server.churn_alert * 100) + "%";
+  const keep = p.keep.map(k => KEEP[k]);
+  $("#using").innerHTML = `<b>${PROVIDER[p.provider] || "No model"}</b> · ${keep.length ? `${keep.join(" and ")} sent as said` : "names and places masked"} · churn alert at ${Math.round(p.churn * 100)}%`;
+}
+let savedTimer;
+$("#setForm").onchange = e => {
+  const f = e.currentTarget;
+  if (e.target.name === "theme") return setTheme(e.target.value);
+  prefs = {provider: f.provider?.value || prefs.provider, keep: $$("#setForm [name=keep]:checked").map(c => c.value), churn: Number(f.churn.value) / 100};
+  save("cs-settings", prefs); renderSettings();
+  $("#saved").textContent = "Saved."; clearTimeout(savedTimer); savedTimer = setTimeout(() => $("#saved").textContent = "", 1500);
+};
+$("#setForm").churn.oninput = e => $("#churnVal").textContent = e.target.value + "%";
+$("#reset").onclick = () => { prefs = {}; save("cs-settings", prefs); setTheme("light"); renderSettings(); };
+
+// --- server ------------------------------------------------------------------------------------------------------
 async function api(path, opts) {
   const r = await fetch(path, opts);
   if (r.status === 401 && path !== "/api/login") { show(false); throw new Error("sign in required"); }
   const body = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(body.detail || `HTTP ${r.status}`);
+  if (!r.ok) throw new Error(Array.isArray(body.detail) ? body.detail.map(d => d.msg).join("; ") : body.detail || `HTTP ${r.status}`);
   return body;
 }
-function show(authed) { $("#app").hidden = !authed; $("#login").hidden = authed; }
+function show(authed) { $("#app").hidden = $("#appnav").hidden = !authed; $("#landing").hidden = authed; }
 const risk = v => v >= .6 ? ["High", "b-high", "var(--bad)"] : v >= .3 ? ["Medium", "b-med", "var(--warn)"] : ["Low", "b-low", "var(--ok)"];
 
 $("#loginForm").onsubmit = async e => {
   e.preventDefault(); $("#loginErr").textContent = "";
   try { await api("/api/login", {method:"POST", headers:{"content-type":"application/json"},
-          body: JSON.stringify(Object.fromEntries(new FormData(e.target)))}); e.target.password.value = ""; await start(); }
+          body: JSON.stringify(Object.fromEntries(new FormData(e.target)))}); e.target.password.value = ""; await start(); route(); }
   catch (err) { $("#loginErr").textContent = err.message; }
 };
 $("#logout").onclick = async () => { await fetch("/api/logout", {method:"POST"}).catch(() => {}); history.replaceState(null, "", "/"); show(false); };
 
 async function start() {
-  const [me, cs] = [await api("/api/me"), await api("/api/clients")]; show(true);
+  const me = await api("/api/me");
+  if (!me.signed_in) return show(false);
+  const [cs, st, sm] = await Promise.all([api("/api/clients"), api("/api/settings"), api("/api/samples")]);
+  show(true); server = st; samples = sm;
   $("#logout").hidden = !me.login_required;
   $("#clients").innerHTML = cs.map(c => `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.plan)})</option>`).join("");
-  samples = await api("/api/samples");
   $("#sample").innerHTML = `<option value="">Choose one of ${samples.length} test calls...</option>` + samples.map((s, n) => `<option value="${n}">${esc(s.title)}</option>`).join("");
+  renderSettings();
   await loadCalls();
 }
-function tab(name) {
-  document.querySelectorAll("[data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
-  $("#tab-text").hidden = name !== "text"; $("#tab-audio").hidden = name !== "audio";
-  if (name === "text") $("#audio").value = ""; else $("#transcript").value = "";
-}
-document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => tab(b.dataset.tab));
-$("#sample").onchange = e => { const s = samples[e.target.value]; if (!s) return;
-  tab("text"); $("#clients").value = s.client_id; $("#transcript").value = s.transcript; };
 
-async function loadCalls() {
-  const calls = await api("/api/calls");
+// --- views: #new #ask #settings #how, or #CALL-ID[@time] ---------------------------------------------------------
+function view(name) {
+  $$("[data-view]").forEach(v => v.hidden = v.dataset.view !== name);
+  $$("#appnav a").forEach(a => a.getAttribute("href") === "#" + name ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+}
+function route() {
+  if ($("#app").hidden) return;
+  const [id, at] = decodeURIComponent(location.hash.slice(1)).split("@");
+  if (!id || VIEWS.includes(id)) { current = null; drawCalls(); view(id || "new"); window.scrollTo(0, 0); return; }
+  view("call"); openCall(id, at);
+}
+window.onhashchange = route;
+
+function tab(name) {
+  $$("[data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
+  $("#tab-text").hidden = name !== "text"; $("#tab-audio").hidden = name !== "audio";
+  if (name === "text") $("#audio").value = ""; else { $("#transcript").value = ""; $("#sample").value = ""; }
+}
+$$("[data-tab]").forEach(b => b.onclick = () => tab(b.dataset.tab));
+$("#sample").onchange = e => { const s = samples[e.target.value]; if (!s) return;
+  $("#clients").value = s.client_id; $("#transcript").value = s.transcript; };
+
+async function loadCalls() { calls = await api("/api/calls"); drawCalls(); }
+function drawCalls() {
   $("#ncalls").textContent = calls.length ? `(${calls.length})` : "";
-  if (calls.length) $("#calls").innerHTML = calls.map(c => { const [l, cls] = risk(c.churn_risk);
+  const q = $("#filter").value.trim().toLowerCase();
+  const shown = calls.filter(c => !q || `${c.client} ${c.id} ${c.sentiment} ${risk(c.churn_risk)[0]} risk`.toLowerCase().includes(q));
+  $("#calls").innerHTML = shown.map(c => { const [l, cls] = risk(c.churn_risk);
     return `<a href="#${esc(c.id)}" class="${c.id === current ? "on" : ""}"><span class="who"><b>${esc(c.client)}</b>
       <small>${esc(c.id)} · ${esc(c.sentiment)} · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}</small></span>
-      <span class="badge ${cls}">${l} ${Math.round(c.churn_risk * 100)}%</span></a>`; }).join("");
+      <span class="badge ${cls}">${l} ${Math.round(c.churn_risk * 100)}%</span></a>`; }).join("")
+    || `<p class="help" style="margin:0 8px">${calls.length ? "No calls match." : "None yet. Process a call to see it here."}</p>`;
 }
+$("#filter").oninput = drawCalls;
+$("#calls").onclick = e => { if (e.target.closest("a") && narrow.matches) $("#callsFold").open = false; };
+if (narrow.matches) $("#callsFold").open = false;
 
 $("#callForm").onsubmit = async e => {
   e.preventDefault(); $("#callErr").textContent = ""; $("#callBtn").disabled = true;
-  const fd = new FormData(e.target); if (!fd.get("audio")?.name) fd.delete("audio"); if (!fd.get("transcript")) fd.delete("transcript");
+  const p = pick(), fd = new FormData(e.target);
+  if (!fd.get("audio")?.name) fd.delete("audio"); if (!fd.get("transcript")) fd.delete("transcript");
+  if (p.provider) fd.set("provider", p.provider); fd.set("keep", p.keep.join(",")); fd.set("churn_alert", p.churn);
   $("#callBtn").textContent = fd.has("audio") ? "Transcribing, then analysing..." : "Masking and analysing...";
   try { const r = await api("/api/calls", {method:"POST", body:fd}); e.target.transcript.value = ""; e.target.audio.value = ""; $("#sample").value = "";
-        location.hash = r.id; }
+        await loadCalls(); location.hash = r.id; }
   catch (err) { $("#callErr").textContent = err.message; }
   finally { $("#callBtn").disabled = false; $("#callBtn").textContent = "Process call"; }
 };
 
+// --- one call ----------------------------------------------------------------------------------------------------
 function alertHtml(a) {
   const [cls, ic] = /^Churn risk \d+%:/.test(a) ? ["a-bad", "warn"] : /person should check/.test(a) ? ["a-warn", "warn"]
     : /^Upsell/.test(a) ? ["a-ok", "up"] : ["a-info", "info"];
   return `<div class="alert ${cls}">${ICON[ic]}<span>${esc(a)}</span></div>`;
 }
-
+function dtab(name) {
+  $$("#detail [data-dtab]").forEach(s => s.hidden = s.dataset.dtab !== name);
+  $$("#detail .dtabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.to === name));
+}
 async function openCall(id, at) {
-  current = id; loadCalls();
-  const r = await api(`/api/calls/${encodeURIComponent(id)}`), i = r.insight;
-  const timed = r.segments.some(s => s.end > s.start);
+  if (id !== current || !$("#detail [data-dtab]")) {
+    current = id; drawCalls();
+    $("#detail").innerHTML = '<div class="card"><p class="help" style="margin:0">Loading the call...</p></div>';
+    let r;
+    try { r = await api(`/api/calls/${encodeURIComponent(id)}`); }
+    catch (err) { $("#detail").innerHTML = `<div class="card"><p class="err" style="margin:0">${esc(err.message)}</p></div>`; return; }
+    renderCall(r);
+  }
+  if (at != null) { dtab("transcript"); highlight(at); } else window.scrollTo(0, 0);
+}
+function renderCall(r) {
+  const i = r.insight, timed = r.segments.some(s => s.end > s.start);
   const where = at => timed ? mmss(at) : "line " + (Number(at) + 1);
   const [rl, , rc] = risk(i.churn_risk), pct = Math.round(i.churn_risk * 100);
   const base = s => s.speaker.split(" (")[0];
   const speakers = [...new Set(r.segments.map(base))];
+  const unmasked = (r.unmasked || []).map(k => KEEP[k] || k.toLowerCase());
+  const missing = r.checks.filter(c => !c.found).length;
   const ev = r.checks.map(c => `<div class="ev ${c.found ? "found" : "miss"}"><span class="k">${esc(c.kind.replace("_", " "))}</span>${esc(c.text)}
       ${c.found ? `<span class="tick b-low">&#10003; found</span><button class="ts" data-at="${c.at}" title="Show in transcript">${where(c.at)}</button>`
                 : '<span class="tick b-high">unverified</span>'}
@@ -331,30 +470,41 @@ async function openCall(id, at) {
         <div class="tile"><small>Alerts</small><b>${r.alerts.length}</b></div>
         <div class="tile"><small>Analysed by</small><b>${esc(r.provider)}</b> <span class="due">${(r.latency_ms / 1000).toFixed(1)} s</span></div>
       </div></section>
-    <section class="card"><h3 class="sub">Alerts</h3><p class="help">Raised by rules in code, not by the AI. A churn or upsell alert needs a quote that was found in the transcript.</p>
-      ${r.alerts.map(alertHtml).join("") || `<div class="alert a-ok">${ICON.check}<span>No alerts: nothing on this call needs action.</span></div>`}</section>
-    <section class="card"><h3 class="sub">Follow-ups</h3><p class="help">What each side agreed to do. "Us" is Acme Leads; "client" is the agency.</p>
+    <div class="tabs dtabs" role="tablist">
+      <button type="button" role="tab" data-to="overview" aria-selected="true">Overview</button>
+      <button type="button" role="tab" data-to="evidence">Evidence (${r.checks.length}${missing ? `, ${missing} unverified` : ""})</button>
+      <button type="button" role="tab" data-to="transcript">Transcript</button></div>
+    <section class="card" data-dtab="overview">
+      <h3 class="sub">Alerts</h3><p class="help">Raised by rules in code, not by the AI. A churn or upsell alert needs a quote that was found in the transcript.</p>
+      ${r.alerts.map(alertHtml).join("") || `<div class="alert a-ok">${ICON.check}<span>No alerts: nothing on this call needs action.</span></div>`}
+      <h3 class="sub">Follow-ups</h3><p class="help">What each side agreed to do. "Us" is Acme Leads; "client" is the agency.</p>
       ${i.action_items.map(a => `<div class="todo"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "Us" : "Client"}</span>
         <span>${esc(a.task)} ${a.due ? `<span class="due">· due ${esc(a.due)}</span>` : '<span class="nodue">· no due date</span>'}</span></div>`).join("") || '<p class="help" style="margin:0">None agreed on this call.</p>'}</section>
-    <section class="card"><h3 class="sub">Evidence</h3><p class="help">Every point the AI made, with the words it quoted. <b>Found</b> means code found that
+    <section class="card" data-dtab="evidence" hidden><p class="help">Every point the AI made, with the words it quoted. <b>Found</b> means code found that
       quote in the transcript; click the ${timed ? "time" : "line"} to see it. <b>Unverified</b> points are ignored by the alerts.</p>
       ${ev || '<p class="help" style="margin:0">The AI found nothing to report on this call.</p>'}</section>
-    <section class="card"><h3 class="sub">Transcript</h3><p class="help">Exactly what the AI was given, with names, phone numbers, emails and similar already masked.</p>
+    <section class="card" data-dtab="transcript" hidden><p class="help">Exactly what the AI was given. ${unmasked.length
+        ? `The ${unmasked.join(" and ")} on this call were sent as said (a setting); phone numbers, emails and similar are masked.`
+        : "Names, phone numbers, emails and similar are already masked."}</p>
       <div class="chat">${r.segments.map(s => `<div class="line" data-at="${s.start}"><span class="who-tag s${Math.min(speakers.indexOf(base(s)), 2)}" title="${esc(s.speaker)}">${esc(s.speaker)}</span>
         <span>${timed ? `<span class="t">${mmss(s.start)}</span>` : ""}${esc(s.text)}</span></div>`).join("")}</div></section>`;
-  if (at != null) highlight(at); else $("#detail").scrollIntoView({block:"start", behavior:"smooth"});
 }
 function highlight(at) {
-  document.querySelectorAll(".line").forEach(el => el.classList.toggle("hl", Number(el.dataset.at) === Number(at)));
+  $$(".line").forEach(el => el.classList.toggle("hl", Number(el.dataset.at) === Number(at)));
   document.querySelector(".line.hl")?.scrollIntoView({block:"center", behavior:"smooth"});
 }
-document.addEventListener("click", e => { const t = e.target.closest(".ts"); if (t) highlight(t.dataset.at); });
-$("#examples").onclick = e => { if (e.target.tagName === "BUTTON") { $("#askForm").question.value = e.target.textContent; $("#askForm").requestSubmit(); } };
+document.addEventListener("click", e => {
+  const t = e.target.closest(".ts"); if (t) { dtab("transcript"); highlight(t.dataset.at); }
+  const d = e.target.closest(".dtabs button"); if (d) dtab(d.dataset.to);
+});
 
+// --- ask ---------------------------------------------------------------------------------------------------------
+$("#examples").onclick = e => { if (e.target.tagName === "BUTTON") { $("#askForm").question.value = e.target.textContent; $("#askForm").requestSubmit(); } };
 $("#askForm").onsubmit = async e => {
   e.preventDefault(); const btn = e.target.querySelector("button"); btn.disabled = true; $("#answer").innerHTML = '<div class="answer">Searching the calls...</div>';
   try {
-    const r = await api("/api/ask", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({question: e.target.question.value})});
+    const r = await api("/api/ask", {method:"POST", headers:{"content-type":"application/json"},
+                                     body: JSON.stringify({question: e.target.question.value, provider: pick().provider})});
     const byN = Object.fromEntries(r.sources.map(s => [s.n, s]));
     const cite = n => byN[n] ? `<a href="#${esc(byN[n].call_id)}${byN[n].at != null ? "@" + byN[n].at : ""}">${esc(byN[n].call_id)}</a>` : `<span class="nodue">[S${n}?]</span>`;
     const text = esc(r.answer).replace(/\[(S\d+(?:\s*,\s*S\d+)*)\]/g, (m, g) => g.split(/\s*,\s*/).map(x => cite(x.slice(1))).join(" "));
@@ -363,8 +513,7 @@ $("#askForm").onsubmit = async e => {
   finally { btn.disabled = false; }
 };
 
-window.onhashchange = () => { const [id, at] = location.hash.slice(1).split("@"); if (id && id !== "how") openCall(decodeURIComponent(id), at); };
-start().then(() => window.onhashchange()).catch(() => show(false));
+start().then(route).catch(() => show(false));
 </script>
 </body>
 </html>
