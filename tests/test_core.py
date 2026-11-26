@@ -1,11 +1,22 @@
 import pytest
 
-from callsight import extract, pipeline, redact, rules, store, stt
+import numpy as np
+
+from callsight import ask, extract, pipeline, redact, rules, store, stt
 from callsight.config import CLIENTS
 from callsight.models import ActionItem, Insight, Segment, Signal
 
 SEGS = stt.from_text("AM: How have the IUL leads been?\nClient: Honestly we're looking at other vendors.\n"
                      "Client: Half the numbers are disconnected, third time I'm telling you.\nAM: I'll call you back by Friday.")
+
+
+def fake_embed(texts):
+    """Bag of words hashed into 64 dims, normalised: enough for 'shared words score higher'."""
+    out = np.zeros((len(texts), 64), dtype=np.float32)
+    for i, t in enumerate(texts):
+        for w in extract._norm(t).split():
+            out[i, sum(map(ord, w)) % 64] += 1
+    return out / np.maximum(np.linalg.norm(out, axis=1, keepdims=True), 1e-9)
 
 
 def insight(**kw):
@@ -67,7 +78,7 @@ def test_pipeline_never_calls_model_without_redaction(tmp_path):
     def boom(_): raise redact.RedactionUnavailable("down")
     with pytest.raises(redact.RedactionUnavailable):
         pipeline.process("X", "C-03", store.connect(str(tmp_path / "t.db")), text="AM: hi there",
-                         analyze_fn=lambda *a: called.append(1), redact_fn=boom)
+                         analyze_fn=lambda *a: called.append(1), redact_fn=boom, embed_fn=fake_embed)
     assert not called
 
 
@@ -76,11 +87,11 @@ def test_pipeline_end_to_end_offline(tmp_path):
     seen = []
     r = pipeline.process("CALL-T", "C-03", conn, text="\n".join(f"{s.speaker}: {s.text}" for s in SEGS), provider="claude",
                          redact_fn=lambda segs: [s.model_copy(update={"text": s.text.upper()}) for s in segs],
-                         analyze_fn=lambda segs, client: seen.append(segs) or insight())
+                         analyze_fn=lambda segs, client: seen.append(segs) or insight(), embed_fn=fake_embed)
     assert seen[0][0].text.isupper()  # the model only saw redacted text
     assert all(c.found for c in r.checks) and store.get(conn, "CALL-T").insight.churn_risk == 0.8
     with pytest.raises(KeyError):
-        pipeline.process("Y", "NOPE", conn, text="a: b", analyze_fn=lambda *a: insight(), redact_fn=lambda s: s)
+        pipeline.process("Y", "NOPE", conn, text="a: b", analyze_fn=lambda *a: insight(), redact_fn=lambda s: s, embed_fn=fake_embed)
 
 
 def test_analyze_retries_once_then_gives_up():
@@ -92,3 +103,50 @@ def test_analyze_retries_once_then_gives_up():
     assert extract.analyze(SEGS, CLIENTS["C-03"], "claude", flaky).churn_risk == 0.8
     with pytest.raises(extract.ModelUnavailable):
         extract.analyze(SEGS, CLIENTS["C-03"], "claude", lambda *a: (_ for _ in ()).throw(ValueError()))
+
+
+def test_ask_finds_the_right_call_and_checks_citations(tmp_path):
+    conn = store.connect(str(tmp_path / "t.db"))
+    for cid, client, text in [("A", "C-03", "AM: hi\nClient: our budget was cut so we may pause in January"),
+                              ("B", "C-01", "AM: hi\nClient: the Medicare leads are great, add Texas please")]:
+        pipeline.process(cid, client, conn, text=text, redact_fn=lambda s: s, embed_fn=fake_embed, provider="claude",
+                         analyze_fn=lambda *a: insight(churn_risk=0.1, churn_reasons=[], action_items=[]))
+    hits = ask.search(conn, "budget cut pause", embed_fn=fake_embed)
+    assert hits[0]["call_id"] == "A"
+    out = ask.answer(conn, "who had budget cuts?", provider="claude", embed_fn=fake_embed,
+                     complete_fn=lambda sys, user, p: "Harbor's client, budget cut [S1]. Also [S99].")
+    assert [s["n"] for s in out["sources"]] == [1] and out["unknown_citations"] == [99]
+    pipeline.process("A", "C-03", conn, text="AM: reprocessed", redact_fn=lambda s: s, embed_fn=fake_embed, provider="claude",
+                     analyze_fn=lambda *a: insight(churn_risk=0.1, churn_reasons=[], action_items=[]))
+    assert not any("budget" in t for (t,) in conn.execute("SELECT text FROM chunks WHERE call_id='A'"))  # re-index replaces
+
+
+def test_ask_with_no_calls(tmp_path):
+    out = ask.answer(store.connect(str(tmp_path / "t.db")), "anything", complete_fn=lambda *a: 1 / 0, embed_fn=fake_embed)
+    assert out["sources"] == []
+
+
+def test_sinks_monday_and_ghl(tmp_path, monkeypatch):
+    sent = []
+    subscribers = [{"id": "1"}]
+    def post(url, **kw):
+        sent.append((url, kw["json"]))
+        if "subscribers" in kw["json"].get("query", ""):
+            return Resp({"data": {"boards": [{"subscribers": subscribers}]}})
+        return Resp({"data": {"x": {"id": 42}}})
+    r = pipeline.process("CALL-M", "C-03", store.connect(str(tmp_path / "t.db")), text="AM: I'll call you back by Friday.",
+                         provider="claude", redact_fn=lambda s: s, embed_fn=fake_embed, analyze_fn=lambda *a: insight())
+    from callsight import sinks
+    assert sinks.to_monday(r, post=post) is None and not sent  # off without env
+    monkeypatch.setenv("MONDAY_API_TOKEN", "t"); monkeypatch.setenv("MONDAY_CALLS_BOARD_ID", "1")
+    assert sinks.to_monday(r, post=post) is None  # no allowlist: never write
+    monkeypatch.setenv("MONDAY_ALLOWED_SUBSCRIBERS", "1")
+    subscribers.append({"id": "2"})
+    assert sinks.to_monday(r, post=post) is None and not any("create_item" in j.get("query", "") for _, j in sent)
+    subscribers.pop()
+    assert sinks.to_monday(r, post=post) == "42"
+    queries = " ".join(j["query"] for _, j in sent)
+    assert "create_subitem" in queries and "notification" not in queries and "people" not in queries
+    assert any("[unverified]" in j["variables"].get("body", "") for _, j in sent)  # churn quote isn't in this transcript
+    monkeypatch.setenv("GHL_API_KEY", "k"); monkeypatch.setenv("GHL_CONTACTS", '{"C-03": "abc"}')
+    assert sinks.to_ghl(r, post=post) and sent[-1][0].endswith("/contacts/abc/notes")

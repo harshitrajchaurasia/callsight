@@ -1,0 +1,12 @@
+[
+  {"q": "Which clients mentioned budget cuts or pausing?", "calls": ["CALL-09"], "also_ok": []},
+  {"q": "Who wants leads in new states?", "calls": ["CALL-01", "CALL-07", "CALL-10", "CALL-13"], "also_ok": ["CALL-17"]},
+  {"q": "Which clients said they might cancel or switch vendors?", "calls": ["CALL-02", "CALL-07", "CALL-08", "CALL-12", "CALL-18"], "also_ok": ["CALL-14", "CALL-20", "CALL-09"]},
+  {"q": "Who complained about appointment no-shows?", "calls": ["CALL-14"], "also_ok": []},
+  {"q": "Which client asked about Medicare Supplement leads?", "calls": ["CALL-17"], "also_ok": []},
+  {"q": "Who brought up a competitor's price?", "calls": ["CALL-02", "CALL-07", "CALL-12"], "also_ok": []},
+  {"q": "Were there any refunds or duplicate charges?", "calls": ["CALL-17"], "also_ok": ["CALL-04", "CALL-18"]},
+  {"q": "Which calls mentioned wrong phone numbers on leads?", "calls": ["CALL-18"], "also_ok": []},
+  {"q": "Who still owes us a signed TCPA addendum?", "calls": ["CALL-19"], "also_ok": []},
+  {"q": "Did anyone refer another agency to us?", "calls": ["CALL-13"], "also_ok": []}
+]

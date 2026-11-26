@@ -8,6 +8,7 @@ def connect(path: str = DB_PATH) -> sqlite3.Connection:
     conn = sqlite3.connect(path, check_same_thread=False)
     conn.execute("CREATE TABLE IF NOT EXISTS calls (id TEXT PRIMARY KEY, client_id TEXT, created REAL DEFAULT (unixepoch()), "
                  "result TEXT NOT NULL)")
+    conn.execute("CREATE TABLE IF NOT EXISTS chunks (call_id TEXT, at REAL, text TEXT, vec BLOB)")  # see ask.py
     return conn
 
 

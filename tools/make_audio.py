@@ -19,7 +19,9 @@ def main(src: str, dst: str) -> None:
     with wave.open(dst, "wb") as out:
         out.setnchannels(2); out.setsampwidth(2); out.setframerate(rate)
         for line in open(src, encoding="utf-8"):
-            who, _, text = line.partition(":")
+            who, sep, text = line.partition(":")
+            if not sep:  # no speaker label: read the whole line in the first voice
+                who, text = "", line
             if not text.strip():
                 continue
             side = min(speakers.setdefault(who.split(" (")[0].strip(), len(speakers)), 1)

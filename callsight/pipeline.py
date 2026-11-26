@@ -1,13 +1,13 @@
-"""audio or transcript -> segments -> PII Shield -> LLM extraction -> quote check -> rules -> store."""
+"""audio or transcript -> segments -> PII Shield -> LLM extraction -> quote check -> rules -> store -> Monday / GHL."""
 import time
 
-from . import extract, redact, rules, store, stt
+from . import ask, extract, redact, rules, sinks, store, stt
 from .config import CLIENTS
 from .models import CallResult
 
 
 def process(call_id: str, client_id: str, conn, *, audio_path: str | None = None, text: str | None = None,
-            provider: str | None = None, analyze_fn=None, redact_fn=None) -> CallResult:
+            provider: str | None = None, analyze_fn=None, redact_fn=None, embed_fn=None) -> CallResult:
     client = CLIENTS.get(client_id)
     if client is None:
         raise KeyError(f"unknown client {client_id}")
@@ -22,5 +22,10 @@ def process(call_id: str, client_id: str, conn, *, audio_path: str | None = None
     result = CallResult(id=call_id, client_id=client_id, segments=segments, insight=insight, checks=checks,
                         alerts=rules.alerts(insight, checks, client), provider=provider,
                         latency_ms=int((time.perf_counter() - start) * 1000))
-    store.save(conn, result)
+    store.save(conn, result)  # saved before any write-out, so a Monday/GHL failure never loses the call
+    ask.index(conn, result, embed_fn or ask.embed)
+    if item := sinks.to_monday(result):
+        result.monday_item_id = item
+        store.save(conn, result)
+    sinks.to_ghl(result)
     return result

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Callsight</title>
+<style>
+:root { --bg:#f7f7f5; --panel:#fff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e4e3de; --accent:#2f5d8a;
+        --ok:#2e7d4f; --warn:#a15c00; --bad:#b3261e; --hl:#fff4c2; }
+@media (prefers-color-scheme: dark) { :root { --bg:#161615; --panel:#1f1f1d; --ink:#ecebe6; --muted:#9a9993; --line:#33332f;
+        --accent:#8bb4e0; --ok:#6fcf97; --warn:#f2b45c; --bad:#f28b82; --hl:#4a4320; } }
+* { box-sizing:border-box } body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--ink) }
+header { display:flex; gap:16px; align-items:center; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel) }
+header h1 { font-size:17px; margin:0 } header span { color:var(--muted); font-size:13px }
+main { display:grid; grid-template-columns:320px 1fr; gap:16px; padding:16px 20px; max-width:1300px; margin:auto }
+@media (max-width:860px) { main { grid-template-columns:1fr; padding:16px } }
+section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:16px }
+h2 { font-size:14px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 10px }
+label { display:block; font-size:13px; color:var(--muted); margin:8px 0 4px }
+select, textarea, input[type=text], input[type=password] { width:100%; font:inherit; padding:7px 9px; border:1px solid var(--line);
+  border-radius:6px; background:var(--bg); color:var(--ink) }
+textarea { min-height:120px; resize:vertical }
+button { font:inherit; padding:7px 14px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; margin-top:10px }
+button:disabled { opacity:.5; cursor:wait }
+.list a { display:block; padding:8px 6px; border-bottom:1px solid var(--line); color:inherit; text-decoration:none; font-size:14px }
+.list a:hover, .list a.on { background:var(--bg) } .list small { color:var(--muted); display:block }
+.alert { padding:6px 10px; border-left:3px solid var(--warn); margin:6px 0; background:var(--bg) }
+.check { margin:4px 0; font-size:14px } .check q { color:var(--muted) }
+.ok { color:var(--ok) } .no { color:var(--bad) } .muted { color:var(--muted) }
+.tline { padding:3px 6px; border-radius:4px; font-size:14px } .tline b { font-weight:600 } .tline.hl { background:var(--hl) }
+.ts { color:var(--muted); font-variant-numeric:tabular-nums; font-size:12px; margin-right:6px; cursor:pointer }
+.err { color:var(--bad); font-size:14px; margin-top:8px } .row { display:flex; gap:8px } .row > * { flex:1 }
+#login { max-width:340px; margin:12vh auto }
+</style>
+</head>
+<body>
+<div id="login" hidden>
+  <section><h2>Sign in</h2>
+    <form id="loginForm"><label>Username</label><input type="text" name="username" autocomplete="username" required>
+      <label>Password</label><input type="password" name="password" autocomplete="current-password" required>
+      <button>Sign in</button><div class="err" id="loginErr"></div></form></section>
+</div>
+<div id="app" hidden>
+<header><h1>Callsight</h1><span>Client calls in, checked facts and follow-ups out. Demo data for a made-up lead agency.</span></header>
+<main>
+  <div>
+    <section><h2>New call</h2>
+      <form id="callForm">
+        <label>Client</label><select name="client_id" id="clients"></select>
+        <label>Transcript (Speaker: words, one line each)</label><textarea name="transcript" placeholder="AM: Hi Tom...&#10;Tom: ..."></textarea>
+        <label>or a recording (stereo: one side per channel)</label><input type="file" name="audio" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm">
+        <div class="row"><div><label>Model</label><select name="provider"><option value="">default</option><option>claude</option><option>grok</option></select></div></div>
+        <button id="callBtn">Process call</button><div class="err" id="callErr"></div>
+      </form></section>
+    <section><h2>Calls</h2><div class="list" id="calls"><span class="muted">None yet.</span></div></section>
+  </div>
+  <div>
+    <section><h2>Ask across calls</h2>
+      <form id="askForm" class="row"><input type="text" name="question" placeholder="Which clients mentioned budget cuts?" minlength="3" maxlength="500" required>
+        <button style="flex:0;margin:0">Ask</button></form>
+      <div id="answer"></div></section>
+    <div id="detail"><section class="muted">Pick a call, or process a new one.</section></div>
+  </div>
+</main>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const mmss = t => t == null ? "" : `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+let current = null;
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (r.status === 401 && path !== "/api/login") { show(false); throw new Error("sign in required"); }
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || `HTTP ${r.status}`);
+  return body;
+}
+function show(authed) { $("#app").hidden = !authed; $("#login").hidden = authed; }
+
+$("#loginForm").onsubmit = async e => {
+  e.preventDefault(); $("#loginErr").textContent = "";
+  try { await api("/api/login", {method:"POST", headers:{"content-type":"application/json"},
+          body: JSON.stringify(Object.fromEntries(new FormData(e.target)))}); start(); }
+  catch (err) { $("#loginErr").textContent = err.message; }
+};
+
+async function start() {
+  const cs = await api("/api/clients"); show(true);
+  $("#clients").innerHTML = cs.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+  await loadCalls();
+}
+async function loadCalls() {
+  const calls = await api("/api/calls");
+  if (calls.length) $("#calls").innerHTML = calls.map(c => `<a href="#${esc(c.id)}" class="${c.id === current ? "on" : ""}">${esc(c.client)}
+    <small>${esc(c.id)} · churn ${Math.round(c.churn_risk * 100)}% · ${esc(c.sentiment)} · ${c.alerts} alert(s)</small></a>`).join("");
+}
+
+$("#callForm").onsubmit = async e => {
+  e.preventDefault(); $("#callErr").textContent = ""; $("#callBtn").disabled = true;
+  const fd = new FormData(e.target); if (!fd.get("audio")?.name) fd.delete("audio"); if (!fd.get("transcript")) fd.delete("transcript");
+  $("#callBtn").textContent = fd.has("audio") ? "Transcribing..." : "Processing...";
+  try { const r = await api("/api/calls", {method:"POST", body:fd}); e.target.transcript.value = ""; e.target.audio.value = "";
+        location.hash = r.id; }
+  catch (err) { $("#callErr").textContent = err.message; }
+  finally { $("#callBtn").disabled = false; $("#callBtn").textContent = "Process call"; }
+};
+
+async function openCall(id, at) {
+  current = id; loadCalls();
+  const r = await api(`/api/calls/${encodeURIComponent(id)}`), i = r.insight;
+  const checks = r.checks.map(c => `<div class="check"><span class="${c.found ? "ok" : "no"}">${c.found ? "&#10003;" : "unverified"}</span>
+      <b>${esc(c.kind.replace("_", " "))}</b>: ${esc(c.text)} <q>${esc(c.quote)}</q>
+      ${c.found ? `<span class="ts" data-at="${c.at}">${r.segments.some(s => s.end > s.start) ? mmss(c.at) : "line " + (c.at + 1)}</span>` : ""}</div>`).join("");
+  const timed = r.segments.some(s => s.end > s.start);
+  $("#detail").innerHTML = `
+    <section><h2>${esc(r.client.name)} · ${esc(r.id)}</h2>
+      <p>${esc(i.summary)}</p>
+      <p class="muted">Sentiment ${esc(i.sentiment)} · churn risk ${Math.round(i.churn_risk * 100)}% · ${esc(r.provider)} · ${(r.latency_ms / 1000).toFixed(1)} s
+        ${r.monday_item_id ? " · on Monday" : ""}</p>
+      ${r.alerts.map(a => `<div class="alert">${esc(a)}</div>`).join("") || '<p class="muted">No alerts.</p>'}</section>
+    <section><h2>Action items</h2>${i.action_items.map(a => `<div class="check">[${esc(a.owner)}] ${esc(a.task)}${a.due ? ` <span class="muted">(due ${esc(a.due)})</span>` : ""}</div>`).join("") || '<span class="muted">None.</span>'}</section>
+    <section><h2>Checked against the transcript</h2>${checks || '<span class="muted">Nothing to check.</span>'}</section>
+    <section><h2>Transcript (PII masked)</h2>${r.segments.map(s => `<div class="tline" data-at="${s.start}"><span class="ts">${timed ? mmss(s.start) : ""}</span><b>${esc(s.speaker)}:</b> ${esc(s.text)}</div>`).join("")}</section>`;
+  if (at != null) highlight(at);
+}
+function highlight(at) {
+  document.querySelectorAll(".tline").forEach(el => el.classList.toggle("hl", Number(el.dataset.at) === Number(at)));
+  document.querySelector(".tline.hl")?.scrollIntoView({block:"center", behavior:"smooth"});
+}
+document.addEventListener("click", e => { const t = e.target.closest(".check .ts"); if (t) highlight(t.dataset.at); });
+
+$("#askForm").onsubmit = async e => {
+  e.preventDefault(); const btn = e.target.querySelector("button"); btn.disabled = true; $("#answer").innerHTML = '<p class="muted">Searching...</p>';
+  try {
+    const r = await api("/api/ask", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({question: e.target.question.value})});
+    const byN = Object.fromEntries(r.sources.map(s => [s.n, s]));
+    const text = esc(r.answer).replace(/\[S(\d+)\]/g, (m, n) => byN[n]
+      ? `<a href="#${esc(byN[n].call_id)}${byN[n].at != null ? "@" + byN[n].at : ""}">[${esc(byN[n].call_id)}${byN[n].at != null ? " " + mmss(byN[n].at) : ""}]</a>` : `<span class="no">[S${n}?]</span>`);
+    $("#answer").innerHTML = `<p style="white-space:pre-wrap">${text}</p>` + (r.unknown_citations.length ? '<p class="no">The answer cited sources that were not retrieved.</p>' : "");
+  } catch (err) { $("#answer").innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+  finally { btn.disabled = false; }
+};
+
+window.onhashchange = () => { const [id, at] = location.hash.slice(1).split("@"); if (id) openCall(decodeURIComponent(id), at); };
+start().then(() => window.onhashchange()).catch(() => show(false));
+</script>
+</body>
+</html>

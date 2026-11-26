@@ -65,10 +65,23 @@ def _record(provider: str, model: str, usage, started: float) -> None:
         log.warning("usage log failed: %r", e)
 
 
-def _claude(segments, client) -> Insight:
+def anthropic_client():
     import anthropic
     ws = os.getenv("ANTHROPIC_WORKSPACE_ID")  # keys not scoped to a workspace must name one per request
-    c = anthropic.Anthropic(default_headers={"anthropic-workspace-id": ws} if ws else None)
+    return anthropic.Anthropic(default_headers={"anthropic-workspace-id": ws} if ws else None)
+
+
+def xai_client():
+    import openai
+    return openai.OpenAI(api_key=os.getenv("XAI_API_KEY"), base_url=os.getenv("XAI_BASE_URL") or "https://api.x.ai/v1")
+
+
+def grok_model() -> str:
+    return os.getenv("XAI_MODEL") or GROK_MODEL
+
+
+def _claude(segments, client) -> Insight:
+    c = anthropic_client()
     model, started = os.getenv("CLAUDE_MODEL", "claude-sonnet-5-5"), time.perf_counter()
     resp = c.messages.parse(model=model, max_tokens=4000, system=SYSTEM, output_format=Insight,
                             messages=[{"role": "user", "content": _prompt(segments, client)}])
@@ -77,9 +90,7 @@ def _claude(segments, client) -> Insight:
 
 
 def _grok(segments, client) -> Insight:
-    import openai
-    c = openai.OpenAI(api_key=os.getenv("XAI_API_KEY"), base_url=os.getenv("XAI_BASE_URL") or "https://api.x.ai/v1")
-    model, started = os.getenv("XAI_MODEL") or GROK_MODEL, time.perf_counter()
+    c, model, started = xai_client(), grok_model(), time.perf_counter()
     resp = c.chat.completions.create(
         model=model, messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": _prompt(segments, client)}],
         response_format={"type": "json_schema", "json_schema": {"name": "call", "schema": Insight.model_json_schema()}})
