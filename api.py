@@ -31,19 +31,27 @@ FAILS_PER_IP, FAILS_GLOBAL, WINDOW = 5, 30, 15 * 60
 _fails: dict[str, list[float]] = {}  # ponytail: in-memory, one worker process
 
 
-def _token(expiry: int) -> str:
+def _token(expiry: int, user: str) -> str:
+    """The username is in the cookie (signed), so the log can say who did what for the whole 7 days, not only at sign-in."""
     key = hashlib.sha256(f"callsight:{os.getenv('DEMO_USER', '')}:{os.getenv('DEMO_PASS', '')}:{os.getenv('EXTRA_LOGINS', '')}".encode()).digest()
-    return f"{expiry}." + hmac.new(key, str(expiry).encode(), hashlib.sha256).hexdigest()
+    return f"{expiry}.{user}." + hmac.new(key, f"{expiry}.{user}".encode(), hashlib.sha256).hexdigest()
+
+
+def _user(session: str | None) -> str | None:
+    """Who this cookie belongs to, or None if it's missing, expired or forged. "" when no login is configured."""
+    if not _logins():  # no login configured: open, for local dev
+        return ""
+    expiry, _, rest = (session or "").partition(".")
+    user = rest.rpartition(".")[0]
+    try:
+        ok = int(expiry) > time.time() and hmac.compare_digest(session.encode(), _token(int(expiry), user).encode())
+    except ValueError:
+        return None
+    return user if ok and any(u == user for u, _ in _logins()) else None
 
 
 def _authed(session: str | None) -> bool:
-    if not _logins():  # no login configured: open, for local dev
-        return True
-    try:
-        expiry = int((session or "").split(".", 1)[0])
-    except ValueError:
-        return False
-    return expiry > time.time() and hmac.compare_digest(session.encode(), _token(expiry).encode())
+    return _user(session) is not None
 
 
 def _login_ok(username: str, password: str) -> bool:
@@ -86,9 +94,10 @@ def _recent(ip: str, now: float) -> list[float]:
     return hits
 
 
-def require_session(cs_session: str | None = Cookie(default=None)):
-    if not _authed(cs_session):
+def require_session(cs_session: str | None = Cookie(default=None)) -> str:
+    if (user := _user(cs_session)) is None:
         raise HTTPException(401, "sign in required")
+    return user
 
 
 class Login(BaseModel):
@@ -108,7 +117,8 @@ def login(body: Login, request: Request, response: Response):
         log.warning("login failed ip=%s", ip)  # never log what was typed
         raise HTTPException(401, "Incorrect username or password")
     _fails.pop(ip, None)
-    response.set_cookie(COOKIE, _token(int(now) + SESSION_TTL), httponly=True, secure=True, samesite="lax", max_age=SESSION_TTL)
+    log.info("login ok user=%s ip=%s", body.username, ip)
+    response.set_cookie(COOKIE, _token(int(now) + SESSION_TTL, body.username), httponly=True, secure=True, samesite="lax", max_age=SESSION_TTL)
     return {"ok": True}
 
 
@@ -128,8 +138,11 @@ api = [Depends(require_session)]
 
 
 @app.get("/api/me")
-def me(cs_session: str | None = Cookie(default=None)):
-    return {"login_required": bool(_logins()), "signed_in": _authed(cs_session)}
+def me(request: Request, cs_session: str | None = Cookie(default=None)):
+    user = _user(cs_session)
+    if user:  # every page load by a signed-in user, so returning visitors show up too
+        log.info("visit user=%s ip=%s", user, _ip(request))
+    return {"login_required": bool(_logins()), "signed_in": user is not None}
 
 
 @app.get("/api/settings", dependencies=api)
@@ -180,7 +193,7 @@ def call(call_id: str):
 
 
 @app.post("/api/calls", dependencies=api)
-async def new_call(request: Request, client_id: str = Form(...), transcript: str | None = Form(None),
+async def new_call(request: Request, user: str = Depends(require_session), client_id: str = Form(...), transcript: str | None = Form(None),
                    audio: UploadFile | None = None, provider: str | None = Form(None),
                    keep: str = Form(""), churn_alert: float | None = Form(None, ge=0.3, le=0.9)):
     if client_id not in CLIENTS:
@@ -194,6 +207,7 @@ async def new_call(request: Request, client_id: str = Form(...), transcript: str
         raise HTTPException(422, f"only {', '.join(sorted(redact.KEEPABLE))} can be left unmasked")
     rate_limit("call", request)
     call_id = f"CALL-{time.strftime('%m%d')}-{uuid.uuid4().hex[:5]}"
+    log.info("call user=%s id=%s client=%s %s", user, call_id, client_id, "audio" if audio and audio.filename else "text")
     kw = {"provider": provider or None, "keep": keep_set, "churn_min": churn_alert}
     try:
         if transcript:
@@ -233,8 +247,9 @@ class Question(BaseModel):
 
 
 @app.post("/api/ask", dependencies=api)
-async def ask_calls(q: Question, request: Request):
+async def ask_calls(q: Question, request: Request, user: str = Depends(require_session)):
     rate_limit("ask", request)
+    log.info("ask user=%s q=%r", user, q.question[:120])
     try:
         return await run_in_threadpool(ask.answer, conn, q.question, q.provider if q.provider in ("claude", "grok") else None)
     except extract.ModelUnavailable as e:

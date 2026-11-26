@@ -1,3 +1,4 @@
+import time
 from fastapi.testclient import TestClient
 
 import api
@@ -64,3 +65,19 @@ def test_extra_logins(monkeypatch):
     assert api._login_ok("h2", "r") and not api._login_ok("", "x")
     monkeypatch.setenv("DEMO_PASS", "")
     assert not api._authed(None)  # EXTRA_LOGINS alone still means a login is required
+
+
+def test_session_cookie_names_the_user(monkeypatch, caplog):
+    monkeypatch.setenv("DEMO_USER", "u"); monkeypatch.setenv("DEMO_PASS", "p"); monkeypatch.setenv("EXTRA_LOGINS", "garrett:q")
+    api._fails.clear()
+    c = TestClient(api.app, base_url="https://testserver")
+    with caplog.at_level("INFO", logger="uvicorn.error"):
+        assert c.post("/api/login", json={"username": "garrett", "password": "q"}).status_code == 200
+        assert c.get("/api/me").json()["signed_in"]
+    assert "login ok user=garrett" in caplog.text and "visit user=garrett" in caplog.text
+    tok = c.cookies.get(api.COOKIE)
+    assert api._user(tok) == "garrett"
+    assert api._user(tok.replace(".garrett.", ".u.")) is None  # can't swap the name without the key
+    assert api._user(api._token(int(time.time()) + 60, "nobody")) is None  # signed, but not a current login
+    monkeypatch.setenv("EXTRA_LOGINS", "")
+    assert api._user(tok) is None  # removing a login signs it out
