@@ -32,7 +32,7 @@ _fails: dict[str, list[float]] = {}  # ponytail: in-memory, one worker process
 
 
 def _token(expiry: int) -> str:
-    key = hashlib.sha256(f"callsight:{os.getenv('DEMO_USER', '')}:{os.getenv('DEMO_PASS', '')}".encode()).digest()
+    key = hashlib.sha256(f"callsight:{os.getenv('DEMO_USER', '')}:{os.getenv('DEMO_PASS', '')}:{os.getenv('EXTRA_LOGINS', '')}".encode()).digest()
     return f"{expiry}." + hmac.new(key, str(expiry).encode(), hashlib.sha256).hexdigest()
 
 
@@ -44,6 +44,14 @@ def _authed(session: str | None) -> bool:
     except ValueError:
         return False
     return expiry > time.time() and hmac.compare_digest(session.encode(), _token(expiry).encode())
+
+
+def _login_ok(username: str, password: str) -> bool:
+    """DEMO_USER/DEMO_PASS, or any "user:pass" in EXTRA_LOGINS (comma separated), e.g. one login per reviewer."""
+    pairs = [(os.getenv("DEMO_USER", ""), os.getenv("DEMO_PASS", ""))]
+    pairs += [tuple(x.split(":", 1)) for x in os.getenv("EXTRA_LOGINS", "").split(",") if ":" in x]
+    return any(hmac.compare_digest(username.encode(), u.encode()) & hmac.compare_digest(password.encode(), p.encode())
+               for u, p in pairs if p)
 
 
 def _ip(request: Request) -> str:
@@ -91,9 +99,7 @@ def login(body: Login, request: Request, response: Response):
     if len(_recent(ip, now)) >= FAILS_PER_IP or sum(len(_recent(k, now)) for k in list(_fails)) >= FAILS_GLOBAL:
         log.warning("login locked out ip=%s", ip)
         raise HTTPException(429, "Too many attempts. Try again in 15 minutes.")
-    ok = hmac.compare_digest(body.username.encode(), os.getenv("DEMO_USER", "").encode()) & \
-        hmac.compare_digest(body.password.encode(), os.getenv("DEMO_PASS", "").encode())
-    if not ok:
+    if not _login_ok(body.username, body.password):
         _fails.setdefault(ip, []).append(now)
         log.warning("login failed ip=%s", ip)  # never log what was typed
         raise HTTPException(401, "Incorrect username or password")

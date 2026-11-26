@@ -53,3 +53,10 @@ def test_public_mode_rate_limits_spending(tmp_path, monkeypatch):
     assert codes == [200, 200, 429]
     assert c.post("/api/calls", data=form, headers={"x-forwarded-for": "2.2.2.2"}).status_code == 200  # per IP
     api._hits.clear()
+
+
+def test_extra_logins(monkeypatch):
+    monkeypatch.setenv("DEMO_USER", "u"); monkeypatch.setenv("DEMO_PASS", "p"); monkeypatch.setenv("EXTRA_LOGINS", "g:q,h:")
+    api._fails.clear()
+    assert api._login_ok("u", "p") and api._login_ok("g", "q")
+    assert not api._login_ok("g", "p") and not api._login_ok("h", "") and not api._login_ok("u", "q")
