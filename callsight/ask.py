@@ -83,6 +83,7 @@ def answer(conn, question: str, provider: str | None = None, complete_fn=None, e
     src = "\n".join(f"[S{n}] (call {h['call_id']}) {h['text']}" for n, h in enumerate(hits, 1))
     text = (complete_fn or _complete)(SYSTEM, f"<sources>\n{src}\n</sources>\n\nQuestion: {question}",
                                       provider or extract.default_provider())
-    cited = sorted({int(n) for n in re.findall(r"\[S(\d+)\]", text)})
+    # "[S2]" or "[S2, S5]"
+    cited = sorted({int(n) for group in re.findall(r"\[(S\d+(?:\s*,\s*S\d+)*)\]", text) for n in re.findall(r"\d+", group)})
     return {"answer": text, "sources": [dict(hits[n - 1], n=n) for n in cited if 1 <= n <= len(hits)],
             "unknown_citations": [n for n in cited if not 1 <= n <= len(hits)]}

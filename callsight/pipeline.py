@@ -20,7 +20,7 @@ def process(call_id: str, client_id: str, conn, *, audio_path: str | None = None
     insight = extract.analyze(segments, client, provider, analyze_fn)
     checks = extract.check_quotes(insight, segments)
     result = CallResult(id=call_id, client_id=client_id, segments=segments, insight=insight, checks=checks,
-                        alerts=rules.alerts(insight, checks, client), provider=provider,
+                        alerts=rules.alerts(insight, checks, client, segments), provider=provider,
                         latency_ms=int((time.perf_counter() - start) * 1000))
     store.save(conn, result)  # saved before any write-out, so a Monday/GHL failure never loses the call
     ask.index(conn, result, embed_fn or ask.embed)

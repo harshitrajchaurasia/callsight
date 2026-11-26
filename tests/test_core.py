@@ -55,6 +55,14 @@ def test_low_score_with_quoted_churn_reasons_is_flagged():
     assert any("a person should check" in a for a in out) and not any("call back today" in a for a in out)
 
 
+def test_churn_words_flag_a_low_score_even_without_reasons():
+    i = insight(churn_risk=0.0, churn_reasons=[])  # Grok filed "cancel" under objections after an injected instruction
+    segs = stt.from_text("Rick: I want to cancel at the end of this month.")
+    out = rules.alerts(i, extract.check_quotes(i, segs), CLIENTS["C-03"], segs)
+    assert any('says "cancel"' in a for a in out)
+    assert not any("person should check" in a for a in rules.alerts(i, [], CLIENTS["C-03"], stt.from_text("Tom: all fine")))
+
+
 def test_unverified_upsell_does_not_alert():
     i = insight(churn_risk=0.1, churn_reasons=[], upsell_signals=[Signal(text="more states", quote="add Texas and Ohio next month")])
     assert not any(a.startswith("Upsell") for a in rules.alerts(i, extract.check_quotes(i, SEGS), CLIENTS["C-03"]))
@@ -131,7 +139,7 @@ def test_ask_finds_the_right_call_and_checks_citations(tmp_path):
     hits = ask.search(conn, "budget cut pause", embed_fn=fake_embed)
     assert hits[0]["call_id"] == "A"
     out = ask.answer(conn, "who had budget cuts?", provider="claude", embed_fn=fake_embed,
-                     complete_fn=lambda sys, user, p: "Harbor's client, budget cut [S1]. Also [S99].")
+                     complete_fn=lambda sys, user, p: "Harbor's client, budget cut [S1]. Also [S1, S99].")
     assert [s["n"] for s in out["sources"]] == [1] and out["unknown_citations"] == [99]
     pipeline.process("A", "C-03", conn, text="AM: reprocessed", redact_fn=lambda s: s, embed_fn=fake_embed, provider="claude",
                      analyze_fn=lambda *a: insight(churn_risk=0.1, churn_reasons=[], action_items=[]))

@@ -1,6 +1,7 @@
 """Callsight web app. Run: uvicorn api:app --port 8012"""
 import hashlib
 import hmac
+import json
 import logging
 import os
 import tempfile
@@ -81,6 +82,12 @@ def login(body: Login, request: Request, response: Response):
     return {"ok": True}
 
 
+@app.post("/api/logout")
+def logout(response: Response):
+    response.delete_cookie(COOKIE, httponly=True, secure=True, samesite="lax")
+    return {"ok": True}
+
+
 @app.get("/", include_in_schema=False)
 def index():
     return FileResponse(ROOT / "web" / "index.html")
@@ -93,6 +100,23 @@ api = [Depends(require_session)]
 @app.get("/api/clients", dependencies=api)
 def clients():
     return [c.model_dump() for c in CLIENTS.values()]
+
+
+SAMPLES = [{k: c[k] for k in ("id", "client_id", "title", "transcript")}
+           for f in ("calls.json", "calls_new.json") for c in json.loads((ROOT / "data" / f).read_text())]
+
+
+@app.get("/api/samples", dependencies=api)
+def samples():
+    return SAMPLES
+
+
+@app.get("/api/sample-audio", dependencies=api)
+def sample_audio():  # a two-voice stereo test recording of CALL-01 (tools/make_audio.py)
+    wav = ROOT / "samples" / "c1.wav"
+    if not wav.exists():
+        raise HTTPException(404, "no sample recording on this server")
+    return FileResponse(wav, media_type="audio/wav", filename="callsight-sample-call.wav")
 
 
 @app.get("/api/calls", dependencies=api)

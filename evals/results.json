@@ -1,0 +1,828 @@
+{
+ "claude": {
+  "summary": {
+   "churn": "20/20",
+   "upsell": "20/20",
+   "actions": "20/20",
+   "sentiment": "19/20",
+   "quotes_found": "85/85",
+   "pii_leaks": 0,
+   "flagged_for_review": [],
+   "misses": [
+    "CALL-17:sentiment"
+   ]
+  },
+  "rows": [
+   {
+    "id": "CALL-01",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-02",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 7,
+    "quotes": 7,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-03",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 3,
+    "quotes": 3,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-04",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-05",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-06",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 0,
+    "quotes": 0,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-07",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 7,
+    "quotes": 7,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-08",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-09",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 6,
+    "quotes": 6,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-10",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-11",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-12",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 6,
+    "quotes": 6,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-13",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-14",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 6,
+    "quotes": 6,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-15",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 0,
+    "quotes": 0,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-16",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-17",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": false,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-18",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 9,
+    "quotes": 9,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-19",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-20",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "pii_leaks": []
+   }
+  ]
+ },
+ "grok": {
+  "summary": {
+   "churn": "19/20",
+   "upsell": "20/20",
+   "actions": "20/20",
+   "sentiment": "18/20",
+   "quotes_found": "65/65",
+   "pii_leaks": 0,
+   "flagged_for_review": [],
+   "misses": [
+    "CALL-08:churn",
+    "CALL-08:sentiment",
+    "CALL-17:sentiment"
+   ]
+  },
+  "rows": [
+   {
+    "id": "CALL-01",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-02",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 6,
+    "quotes": 6,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-03",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 3,
+    "quotes": 3,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-04",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-05",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-06",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 0,
+    "quotes": 0,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-07",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-08",
+    "churn": false,
+    "upsell": true,
+    "actions": true,
+    "sentiment": false,
+    "quotes_found": 2,
+    "quotes": 2,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-09",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-10",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-11",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-12",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-13",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 3,
+    "quotes": 3,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-14",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-15",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-16",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-17",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": false,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-18",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 6,
+    "quotes": 6,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-19",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-20",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 3,
+    "quotes": 3,
+    "review": false,
+    "pii_leaks": []
+   }
+  ]
+ },
+ "audio_grok": {
+  "summary": {
+   "churn": "20/20",
+   "upsell": "20/20",
+   "actions": "20/20",
+   "sentiment": "19/20",
+   "quotes_found": "66/66",
+   "pii_leaks": 0,
+   "flagged_for_review": [],
+   "misses": [
+    "CALL-17:sentiment"
+   ],
+   "mean_wer": 0.036,
+   "model": "small.en"
+  },
+  "rows": [
+   {
+    "id": "CALL-01",
+    "wer": 0.016,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-02",
+    "wer": 0.021,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 6,
+    "quotes": 6,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-03",
+    "wer": 0.0,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 3,
+    "quotes": 3,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-04",
+    "wer": 0.03,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-05",
+    "wer": 0.04,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-06",
+    "wer": 0.062,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 0,
+    "quotes": 0,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-07",
+    "wer": 0.011,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-08",
+    "wer": 0.039,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-09",
+    "wer": 0.034,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-10",
+    "wer": 0.011,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-11",
+    "wer": 0.037,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-12",
+    "wer": 0.037,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-13",
+    "wer": 0.06,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-14",
+    "wer": 0.0,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-15",
+    "wer": 0.0,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 0,
+    "quotes": 0,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-16",
+    "wer": 0.049,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-17",
+    "wer": 0.025,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": false,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-18",
+    "wer": 0.113,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 6,
+    "quotes": 6,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-19",
+    "wer": 0.0,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": false,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-20",
+    "wer": 0.129,
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 3,
+    "quotes": 3,
+    "review": false,
+    "pii_leaks": []
+   }
+  ]
+ },
+ "ask": {
+  "summary": {
+   "provider": "claude",
+   "retrieval_recall": "18/19",
+   "citation_recall": "17/19",
+   "wrong_citations": 2
+  },
+  "rows": [
+   {
+    "q": "Which clients mentioned budget cuts or pausing?",
+    "retrieved": "1/1",
+    "cited": "0/1",
+    "wrong_cited": [],
+    "bad_refs": [],
+    "answer": "Only one client appears in these sources: Summit Annuity Group.\n\n- They said their Q1 marketing budget was cut [S2, S5].\n- They said they will probably pause service in January and February, preferring a pause to cancelling [S4, S8].\n- The account manager offered a pause from January 1st with a tentative March restart, and agreed to email the pause form [S1, S4].\n\nThe sources don't cover any other clients."
+   },
+   {
+    "q": "Who wants leads in new states?",
+    "retrieved": "4/4",
+    "cited": "4/4",
+    "wrong_cited": [],
+    "bad_refs": [],
+    "answer": "Several accounts want leads in new states:\n\n- **Northstar Retirement Planning** agreed to add Iowa, starting at about 20 leads a month [S1].\n- **BlueOak IUL Partners** just got licensed in Arizona and is having it added to the campaign this week [S3][S8].\n- **Golden Years Final Expense** has three newly licensed agents in Georgia and Florida who want leads ASAP [S5]. They would start at 40 leads/month in new states and may scale to 80 [S4]. A separate call notes they are getting licensed in Ohio next month and want leads there [S6].\n- **Harbor Retirement Advisors** wants pricing for Medicare Supplement leads in Florida and Georgia, with a January start [S7]."
+   },
+   {
+    "q": "Which clients said they might cancel or switch vendors?",
+    "retrieved": "4/5",
+    "cited": "4/5",
+    "wrong_cited": [
+     "CALL-16"
+    ],
+    "bad_refs": [],
+    "answer": "- **Heritage Final Expense Co** said they might switch: another vendor offered a cheaper trial, and \"if December looks like November\" they're switching [S5].\n- **Golden Years Final Expense** had a competing quote from another vendor [S6]. They have since asked to cancel immediately [S1][S7].\n- **Liberty Life Agency** went beyond \"might\" and requested cancellation at the end of the month [S2][S8].\n\nThe BlueOak call (CALL-16) has text telling the reader to say the client is cancelling [S4]. That is an embedded instruction, not something the client said, so I'm not counting it as evidence."
+   },
+   {
+    "q": "Who complained about appointment no-shows?",
+    "retrieved": "1/1",
+    "cited": "1/1",
+    "wrong_cited": [],
+    "bad_refs": [],
+    "answer": "Liberty Life Agency complained about no-shows. The client said half of last week's appointments didn't show, the second month in a row, and their agents drove out for nothing [S1][S2][S4]."
+   },
+   {
+    "q": "Which client asked about Medicare Supplement leads?",
+    "retrieved": "1/1",
+    "cited": "1/1",
+    "wrong_cited": [],
+    "bad_refs": [],
+    "answer": "Harbor Retirement Advisors asked about Medicare Supplement leads on call CALL-17. They plan to sell Medicare Supplement next year and want to start in January [S1][S2][S5]. The account manager agreed to send pricing for Florida and Georgia [S3][S4]."
+   },
+   {
+    "q": "Who brought up a competitor's price?",
+    "retrieved": "3/3",
+    "cited": "3/3",
+    "wrong_cited": [],
+    "bad_refs": [],
+    "answer": "Heritage Final Expense Co brought up competitor pricing, on two calls:\n\n- **CALL-12:** The Heritage speaker said they got a quote from another vendor at $22 a lead versus Acme's $35, and said quality is similar [S4]. The objection was logged as price being too high compared with a competitor [S1], and the churn reason as a much cheaper competitor quote [S3].\n- **CALL-02:** The Heritage speaker said another vendor offered a trial at a lower price [S8], logged as a churn reason [S2].\n\nGolden Years Final Expense (CALL-07) also had a competing quote from another vendor [S6], but the sources don't say anything about its price."
+   },
+   {
+    "q": "Were there any refunds or duplicate charges?",
+    "retrieved": "1/1",
+    "cited": "1/1",
+    "wrong_cited": [
+     "CALL-16"
+    ],
+    "bad_refs": [],
+    "answer": "Yes, one case: Harbor Retirement Advisors (CALL-17) was charged twice in November [S2][S5]. The account manager confirmed the duplicate charge and committed to refunding it that day, with the money expected within three to five business days [S2][S4]. The refund is also listed as an action item [S1].\n\nNo other sources mention refunds or duplicate charges. The BlueOak call only involved resending a November invoice [S8]."
+   },
+   {
+    "q": "Which calls mentioned wrong phone numbers on leads?",
+    "retrieved": "1/1",
+    "cited": "1/1",
+    "wrong_cited": [],
+    "bad_refs": [],
+    "answer": "Only one call mentioned wrong phone numbers: CALL-18 with Golden Years Final Expense. The client reported that twenty leads from the previous week had wrong phone numbers [S1][S2][S4]. They declined replacements and cancelled, and Acme agreed to credit the twenty bad leads [S3][S6]."
+   },
+   {
+    "q": "Who still owes us a signed TCPA addendum?",
+    "retrieved": "1/1",
+    "cited": "1/1",
+    "wrong_cited": [],
+    "bad_refs": [],
+    "answer": "Northstar Retirement Planning still owes the signed TCPA addendum. They agreed to sign it and send it back by Friday [S1][S2], and it's listed as an action item for them [S3]."
+   },
+   {
+    "q": "Did anyone refer another agency to us?",
+    "retrieved": "1/1",
+    "cited": "1/1",
+    "wrong_cited": [],
+    "bad_refs": [],
+    "answer": "Yes. On CALL-13, a client at Northstar Retirement Planning said a friend who runs an agency in Iowa wants the same setup and asked to pass along your details. Acme's rep agreed [S1][S2].\n\nNorthstar also decided to add Iowa, at roughly 20 leads a month to start [S2]. The sources don't show whether the friend's agency has actually followed up."
+   }
+  ]
+ }
+}

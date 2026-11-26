@@ -4,70 +4,130 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Callsight</title>
+<meta name="description" content="Turns recorded client calls into checked summaries, alerts and follow-up tasks.">
 <style>
 :root { --bg:#f7f7f5; --panel:#fff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e4e3de; --accent:#2f5d8a;
-        --ok:#2e7d4f; --warn:#a15c00; --bad:#b3261e; --hl:#fff4c2; }
-@media (prefers-color-scheme: dark) { :root { --bg:#161615; --panel:#1f1f1d; --ink:#ecebe6; --muted:#9a9993; --line:#33332f;
-        --accent:#8bb4e0; --ok:#6fcf97; --warn:#f2b45c; --bad:#f28b82; --hl:#4a4320; } }
-* { box-sizing:border-box } body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--ink) }
-header { display:flex; gap:16px; align-items:center; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel) }
-header h1 { font-size:17px; margin:0 } header span { color:var(--muted); font-size:13px }
-main { display:grid; grid-template-columns:320px 1fr; gap:16px; padding:16px 20px; max-width:1300px; margin:auto }
-@media (max-width:860px) { main { grid-template-columns:1fr; padding:16px } }
+        --ok:#2e7d4f; --warn:#a15c00; --bad:#b3261e; --hl:#fff4c2; --tint:#eef3f8; }
+@media (prefers-color-scheme: dark) { :root { --bg:#161615; --panel:#1f1f1d; --ink:#ecebe6; --muted:#a3a29c; --line:#33332f;
+        --accent:#8bb4e0; --ok:#6fcf97; --warn:#f2b45c; --bad:#f28b82; --hl:#4a4320; --tint:#1e2833; } }
+[hidden] { display:none !important }
+* { box-sizing:border-box } body { margin:0; font:15px/1.55 system-ui, sans-serif; background:var(--bg); color:var(--ink) }
+a { color:var(--accent) }
+header { display:flex; gap:14px; align-items:center; flex-wrap:wrap; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel) }
+header h1 { font-size:18px; margin:0 } header .tag { color:var(--muted); font-size:13px; flex:1; min-width:200px }
+main { display:grid; grid-template-columns:340px 1fr; gap:16px; padding:16px 20px; max-width:1300px; margin:auto }
+@media (max-width:860px) { main { grid-template-columns:1fr; padding:16px } header { padding:12px 16px } }
 section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:16px }
-h2 { font-size:14px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 10px }
-label { display:block; font-size:13px; color:var(--muted); margin:8px 0 4px }
+h2 { font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 4px }
+.help { color:var(--muted); font-size:13px; margin:0 0 10px }
+label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px }
 select, textarea, input[type=text], input[type=password] { width:100%; font:inherit; padding:7px 9px; border:1px solid var(--line);
   border-radius:6px; background:var(--bg); color:var(--ink) }
-textarea { min-height:120px; resize:vertical }
-button { font:inherit; padding:7px 14px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; margin-top:10px }
-button:disabled { opacity:.5; cursor:wait }
+input[type=file] { font-size:13px; max-width:100% }
+textarea { min-height:130px; resize:vertical; font-size:14px }
+button { font:inherit; padding:7px 14px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer }
+button.ghost { background:transparent; color:var(--accent) } button:disabled { opacity:.5; cursor:wait }
+.mt { margin-top:12px }
 .list a { display:block; padding:8px 6px; border-bottom:1px solid var(--line); color:inherit; text-decoration:none; font-size:14px }
 .list a:hover, .list a.on { background:var(--bg) } .list small { color:var(--muted); display:block }
 .alert { padding:6px 10px; border-left:3px solid var(--warn); margin:6px 0; background:var(--bg) }
-.check { margin:4px 0; font-size:14px } .check q { color:var(--muted) }
+.check { margin:6px 0; font-size:14px } .check q { color:var(--muted) }
 .ok { color:var(--ok) } .no { color:var(--bad) } .muted { color:var(--muted) }
 .tline { padding:3px 6px; border-radius:4px; font-size:14px } .tline b { font-weight:600 } .tline.hl { background:var(--hl) }
-.ts { color:var(--muted); font-variant-numeric:tabular-nums; font-size:12px; margin-right:6px; cursor:pointer }
-.err { color:var(--bad); font-size:14px; margin-top:8px } .row { display:flex; gap:8px } .row > * { flex:1 }
-#login { max-width:340px; margin:12vh auto }
+.ts { color:var(--muted); font-variant-numeric:tabular-nums; font-size:12px; margin-right:6px }
+.check .ts { cursor:pointer; text-decoration:underline dotted }
+.err { color:var(--bad); font-size:14px; margin-top:8px } .row { display:flex; gap:8px; align-items:center } .row > input { flex:1 }
+.steps { display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin:10px 0 0; padding:0; list-style:none; counter-reset:s }
+@media (max-width:1000px) { .steps { grid-template-columns:1fr } }
+.steps li { counter-increment:s; font-size:13.5px } .steps li::before { content:counter(s); display:inline-block; width:20px; height:20px;
+  border-radius:50%; background:var(--accent); color:var(--panel); text-align:center; font-size:12px; line-height:20px; margin-right:6px; font-weight:600 }
+.steps b { font-size:14px }
+.intro { background:var(--tint) }
+.meter { display:inline-block; width:90px; height:8px; border-radius:4px; background:var(--line); vertical-align:middle; overflow:hidden; margin:0 4px }
+.meter i { display:block; height:100% }
+.chips button { background:transparent; color:var(--accent); font-size:13px; padding:3px 9px; margin:4px 4px 0 0 }
+#login { max-width:1000px; margin:6vh auto; padding:0 16px; display:grid; grid-template-columns:1fr 340px; gap:24px }
+@media (max-width:860px) { #login { grid-template-columns:1fr; margin:3vh auto } }
+#login h1 { margin:0 0 6px; font-size:28px } #login .lead { font-size:17px; margin:0 0 12px }
+#login .steps { grid-template-columns:1fr; gap:10px }
 </style>
 </head>
 <body>
+
 <div id="login" hidden>
-  <section><h2>Sign in</h2>
-    <form id="loginForm"><label>Username</label><input type="text" name="username" autocomplete="username" required>
-      <label>Password</label><input type="password" name="password" autocomplete="current-password" required>
-      <button>Sign in</button><div class="err" id="loginErr"></div></form></section>
-</div>
-<div id="app" hidden>
-<header><h1>Callsight</h1><span>Client calls in, checked facts and follow-ups out. Demo data for a made-up lead agency.</span></header>
-<main>
   <div>
-    <section><h2>New call</h2>
+    <h1>Callsight</h1>
+    <p class="lead">Turns a recorded client call into a checked summary, alerts and follow-up tasks, and lets you search
+      everything your clients have said.</p>
+    <p class="muted">Demo for a made-up lead agency, Acme Leads, whose account managers call the insurance agents who buy
+      its leads. After each call someone has to write notes, spot a client who is about to leave or ready to buy more,
+      and log what was promised. Callsight does that in seconds.</p>
+    <ol class="steps" id="stepsLogin"></ol>
+  </div>
+  <section style="align-self:start"><h2>Sign in</h2>
+    <p class="help">Demo access is by invitation, because each call costs a little in AI usage.
+      Request a login at <a href="https://harshit.saakura.dev/projects/">harshit.saakura.dev/projects</a>.</p>
+    <form id="loginForm"><label for="u">Username</label><input id="u" type="text" name="username" autocomplete="username" required>
+      <label for="p">Password</label><input id="p" type="password" name="password" autocomplete="current-password" required>
+      <button class="mt">Sign in</button><div class="err" id="loginErr" role="alert"></div></form></section>
+</div>
+
+<div id="app" hidden>
+<header><h1>Callsight</h1><span class="tag">Client calls in, checked facts and follow-ups out. All clients and calls are made up.</span>
+  <button class="ghost" id="howBtn" aria-expanded="false">How it works</button><button class="ghost" id="logout">Sign out</button></header>
+<main>
+  <section class="intro" style="grid-column:1/-1;margin:0" id="intro" hidden><h2>How it works</h2>
+      <ol class="steps" id="stepsApp"></ol>
+      <p class="help mt" style="margin-bottom:0">New here? Open one of the processed calls, or load a sample call and press
+        <b>Process call</b>. <a href="#" id="hideIntro">Hide this</a></p></section>
+  <div>
+    <section><h2>1. Process a call</h2>
+      <p class="help">Paste a transcript or upload a recording. Text takes about 10 seconds; audio about 20 seconds per minute.</p>
       <form id="callForm">
-        <label>Client</label><select name="client_id" id="clients"></select>
-        <label>Transcript (Speaker: words, one line each)</label><textarea name="transcript" placeholder="AM: Hi Tom...&#10;Tom: ..."></textarea>
-        <label>or a recording (stereo: one side per channel)</label><input type="file" name="audio" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm">
-        <div class="row"><div><label>Model</label><select name="provider"><option value="">default</option><option>claude</option><option>grok</option></select></div></div>
-        <button id="callBtn">Process call</button><div class="err" id="callErr"></div>
+        <label for="sample">Quick start: load a sample call</label>
+        <select id="sample"><option value="">Choose a sample...</option></select>
+        <label for="clients">Client on the call</label><select name="client_id" id="clients"></select>
+        <label for="transcript">Transcript: one line per turn, "Name: words"</label>
+        <textarea id="transcript" name="transcript" placeholder="Priya (Acme): Hi Tom, how were the leads this month?&#10;Tom (BlueOak): Honestly, not great..."></textarea>
+        <label for="audio">...or a recording (stereo, one speaker per channel, is best)</label>
+        <input id="audio" type="file" name="audio" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm">
+        <p class="help" style="margin-top:4px">No recording? <a href="/api/sample-audio">Download a 1-minute test call</a> and upload it.</p>
+        <label for="prov">AI model</label><select id="prov" name="provider"><option value="">Claude (default)</option><option value="claude">Claude</option><option value="grok">Grok</option></select>
+        <button id="callBtn" class="mt">Process call</button><div class="err" id="callErr" role="alert"></div>
       </form></section>
-    <section><h2>Calls</h2><div class="list" id="calls"><span class="muted">None yet.</span></div></section>
+    <section><h2>Processed calls</h2>
+      <p class="help">Click one to see what was found. Churn % is the AI's estimate that the client will leave.</p>
+      <div class="list" id="calls"><span class="muted">None yet. Process a call above.</span></div></section>
   </div>
   <div>
-    <section><h2>Ask across calls</h2>
-      <form id="askForm" class="row"><input type="text" name="question" placeholder="Which clients mentioned budget cuts?" minlength="3" maxlength="500" required>
-        <button style="flex:0;margin:0">Ask</button></form>
+    <section><h2>2. Ask across all calls</h2>
+      <p class="help">Answers come only from what was said on the calls, with links to the exact moment.</p>
+      <form id="askForm" class="row"><input type="text" name="question" aria-label="Question" placeholder="Which clients mentioned budget cuts?" minlength="3" maxlength="500" required>
+        <button>Ask</button></form>
+      <div class="chips" id="examples"></div>
       <div id="answer"></div></section>
-    <div id="detail"><section class="muted">Pick a call, or process a new one.</section></div>
+    <div id="detail"><section><h2>3. Call details</h2><p class="muted" style="margin:0">Open a processed call to see its summary,
+      alerts, follow-ups and the evidence behind each one.</p></section></div>
   </div>
 </main>
 </div>
+
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const mmss = t => t == null ? "" : `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
-let current = null;
+const store = {get: k => { try { return localStorage.getItem(k) } catch { return null } }, set: (k, v) => { try { localStorage.setItem(k, v) } catch {} }};
+const STEPS = [
+  ["Listen", "Speech-to-text runs on this server. With a stereo recording each speaker has a channel, so it knows who said what."],
+  ["Mask", "Names, phone numbers, emails and card numbers become [NAME], [PHONE]... before any AI sees the call. If masking fails, the call stops."],
+  ["Extract", "Claude or Grok writes a summary, churn risk, upsell signals and follow-ups, and must quote the exact words behind each one."],
+  ["Check", "Code looks for every quote in the transcript. A point whose quote isn't there is marked unverified and can't raise an alert."],
+  ["Act", "Rules in code, not the AI, decide the alerts. Each call becomes a Monday.com item with the follow-ups as subitems."]];
+const stepsHtml = STEPS.map(([t, d]) => `<li><b>${t}.</b> ${d}</li>`).join("");
+$("#stepsLogin").innerHTML = $("#stepsApp").innerHTML = stepsHtml;
+const EXAMPLES = ["Which clients are thinking about leaving?", "Who wants to expand to new states?", "What did we promise to send, and to whom?"];
+$("#examples").innerHTML = "Try: " + EXAMPLES.map(q => `<button type="button">${esc(q)}</button>`).join("");
+let current = null, samples = [];
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -77,67 +137,92 @@ async function api(path, opts) {
   return body;
 }
 function show(authed) { $("#app").hidden = !authed; $("#login").hidden = authed; }
+function intro(open) { $("#intro").hidden = !open; $("#howBtn").setAttribute("aria-expanded", open); store.set("cs-intro", open ? "1" : "0"); }
 
 $("#loginForm").onsubmit = async e => {
   e.preventDefault(); $("#loginErr").textContent = "";
   try { await api("/api/login", {method:"POST", headers:{"content-type":"application/json"},
-          body: JSON.stringify(Object.fromEntries(new FormData(e.target)))}); start(); }
+          body: JSON.stringify(Object.fromEntries(new FormData(e.target)))}); e.target.password.value = ""; await start(); }
   catch (err) { $("#loginErr").textContent = err.message; }
 };
+$("#logout").onclick = async () => { await fetch("/api/logout", {method:"POST"}).catch(() => {}); history.replaceState(null, "", "/"); show(false); };
+$("#howBtn").onclick = () => intro($("#intro").hidden);
+$("#hideIntro").onclick = e => { e.preventDefault(); intro(false); };
 
 async function start() {
   const cs = await api("/api/clients"); show(true);
-  $("#clients").innerHTML = cs.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+  intro(store.get("cs-intro") !== "0");
+  $("#clients").innerHTML = cs.map(c => `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.plan)})</option>`).join("");
+  samples = await api("/api/samples");
+  $("#sample").innerHTML = '<option value="">Choose a sample...</option>' + samples.map((s, n) => `<option value="${n}">${esc(s.title)}</option>`).join("");
   await loadCalls();
 }
+$("#sample").onchange = e => { const s = samples[e.target.value]; if (!s) return;
+  $("#clients").value = s.client_id; $("#transcript").value = s.transcript; $("#audio").value = ""; };
+
 async function loadCalls() {
   const calls = await api("/api/calls");
   if (calls.length) $("#calls").innerHTML = calls.map(c => `<a href="#${esc(c.id)}" class="${c.id === current ? "on" : ""}">${esc(c.client)}
-    <small>${esc(c.id)} · churn ${Math.round(c.churn_risk * 100)}% · ${esc(c.sentiment)} · ${c.alerts} alert(s)</small></a>`).join("");
+    <small>${esc(c.id)} · churn ${Math.round(c.churn_risk * 100)}% · ${esc(c.sentiment)} · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}</small></a>`).join("");
 }
 
 $("#callForm").onsubmit = async e => {
   e.preventDefault(); $("#callErr").textContent = ""; $("#callBtn").disabled = true;
   const fd = new FormData(e.target); if (!fd.get("audio")?.name) fd.delete("audio"); if (!fd.get("transcript")) fd.delete("transcript");
-  $("#callBtn").textContent = fd.has("audio") ? "Transcribing..." : "Processing...";
-  try { const r = await api("/api/calls", {method:"POST", body:fd}); e.target.transcript.value = ""; e.target.audio.value = "";
+  $("#callBtn").textContent = fd.has("audio") ? "Transcribing, then analysing..." : "Masking and analysing...";
+  try { const r = await api("/api/calls", {method:"POST", body:fd}); e.target.transcript.value = ""; e.target.audio.value = ""; $("#sample").value = "";
         location.hash = r.id; }
   catch (err) { $("#callErr").textContent = err.message; }
   finally { $("#callBtn").disabled = false; $("#callBtn").textContent = "Process call"; }
 };
 
+function meter(v) { const c = v >= .6 ? "var(--bad)" : v >= .3 ? "var(--warn)" : "var(--ok)";
+  return `<span class="meter" aria-hidden="true"><i style="width:${Math.round(v * 100)}%;background:${c}"></i></span>`; }
+
 async function openCall(id, at) {
   current = id; loadCalls();
   const r = await api(`/api/calls/${encodeURIComponent(id)}`), i = r.insight;
-  const checks = r.checks.map(c => `<div class="check"><span class="${c.found ? "ok" : "no"}">${c.found ? "&#10003;" : "unverified"}</span>
-      <b>${esc(c.kind.replace("_", " "))}</b>: ${esc(c.text)} <q>${esc(c.quote)}</q>
-      ${c.found ? `<span class="ts" data-at="${c.at}">${r.segments.some(s => s.end > s.start) ? mmss(c.at) : "line " + (c.at + 1)}</span>` : ""}</div>`).join("");
   const timed = r.segments.some(s => s.end > s.start);
+  const where = at => timed ? mmss(at) : "line " + (Number(at) + 1);
+  const checks = r.checks.map(c => `<div class="check"><span class="${c.found ? "ok" : "no"}">${c.found ? "&#10003; found" : "unverified"}</span>
+      <b>${esc(c.kind.replace("_", " "))}</b>: ${esc(c.text)} <q>${esc(c.quote)}</q>
+      ${c.found ? `<span class="ts" data-at="${c.at}" title="Show in transcript">${where(c.at)}</span>` : ""}</div>`).join("");
   $("#detail").innerHTML = `
     <section><h2>${esc(r.client.name)} · ${esc(r.id)}</h2>
+      <p class="help">${esc(r.client.plan)} · account manager ${esc(r.client.account_manager)}</p>
       <p>${esc(i.summary)}</p>
-      <p class="muted">Sentiment ${esc(i.sentiment)} · churn risk ${Math.round(i.churn_risk * 100)}% · ${esc(r.provider)} · ${(r.latency_ms / 1000).toFixed(1)} s
-        ${r.monday_item_id ? " · on Monday" : ""}</p>
-      ${r.alerts.map(a => `<div class="alert">${esc(a)}</div>`).join("") || '<p class="muted">No alerts.</p>'}</section>
-    <section><h2>Action items</h2>${i.action_items.map(a => `<div class="check">[${esc(a.owner)}] ${esc(a.task)}${a.due ? ` <span class="muted">(due ${esc(a.due)})</span>` : ""}</div>`).join("") || '<span class="muted">None.</span>'}</section>
-    <section><h2>Checked against the transcript</h2>${checks || '<span class="muted">Nothing to check.</span>'}</section>
-    <section><h2>Transcript (PII masked)</h2>${r.segments.map(s => `<div class="tline" data-at="${s.start}"><span class="ts">${timed ? mmss(s.start) : ""}</span><b>${esc(s.speaker)}:</b> ${esc(s.text)}</div>`).join("")}</section>`;
-  if (at != null) highlight(at);
+      <p class="muted">Churn risk ${meter(i.churn_risk)} ${Math.round(i.churn_risk * 100)}% · sentiment ${esc(i.sentiment)} ·
+        ${esc(r.provider)} · ${(r.latency_ms / 1000).toFixed(1)} s${r.monday_item_id ? " · saved to Monday.com" : ""}</p></section>
+    <section><h2>Alerts</h2><p class="help">Decided by rules in code, not by the AI. A churn or upsell alert needs a quote that was found in the transcript.</p>
+      ${r.alerts.map(a => `<div class="alert">${esc(a)}</div>`).join("") || '<p class="muted" style="margin:0">No alerts: nothing here needs action.</p>'}</section>
+    <section><h2>Follow-ups</h2><p class="help">What each side agreed to do. "Us" is Acme Leads, "client" is the agency.</p>
+      ${i.action_items.map(a => `<div class="check"><b>${a.owner === "us" ? "Us" : "Client"}:</b> ${esc(a.task)}${a.due ? ` <span class="muted">(due ${esc(a.due)})</span>` : ' <span class="no">(no due date)</span>'}</div>`).join("") || '<span class="muted">None agreed on this call.</span>'}</section>
+    <section><h2>Evidence: checked against the transcript</h2>
+      <p class="help">Every point the AI made, with the words it quoted. <span class="ok">&#10003; found</span> means code found
+        that quote in the transcript; click the ${timed ? "time" : "line number"} to see it. <span class="no">Unverified</span> means it didn't, so it is ignored by the alerts.</p>
+      ${checks || '<span class="muted">The AI found nothing to report on this call.</span>'}</section>
+    <section><h2>Transcript (personal details masked)</h2>
+      <p class="help">Exactly what the AI was given. Names, phone numbers, emails and similar were replaced before it saw anything.</p>
+      ${r.segments.map(s => `<div class="tline" data-at="${s.start}"><span class="ts">${timed ? mmss(s.start) : ""}</span><b>${esc(s.speaker)}:</b> ${esc(s.text)}</div>`).join("")}</section>`;
+  if (at != null) highlight(at); else $("#detail").scrollIntoView({block:"start", behavior:"smooth"});
 }
 function highlight(at) {
   document.querySelectorAll(".tline").forEach(el => el.classList.toggle("hl", Number(el.dataset.at) === Number(at)));
   document.querySelector(".tline.hl")?.scrollIntoView({block:"center", behavior:"smooth"});
 }
 document.addEventListener("click", e => { const t = e.target.closest(".check .ts"); if (t) highlight(t.dataset.at); });
+$("#examples").onclick = e => { if (e.target.tagName === "BUTTON") { $("#askForm").question.value = e.target.textContent; $("#askForm").requestSubmit(); } };
 
 $("#askForm").onsubmit = async e => {
-  e.preventDefault(); const btn = e.target.querySelector("button"); btn.disabled = true; $("#answer").innerHTML = '<p class="muted">Searching...</p>';
+  e.preventDefault(); const btn = e.target.querySelector("button"); btn.disabled = true; $("#answer").innerHTML = '<p class="muted">Searching the calls...</p>';
   try {
     const r = await api("/api/ask", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({question: e.target.question.value})});
     const byN = Object.fromEntries(r.sources.map(s => [s.n, s]));
-    const text = esc(r.answer).replace(/\[S(\d+)\]/g, (m, n) => byN[n]
-      ? `<a href="#${esc(byN[n].call_id)}${byN[n].at != null ? "@" + byN[n].at : ""}">[${esc(byN[n].call_id)}${byN[n].at != null ? " " + mmss(byN[n].at) : ""}]</a>` : `<span class="no">[S${n}?]</span>`);
-    $("#answer").innerHTML = `<p style="white-space:pre-wrap">${text}</p>` + (r.unknown_citations.length ? '<p class="no">The answer cited sources that were not retrieved.</p>' : "");
+    const cite = n => byN[n]
+      ? `<a href="#${esc(byN[n].call_id)}${byN[n].at != null ? "@" + byN[n].at : ""}">[${esc(byN[n].call_id)}]</a>` : `<span class="no">[S${n}?]</span>`;
+    const text = esc(r.answer).replace(/\[(S\d+(?:\s*,\s*S\d+)*)\]/g, (m, g) => g.split(/\s*,\s*/).map(x => cite(x.slice(1))).join(" "));
+    $("#answer").innerHTML = `<p style="white-space:pre-wrap">${text}</p>` + (r.sources.length ? '<p class="help">Links open the call at the moment it was said.</p>' : "")
+      + (r.unknown_citations.length ? '<p class="no">The answer cited sources that were not retrieved.</p>' : "");
   } catch (err) { $("#answer").innerHTML = `<p class="err">${esc(err.message)}</p>`; }
   finally { btn.disabled = false; }
 };

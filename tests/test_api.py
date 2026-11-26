@@ -24,6 +24,8 @@ def test_api_login_validation_and_a_call(tmp_path, monkeypatch):
     assert [x["id"] for x in c.get("/api/calls").json()] == [r.json()["id"]]
     monkeypatch.setattr(redact, "redact", lambda segs: (_ for _ in ()).throw(redact.RedactionUnavailable("down")))
     assert c.post("/api/calls", data={"client_id": "C-03", "transcript": "a: b", "provider": "claude"}).status_code == 503
+    assert len(c.get("/api/samples").json()) == 20
+    assert c.post("/api/logout").status_code == 200 and c.get("/api/calls").status_code == 401
 
 
 def test_login_lockout(monkeypatch):
