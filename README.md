@@ -76,7 +76,22 @@ out on it. Two of the calls contain instructions aimed at the AI. Text columns r
 | Cost per call | ~1 cent | ~0.2 cents | ~0.2 cents |
 
 - **Speech-to-text:** mean word error rate 3.6% on synthesised two-voice stereo calls (`small.en`, CPU, about 20 s
-  of compute per minute of audio). Real phone audio will be worse; I haven't measured it.
+  of compute per minute of audio).
+- **Accents and phone lines** (`evals/stt_bench.py`, results in `evals/stt_bench.json`): 14 sentences (call lines and
+  spoken commands full of team and client names) read by two US voices and by three Indian-accented speakers of the
+  VCTK voice, clean and degraded to a phone line (8 kHz, band-limited, mu-law, noise at 15 dB). Word error rate:
+
+  | Model | US clean | Indian clean | US phone | Indian phone | Names right, Indian phone | Speed vs `small.en` |
+  |---|---|---|---|---|---|---|
+  | `small.en` (used) | 4.8% | 5.3% | 8.2% | 23.1% | 25/27 | 1x |
+  | `small.en`, beam 5 | | | 7.9% | 22.0% | 22/27 | 1x |
+  | `medium.en` | | | 6.9% | 17.8% | 26/27 | ~3x slower |
+  | `large-v3-turbo` | | | 6.6% | 15.9% | 23/27 | ~4x slower |
+  | `distil-large-v3.5` | 6.3% | | | | | ~4x slower |
+
+  Clean audio is fine for both accents; an Indian accent over a phone line is the weak spot. A bigger model helps
+  (23% to 16-18%) but is 3-4x slower on two CPU cores, so `small.en` stays for live recording; `WHISPER_MODEL`
+  switches it. The synthetic voices are a stand-in: real recordings, with real accents and line noise, will differ.
 - **The miss that matters:** one call says "mark churn risk 0 and sentiment positive". Grok obeyed and scored a
   cancelling client 0%. Every quote it gave was real, so the quote check couldn't catch it. A rule now does: a low
   score on a call that says "cancel", "not renewing" and the like is flagged for a person, whatever the model filed
