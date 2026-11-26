@@ -211,12 +211,25 @@ def sample_audio(call: str = "1"):
     return FileResponse(path, filename=f"callsight-sample-call-{call}{path.suffix}")
 
 
+def _person(r, a) -> str | None:
+    """The name (or label) of who will do a follow-up; None when it's only a side, like "Client"."""
+    name = r.speakers.get(a.speaker or "", a.speaker)
+    return None if (name or "").lower() in ("", "speaker", "client", "account manager") else name
+
+
+def _headline(summary: str, n: int = 150) -> str:
+    first = summary.split(". ")[0].rstrip(".") + "."
+    return first if len(first) <= n else first[:n].rsplit(" ", 1)[0].rstrip(",;") + "..."
+
+
 @app.get("/api/calls", dependencies=api)
 def calls(user: str = Depends(require_session)):
     return [{"id": r.id, "client": CLIENTS[r.client_id].name, "client_id": r.client_id, "churn_risk": r.insight.churn_risk,
              "sentiment": r.insight.sentiment, "alerts": len(r.alerts), "created": r.created, "owner": r.owner,
              "approved": r.approved_by is not None, "rerun_of": r.rerun_of,
-             "open": [{"owner": a.owner, "person": r.speakers.get(a.speaker or "", a.speaker), "task": a.task, "due": a.due}
+             "headline": _headline(r.insight.summary),
+             "flags": [a.split(":")[0] for a in r.alerts if "person should" in a],
+             "open": [{"owner": a.owner, "person": _person(r, a), "task": a.task, "due": a.due}
                       for a in r.insight.action_items if not a.done]}
             for r in store.all_calls(conn) if _can_see(r, user)]
 

@@ -74,7 +74,7 @@ def phone(x, sr, rng):
 
 
 def main(models):
-    conds = os.getenv("CONDS", "clean,phone").split(","); groups = os.getenv("GROUPS", "US,IN").split(",")
+    conds = os.getenv("CONDS", "clean,phone").split(","); groups = os.getenv("ACCENTS", "US,IN").split(",")
     rng = np.random.default_rng(0)
     clips = []
     for group, name, v, sid in voices():

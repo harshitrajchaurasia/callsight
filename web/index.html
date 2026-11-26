@@ -219,6 +219,27 @@ input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12p
 @media (max-width:760px) { .bar .appnav { gap:0; overflow-x:auto; scrollbar-width:none } .appnav::-webkit-scrollbar { display:none }
   .bar .appnav a { flex:1 0 auto; padding:7px 5px; font-size:13px; white-space:nowrap; justify-content:center } }
 .shell > * { min-width:0 }
+.shell { grid-template-columns:minmax(0, 1fr) !important; max-width:1120px }
+.newcall { background:var(--brand) !important; color:var(--brand-ink) !important; }
+.newcall:hover { filter:brightness(1.07) }
+#gear svg, #theme svg { width:18px; height:18px }
+.linkbtn { font:inherit; font-size:inherit; color:var(--brand); background:none; border:0; padding:0; cursor:pointer; text-decoration:underline }
+.filters { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; margin-bottom:6px } .filters input { max-width:260px }
+.filters .chips { margin:0 } .chips button[aria-pressed=true] { background:var(--brand-soft); border-color:var(--brand); color:var(--brand) }
+.callrow { display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:6px 14px; align-items:center; padding:12px 6px; border-bottom:1px solid var(--line); color:inherit; text-decoration:none; border-radius:8px }
+.callrow:hover { background:var(--soft) } .callrow:last-child { border-bottom:0 }
+.callrow b { font-size:15px } .callrow .muted { display:block; margin-top:1px }
+.state { font-size:12px; font-weight:650; padding:3px 9px; border-radius:999px; white-space:nowrap }
+.st-draft { background:var(--warn-soft); color:var(--warn) } .st-ok { background:var(--ok-soft); color:var(--ok) } .st-flag { background:var(--bad-soft); color:var(--bad) }
+.tags { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; align-items:center }
+@media (max-width:640px) { .tags { flex-direction:column; align-items:flex-end } }
+details.more { margin-top:12px } details.more > summary { cursor:pointer; font-size:14px; font-weight:600; color:var(--ink2); list-style:none; display:inline-block }
+details.more > summary::-webkit-details-marker { display:none } details.more > summary::after { content:" \25BE" } details.more[open] > summary::after { content:" \25B4" }
+details.more .toolbar { margin-top:10px }
+.back { display:inline-block; margin:0 0 12px; font-size:14px; font-weight:600; text-decoration:none }
+.today h3.sub { display:flex; align-items:baseline; gap:8px } .today h3 .muted { font-weight:500 }
+.today .more { display:inline-block; margin-top:10px; font-size:14px; font-weight:600; text-decoration:none }
+.empty-line { color:var(--muted); font-size:14px; margin:4px 0 0 }
 
 .foot { border-top:1px solid var(--line); padding:22px 0 40px; color:var(--muted); font-size:13.5px }
 </style>
@@ -227,11 +248,12 @@ input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12p
 <header class="bar"><div class="wrap">
   <a class="logo" href="#today" aria-label="CallSight home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2b59c3"/>
     <path d="M8 16h2M12 11v10M16 7v18M20 12v8M24 15v2" stroke="#ffc65c" stroke-width="2.6" stroke-linecap="round"/></svg>CallSight</a>
-  <nav class="appnav" id="appnav" aria-label="App" hidden><a href="#today">Today</a><a href="#new">New<span class="hide-sm"> call</span></a><a href="#voice">Voice</a>
-    <a href="#clients">Clients</a><a href="#ask">Ask</a><a href="#settings">Settings</a></nav>
-  <nav class="tools" aria-label="Site"><a href="#how" class="hide-sm">How it works</a>
-    <a href="https://github.com/harshitrajchaurasia/callsight" class="hide-sm">GitHub</a>
-    <button id="theme" type="button"></button><button id="logout" type="button" hidden>Sign out</button></nav>
+  <nav class="appnav" id="appnav" aria-label="App" hidden><a href="#today">Today</a><a href="#calls">Calls</a><a href="#clients">Clients</a>
+    <a href="#voice">Voice</a><a href="#ask">Ask</a></nav>
+  <nav class="tools" aria-label="Site"><a href="#how" class="hide-sm" id="howLink">How it works</a>
+    <a href="#new" class="newcall" id="newLink" hidden>+ New call</a>
+    <a href="#settings" id="gear" hidden aria-label="Settings" title="Settings"></a>
+    <button id="theme" type="button"></button><button id="logout" type="button" class="hide-sm" hidden>Sign out</button></nav>
 </div></header>
 
 <!-- signed out -->
@@ -262,14 +284,22 @@ input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12p
 
 <!-- signed in -->
 <main class="wrap shell" id="app" hidden>
-  <aside class="side"><details class="fold card" id="callsFold" open>
-    <summary><h2>Calls <small id="ncalls"></small></h2></summary>
-    <input type="search" id="filter" aria-label="Filter calls" placeholder="Filter: client, ID, high risk, draft...">
-    <div class="list" id="calls"><p class="help">None yet. Process a call to see it here.</p></div>
-  </details></aside>
-
   <div>
-    <section data-view="today" hidden><div class="vhead"><h2>Today</h2><p id="todaySub">What needs you, across the calls you can see.</p></div><div id="todayBody"></div></section>
+    <section data-view="today" hidden><div class="vhead"><h2 id="hello">Today</h2><p id="todaySub"></p></div><div id="todayBody"></div></section>
+
+    <section data-view="calls" hidden>
+      <div class="vhead"><h2>All processed calls <small class="muted" id="ncalls"></small></h2>
+        <p>Every call CallSight has analysed. Open one to see its summary, alerts and follow-ups, and to approve it.</p></div>
+      <div class="card">
+        <div class="filters"><input type="search" id="filter" aria-label="Search calls" placeholder="Search by client name">
+          <div class="chips" id="callFilters" role="group" aria-label="Show">
+            <button type="button" data-f="all" aria-pressed="true">All</button><button type="button" data-f="draft" aria-pressed="false">Waiting for review</button>
+            <button type="button" data-f="approved" aria-pressed="false">Approved</button><button type="button" data-f="flag" aria-pressed="false">Needs a person</button>
+            <button type="button" data-f="high" aria-pressed="false">High churn risk</button></div></div>
+        <div id="calls"></div>
+        <p class="help" style="margin:14px 0 0"><b>Churn risk</b> is the AI's estimate of how likely the client is to leave, from what was said.
+          <b>Waiting for review</b> means nobody has checked the AI's draft yet, so nothing has gone to Monday or GHL.</p></div>
+    </section>
 
     <section data-view="new" hidden>
       <div class="vhead"><h2>Process a call</h2><p>Paste a transcript, upload a recording, or record one here. Results take about 10 seconds; an uploaded recording about 20 seconds more per minute.</p></div>
@@ -333,7 +363,7 @@ input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12p
     </section>
 
     <section data-view="settings" hidden>
-      <div class="vhead"><h2>Settings</h2><p><span id="whoami"></span> Saved in this browser and used for every call and question you send from it. <span class="saved" id="saved"></span></p></div>
+      <div class="vhead"><h2>Settings</h2><p><span id="whoami"></span> <button type="button" class="linkbtn" id="logout2" hidden>Sign out</button><br>Saved in this browser and used for every call and question you send from it. <span class="saved" id="saved"></span></p></div>
       <form class="card" id="setForm">
         <div class="set"><div><h3>Theme</h3><p>Also on the button in the top bar.</p></div>
           <div class="opts"><label class="opt"><input type="radio" name="theme" value="light">Light</label>
@@ -382,6 +412,7 @@ const ICON = {
   info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/>'),
   sun: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
   moon: svg('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'),
+  gear: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
 };
 const STEPS = [
   ["listen", "1. Listen", "Speech-to-text on this server, from an upload or live from the microphone. In a stereo recording each speaker has a channel."],
@@ -397,8 +428,8 @@ const VEXAMPLES = ["Create a task for Priya to send Summit Annuity the Texas quo
   "Which clients asked for new states?"];
 $("#vExamples").innerHTML = VEXAMPLES.map(q => `<button type="button">${esc(q)}</button>`).join("");
 const PROVIDER = {claude: "Claude", grok: "Grok"}, KEEP = {NAME: "names", LOCATION: "places"};
-const VIEWS = ["today", "new", "voice", "clients", "ask", "settings", "usage", "how"];
-const narrow = matchMedia("(max-width:900px)");
+const VIEWS = ["today", "calls", "new", "voice", "clients", "ask", "settings", "usage", "how"];
+$("#gear").innerHTML = ICON.gear;
 let current = null, samples = [], calls = [], clientsList = [], server = {providers: [], keepable: [], churn_alert: .6, team: []};
 const CL = id => clientsList.find(c => c.id === id) || {name: id};
 const when = t => t ? new Date(t * 1000).toLocaleString([], {dateStyle: "medium", timeStyle: "short"}) : "";
@@ -456,15 +487,17 @@ async function api(path, opts) {
   return body;
 }
 const json = (method, body) => ({method, headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
-function show(authed) { $("#app").hidden = $("#appnav").hidden = !authed; $("#landing").hidden = authed; }
+function show(authed) { $("#app").hidden = $("#appnav").hidden = $("#newLink").hidden = $("#gear").hidden = !authed;
+  $("#landing").hidden = authed; $("#howLink").hidden = authed; }
 const risk = v => v >= .6 ? ["High", "b-high", "var(--bad)"] : v >= .3 ? ["Medium", "b-med", "var(--warn)"] : ["Low", "b-low", "var(--ok)"];
-const badge = v => { const [l, cls] = risk(v); return `<span class="badge ${cls}">${l} ${Math.round(v * 100)}%</span>`; };
+const badge = v => { const [l, cls] = risk(v); return `<span class="badge ${cls}" title="Churn risk: how likely the client is to leave (${l.toLowerCase()})">Churn ${Math.round(v * 100)}%</span>`; };
 
 $("#loginForm").onsubmit = async e => {
   e.preventDefault(); $("#loginErr").textContent = "";
   try { await api("/api/login", json("POST", Object.fromEntries(new FormData(e.target)))); e.target.password.value = ""; await start(); route(); }
   catch (err) { $("#loginErr").textContent = err.message; }
 };
+$("#logout2").onclick = () => $("#logout").click();
 $("#logout").onclick = async () => { await fetch("/api/logout", {method:"POST"}).catch(() => {}); history.replaceState(null, "", "/"); show(false); };
 
 async function start() {
@@ -472,7 +505,7 @@ async function start() {
   if (!me.signed_in) return show(false);
   const [cs, st, sm] = await Promise.all([api("/api/clients"), api("/api/settings"), api("/api/samples")]);
   show(true); server = st; samples = sm; clientsList = cs;
-  $("#logout").hidden = !me.login_required;
+  $("#logout").hidden = $("#logout2").hidden = !me.login_required;
   $("#clients").innerHTML = cs.map(c => `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.plan)})</option>`).join("");
   $("#sample").innerHTML = `<option value="">Choose one of ${samples.length} test calls...</option>` + samples.map((s, n) => `<option value="${n}">${esc(s.title)}</option>`).join("");
   renderSettings();
@@ -482,7 +515,7 @@ async function start() {
 // --- views: #today #new #voice #clients #client/ID #compare/A/B #ask #settings #usage #how, or #CALL-ID[@time] ----
 function view(name) {
   $$("[data-view]").forEach(v => v.hidden = v.dataset.view !== name);
-  const nav = {client: "clients", compare: "clients", usage: "settings"}[name] || name;
+  const nav = {client: "clients", compare: "clients", call: "calls"}[name] || name;
   $$("#appnav a").forEach(a => a.getAttribute("href") === "#" + nav ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
 }
 function route() {
@@ -490,13 +523,14 @@ function route() {
   const h = decodeURIComponent(location.hash.slice(1)), [id, at] = h.split("@"), parts = h.split("/");
   if (parts[0] === "client") return go("client", () => renderClient(parts[1]));
   if (parts[0] === "compare") return go("compare", () => renderCompare(parts[1], parts[2]));
+  if (parts[0] === "calls") { if (parts[1]) setFilter(parts[1]); return go("calls", drawCalls); }
   if (!id || VIEWS.includes(id)) {
     const name = id || "today";
     return go(name, {today: renderToday, voice: renderActions, clients: renderClients, usage: renderUsage}[name]);
   }
   view("call"); openCall(id, at);
 }
-function go(name, render) { current = null; drawCalls(); view(name); window.scrollTo(0, 0); if (render) render(); }
+function go(name, render) { current = null; view(name); window.scrollTo(0, 0); if (render) render(); }
 window.onhashchange = route;
 
 // --- microphone: 16 kHz mono pieces of ~5 s, cut at the quietest moment, transcribed one after another --------
@@ -600,19 +634,22 @@ $$("[data-tab]").forEach(b => b.onclick = () => tab(b.dataset.tab));
 $("#sample").onchange = e => { const s = samples[e.target.value]; if (!s) return;
   $("#clients").value = s.client_id; $("#transcript").value = s.transcript; };
 
-async function loadCalls() { calls = await api("/api/calls"); drawCalls(); }
+async function loadCalls() { calls = await api("/api/calls"); if (!$("[data-view=calls]").hidden) drawCalls(); }
+let callFilter = "all";
+function setFilter(f) { callFilter = f; $$("#callFilters button").forEach(b => b.setAttribute("aria-pressed", b.dataset.f === f)); }
+const TESTS = {all: () => true, draft: c => !c.approved, approved: c => c.approved, flag: c => c.flags.length, high: c => c.churn_risk >= .6};
+const stateChip = c => c.flags.length ? '<span class="state st-flag">Needs a person</span>' : c.approved ? '<span class="state st-ok">Approved</span>' : '<span class="state st-draft">Waiting for review</span>';
 function drawCalls() {
-  $("#ncalls").textContent = calls.length ? `(${calls.length})` : "";
   const q = $("#filter").value.trim().toLowerCase();
-  const shown = calls.filter(c => !q || `${c.client} ${c.id} ${c.sentiment} ${risk(c.churn_risk)[0]} risk ${c.approved ? "approved" : "draft"} ${c.owner === server.user ? "mine" : ""}`.toLowerCase().includes(q));
-  $("#calls").innerHTML = shown.map(c => `<a href="#${esc(c.id)}" class="${c.id === current ? "on" : ""}"><span class="who"><b>${esc(c.client)}</b>
-      <small>${esc(c.id)}${c.rerun_of ? '<span class="tag">re-run</span>' : ""} · ${c.approved ? "approved" : "draft"} · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}</small></span>
-      ${badge(c.churn_risk)}</a>`).join("")
-    || `<p class="help" style="margin:0 8px">${calls.length ? "No calls match." : "None yet. Process a call to see it here."}</p>`;
+  const shown = calls.filter(c => TESTS[callFilter](c) && (!q || c.client.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)));
+  $("#ncalls").textContent = `${shown.length} of ${calls.length}`;
+  $("#calls").innerHTML = shown.map(c => `<a class="callrow" href="#${esc(c.id)}"><span><b>${esc(c.client)}</b>${c.rerun_of ? '<span class="tag">re-run</span>' : ""}
+      <span class="muted">${when(c.created)} · client mood ${esc(c.sentiment)}${c.alerts ? ` · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}` : ""}</span></span>
+      <span class="tags">${["draft", "approved"].includes(callFilter) ? "" : stateChip(c)}${badge(c.churn_risk)}</span></a>`).join("")
+    || `<p class="empty-line">${calls.length ? "No calls match." : "No calls yet. Use New call to process one."}</p>`;
 }
 $("#filter").oninput = drawCalls;
-$("#calls").onclick = e => { if (e.target.closest("a") && narrow.matches) $("#callsFold").open = false; };
-if (narrow.matches) $("#callsFold").open = false;
+$("#callFilters").onclick = e => { const b = e.target.closest("[data-f]"); if (b) { setFilter(b.dataset.f); drawCalls(); } };
 
 const STAGE = {starting: "Starting...", masking: "Masking personal details...", checking: "Checking the quotes...", waiting: "Waiting...", "second opinion": "Borderline: asking the other model too..."};
 $("#callForm").onsubmit = async e => {
@@ -648,7 +685,7 @@ function dtab(name) {
 }
 async function openCall(id, at) {
   if (id !== current || !$("#detail [data-dtab]")) {
-    current = id; drawCalls(); flash = "";
+    current = id; flash = "";
     $("#detail").innerHTML = '<div class="card"><p class="help" style="margin:0">Loading the call...</p></div>';
     let r;
     try { r = await api(`/api/calls/${encodeURIComponent(id)}`); }
@@ -678,7 +715,7 @@ function renderCall(r) {
       ${c.found ? `<span class="tick b-low">&#10003; found</span><button class="ts" data-at="${c.at}" title="Show in transcript">${where(c.at)}</button>`
                 : '<span class="tick b-high">unverified</span>'}
       <blockquote>&ldquo;${esc(c.quote)}&rdquo;</blockquote></div>`).join("");
-  $("#detail").innerHTML = `
+  $("#detail").innerHTML = `<a class="back" href="#calls">&larr; All calls</a>
     <section class="card"><div class="dhead"><h2><a href="#client/${esc(r.client_id)}" style="color:inherit;text-decoration:none">${esc(r.client.name)}</a></h2>
       <span>${esc(r.id)} · ${day(r.created)} · ${esc(r.client.plan)} · account manager ${esc(r.client.account_manager)}</span></div>
       ${r.rerun_of ? `<p class="help" style="margin:8px 0 0">A re-run of <a href="#${esc(r.rerun_of)}">${esc(r.rerun_of)}</a> with ${PROVIDER[r.provider] || esc(r.provider)}. <a href="#compare/${esc(r.rerun_of)}/${esc(r.id)}">Compare the two</a></p>` : ""}
@@ -691,10 +728,10 @@ function renderCall(r) {
       </div>
       <div class="status">${status}<span class="grow"></span><button type="button" class="btn ghost" id="editBtn">Edit</button>
         ${r.approved_by != null ? "" : '<button type="button" class="btn" id="approveBtn">Approve</button>'}</div>
-      <div class="toolbar"><button type="button" class="btn ghost" data-x="copy">Copy report</button><button type="button" class="btn ghost" data-x="email">Email the client a recap</button>
+      <details class="more"><summary>More actions</summary><div class="toolbar"><button type="button" class="btn ghost" data-x="copy">Copy report</button><button type="button" class="btn ghost" data-x="email">Email the client a recap</button>
         <button type="button" class="btn ghost" data-x="csv">Follow-ups as CSV</button>
         ${server.providers.includes(other) ? `<button type="button" class="btn ghost" data-x="rerun" data-p="${other}">Re-run with ${PROVIDER[other]} and compare</button>` : ""}
-        ${canDelete(r) ? '<button type="button" class="btn danger" data-x="delete">Delete</button>' : ""}</div>
+        ${canDelete(r) ? '<button type="button" class="btn danger" data-x="delete">Delete</button>' : ""}</div></details>
       ${flash ? `<p class="flash" role="status">${esc(flash)}</p>` : ""}</section>
     <div class="tabs dtabs" role="tablist">
       <button type="button" role="tab" data-to="overview" aria-selected="true">Overview</button>
@@ -832,35 +869,39 @@ document.addEventListener("click", async e => {
 let actions = [];
 async function renderToday() {
   try { actions = await api("/api/actions"); } catch { actions = []; }
-  const firsts = calls.filter(c => !c.rerun_of), latest = {};
+  const th = pick().churn, firsts = calls.filter(c => !c.rerun_of), latest = {};
   firsts.forEach(c => { if (!latest[c.client_id] || c.created > latest[c.client_id].created) latest[c.client_id] = c; });
-  const atRisk = Object.values(latest).filter(c => c.churn_risk >= pick().churn).sort((a, b) => b.churn_risk - a.churn_risk);
-  const drafts = firsts.filter(c => !c.approved);
-  const ours = firsts.flatMap(c => c.open.filter(a => a.owner === "us").map(a => ({...a, call: c})));
+  // needs attention: a client whose latest call is over the churn line, or any call the checks sent to a person
+  const attention = [...Object.values(latest).filter(c => c.churn_risk >= th).map(c => ({c, why: c.headline})),
+    ...firsts.filter(c => c.flags.length).map(c => ({c, why: c.flags[0] + "."}))]
+    .filter((x, i, all) => all.findIndex(y => y.c.client_id === x.c.client_id) === i)  // one row per client
+    .sort((a, b) => b.c.churn_risk - a.c.churn_risk);
+  const drafts = firsts.filter(c => !c.approved).sort((a, b) => b.churn_risk - a.churn_risk);
+  const promised = firsts.flatMap(c => c.open.filter(a => a.owner === "us" && a.due).map(a => ({...a, call: c})));
   const todo = actions.filter(a => a.kind === "task" && !a.done);
-  const recent = firsts.filter(c => c.created > Date.now() / 1000 - 86400);
-  const tile = (href, label, n, note) => `<a href="${href}"><div class="tile"><small>${label}</small><b>${n}</b> <span class="due">${note}</span></div></a>`;
-  $("#todaySub").textContent = `${new Date().toLocaleDateString([], {weekday: "long", month: "long", day: "numeric"})}: what needs you, across the calls you can see.`;
-  $("#todayBody").innerHTML = `<div class="kpis">
-      ${tile("#clients", "Clients at risk", atRisk.length, `churn ≥ ${Math.round(pick().churn * 100)}%`)}
-      ${tile("#today", "Drafts to approve", drafts.length, "not in the CRM yet")}
-      ${tile("#today", "Our open follow-ups", ours.length, `${ours.filter(a => !a.due).length} without a date`)}
-      ${tile("#voice", "Tasks from voice", todo.length, "open")}</div>
+  const hour = new Date().getHours();
+  $("#hello").textContent = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  $("#todaySub").textContent = `${new Date().toLocaleDateString([], {weekday: "long", month: "long", day: "numeric"})}. `
+    + (attention.length ? `${attention.length} client${attention.length === 1 ? " needs" : "s need"} attention` : "Nothing urgent")
+    + (drafts.length ? `, and ${drafts.length} call${drafts.length === 1 ? " is" : "s are"} waiting for review.` : ".");
+  const row = (c, why, extra = "") => `<a class="rowlink" href="#${esc(c.id)}"><span class="grow"><b>${esc(c.client)}</b><br><span class="muted">${esc(why)}</span></span>${extra}${badge(c.churn_risk)}</a>`;
+  $("#todayBody").innerHTML = `<div class="today">
+    <section class="card"><h3 class="sub">Needs attention</h3>
+      <p class="help">Clients likely to leave (their latest call is at or above ${Math.round(th * 100)}% churn risk), and calls the checks want a person to look at.</p>
+      ${attention.slice(0, 6).map(x => row(x.c, x.why)).join("") || '<p class="empty-line">Nobody right now.</p>'}
+      ${attention.length > 6 ? `<a class="more" href="#calls/flag">See all ${attention.length}</a>` : ""}</section>
     <div class="grid">
-      <section class="card"><h3 class="sub">Clients at risk</h3><p class="help">From each client's latest call.</p>
-        ${atRisk.map(c => `<a class="rowlink" href="#${esc(c.id)}"><span class="grow"><b>${esc(c.client)}</b><br><span class="muted">${esc(c.id)} · ${day(c.created)} · ${esc(c.sentiment)}</span></span>${badge(c.churn_risk)}</a>`).join("")
-          || '<p class="help" style="margin:0">None above the alert threshold.</p>'}</section>
-      <section class="card"><h3 class="sub">Drafts to approve</h3><p class="help">Checked by nobody yet, so not sent to Monday or GHL.</p>
-        ${drafts.slice(0, 8).map(c => `<a class="rowlink" href="#${esc(c.id)}"><span class="grow"><b>${esc(c.client)}</b><br><span class="muted">${esc(c.id)} · ${day(c.created)} · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}</span></span>${badge(c.churn_risk)}</a>`).join("")
-          || '<p class="help" style="margin:0">Nothing waiting.</p>'}${drafts.length > 8 ? `<p class="help" style="margin:8px 0 0">and ${drafts.length - 8} more (filter the calls list by "draft").</p>` : ""}</section>
-      <section class="card"><h3 class="sub">What we promised</h3><p class="help">Our open follow-ups from calls, by person.</p>
-        ${ours.slice(0, 12).map(a => `<a class="rowlink" href="#${esc(a.call.id)}"><span class="grow">${a.person ? `<span class="who-name">${esc(a.person)}</span>: ` : ""}${esc(a.task)}<br><span class="muted">${esc(a.call.client)} · ${a.due ? "due " + esc(a.due) : '<span class="nodue">no due date</span>'}</span></span></a>`).join("")
-          || '<p class="help" style="margin:0">Nothing open.</p>'}${ours.length > 12 ? `<p class="help" style="margin:8px 0 0">and ${ours.length - 12} more: see Clients.</p>` : ""}</section>
-      <section class="card"><h3 class="sub">Tasks from voice</h3><p class="help">Open tasks you (or your team) said out loud. <a href="#voice">Add one</a></p>
-        ${actionRows(todo.slice(0, 8)) || '<p class="help" style="margin:0">None yet. Try the Voice page.</p>'}</section>
+      <section class="card"><h3 class="sub">Waiting for your review <span class="muted">${drafts.length}</span></h3>
+        <p class="help">The AI's drafts. Check one, fix anything wrong, approve it; only then does it go to Monday and GHL.</p>
+        ${drafts.slice(0, 5).map(c => row(c, `${day(c.created)} · client mood ${c.sentiment}`)).join("") || '<p class="empty-line">All caught up.</p>'}
+        ${drafts.length > 5 ? `<a class="more" href="#calls/draft">See all ${drafts.length} &rarr;</a>` : ""}</section>
+      <section class="card"><h3 class="sub">What we promised <span class="muted">${promised.length}</span></h3>
+        <p class="help">Our open follow-ups that have a due date.</p>
+        ${promised.slice(0, 5).map(a => `<a class="rowlink" href="#${esc(a.call.id)}"><span class="grow">${a.person ? `<span class="who-name">${esc(a.person)}</span>: ` : ""}${esc(a.task)}<br><span class="muted">${esc(a.call.client)} · due ${esc(a.due)}</span></span></a>`).join("") || '<p class="empty-line">Nothing with a date.</p>'}
+        ${promised.length > 5 ? `<a class="more" href="#clients">See them by client &rarr;</a>` : ""}</section>
     </div>
-    <section class="card"><h3 class="sub">Calls in the last 24 hours</h3>
-      ${recent.map(c => `<a class="rowlink" href="#${esc(c.id)}"><span class="grow"><b>${esc(c.client)}</b> <span class="muted">${esc(c.id)} · ${when(c.created)}</span></span>${badge(c.churn_risk)}</a>`).join("") || '<p class="help" style="margin:0">None.</p>'}</section>`;
+    <section class="card"><h3 class="sub">Your tasks from voice <span class="muted">${todo.length}</span></h3>
+      ${actionRows(todo.slice(0, 5)) || '<p class="empty-line">None open. <a href="#voice">Say one on the Voice page.</a></p>'}</section></div>`;
 }
 function actionRows(list) {
   return list.map(a => `<div class="todo ${a.done ? "done" : ""}"><input type="checkbox" data-act="${a.id}" ${a.done ? "checked" : ""} aria-label="Done: ${esc(a.text)}">
