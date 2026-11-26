@@ -18,7 +18,8 @@ def redact(segments: list[Segment], *, post=requests.post) -> list[Segment]:
     url = os.getenv("PII_SHIELD_URL", "http://127.0.0.1:18081") + "/api/redact-text"
     # one request per call: PII Shield keeps line breaks, so line n of the answer is segment n. The speaker label is
     # sent too (a pasted transcript labels people by name) and split back off at the first ": ".
-    lines = [f"{s.speaker}: {s.text}".replace("\n", " ") for s in segments]
+    # all whitespace collapsed: PII Shield turns a stray \r into a line break and trims trailing spaces
+    lines = [" ".join(f"{s.speaker}: {s.text}".split()) for s in segments]
     try:
         r = post(url, json={"text": "\n".join(lines)}, timeout=30)
         r.raise_for_status()
@@ -27,10 +28,10 @@ def redact(segments: list[Segment], *, post=requests.post) -> list[Segment]:
         raise RedactionUnavailable(f"PII Shield failed ({type(e).__name__}); call not processed") from e
     if len(out) != len(lines):
         raise RedactionUnavailable("PII Shield changed the line count; call not processed")
-    parts = [line.partition(": ") for line in out]
+    parts = [line.partition(":") for line in out]
     if not all(sep for _, sep, _ in parts):
         raise RedactionUnavailable("PII Shield changed a speaker label; call not processed")
-    return [s.model_copy(update={"speaker": who, "text": t}) for s, (who, _, t) in zip(segments, parts)]
+    return [s.model_copy(update={"speaker": who.strip(), "text": t.strip()}) for s, (who, _, t) in zip(segments, parts)]
 
 
 def alias_speakers(segments: list[Segment]) -> list[Segment]:

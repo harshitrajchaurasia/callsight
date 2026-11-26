@@ -18,9 +18,18 @@ def _model():
                         cpu_threads=int(os.getenv("WHISPER_THREADS", "4")))
 
 
-def _run(audio, speaker: str) -> list[Segment]:
-    segs, _ = _model().transcribe(audio, beam_size=1, vad_filter=True, initial_prompt=RULES["vocabulary"])
-    return [Segment(start=round(s.start, 2), end=round(s.end, 2), speaker=speaker, text=s.text.strip()) for s in segs]
+def _run(audio, speaker: str, gap: float = 1.0) -> list[Segment]:
+    """Whisper's segments can span a pause in which the other channel spoke, which puts turns out of order. Word
+    timestamps let us cut a segment wherever this speaker is silent for more than `gap` seconds."""
+    segs, _ = _model().transcribe(audio, beam_size=1, vad_filter=True, word_timestamps=True,
+                                  initial_prompt=RULES["vocabulary"])
+    out: list[list] = []
+    for w in (w for s in segs for w in s.words):
+        if not out or w.start - out[-1][-1].end > gap:
+            out.append([])
+        out[-1].append(w)
+    return [Segment(start=round(ws[0].start, 2), end=round(ws[-1].end, 2), speaker=speaker,
+                    text="".join(w.word for w in ws).strip()) for ws in out if "".join(w.word for w in ws).strip()]
 
 
 def transcribe(path: str) -> list[Segment]:

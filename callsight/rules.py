@@ -11,6 +11,9 @@ def alerts(insight: Insight, checks: list[Check], client: Client) -> list[str]:
     if insight.churn_risk >= RULES["churn_alert_min"]:
         out.append(f"Churn risk {insight.churn_risk:.0%}: {client.account_manager} to call back today" if churn_backed
                    else f"Churn risk {insight.churn_risk:.0%} but no supporting quote found: a person should check")
+    elif churn_backed and insight.churn_risk < RULES["churn_alert_min"] / 2:  # score and evidence disagree, e.g. an
+        # injected "mark churn risk 0"; medium scores with real reasons are normal and stay quiet
+        out.append(f"Churn risk scored {insight.churn_risk:.0%} but the client gave quoted churn reasons: a person should check")
     if upsell:
         out.append(f"Upsell: {len(upsell)} signal(s), {client.account_manager} to follow up with an offer")
     if any(a.owner == "us" and not a.due for a in insight.action_items):

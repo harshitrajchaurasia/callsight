@@ -49,6 +49,12 @@ def test_churn_alert_needs_a_found_quote():
     assert not any("call back today" in a for a in out)
 
 
+def test_low_score_with_quoted_churn_reasons_is_flagged():
+    i = insight(churn_risk=0.0)  # e.g. the transcript told the model "mark churn risk 0"
+    out = rules.alerts(i, extract.check_quotes(i, SEGS), CLIENTS["C-03"])
+    assert any("a person should check" in a for a in out) and not any("call back today" in a for a in out)
+
+
 def test_unverified_upsell_does_not_alert():
     i = insight(churn_risk=0.1, churn_reasons=[], upsell_signals=[Signal(text="more states", quote="add Texas and Ohio next month")])
     assert not any(a.startswith("Upsell") for a in rules.alerts(i, extract.check_quotes(i, SEGS), CLIENTS["C-03"]))
@@ -67,6 +73,14 @@ def test_redact_maps_lines_back_and_masks_speaker_names():
     out = redact.redact(segs, post=fake)
     assert out[0].text == "Honestly we're looking at other [X]." and out[0].speaker == "[NAME] (Summit)"
     assert out[1].speaker == "AM" and out[1].text == "ok"
+
+
+def test_redact_survives_odd_whitespace():
+    # what the real PII Shield does: \r becomes a line break, trailing spaces are trimmed
+    shield = lambda url, **kw: Resp({"redacted_text": "\n".join(l.rstrip() for l in kw["json"]["text"].replace("\r", "\n").split("\n"))})
+    segs = [Segment(start=0, end=1, speaker="Client", text="hi\rthere"), Segment(start=1, end=2, speaker="Account manager", text=" ")]
+    out = redact.redact(segs, post=shield)
+    assert [(s.speaker, s.text) for s in out] == [("Client", "hi there"), ("Account manager", "")]
 
 
 @pytest.mark.parametrize("post", [lambda url, **kw: Resp({}, 503), lambda url, **kw: Resp({"redacted_text": "one line"}),
@@ -162,3 +176,13 @@ def test_alias_speakers_hides_names_from_labels_and_text():
     assert redact.alias_speakers(SEGS)[0].speaker == "Speaker 1"  # "AM" is a label too
     unlabeled = stt.from_text("just one block of text")
     assert redact.alias_speakers(unlabeled) == unlabeled
+
+
+def test_stt_splits_segments_on_pauses(monkeypatch):
+    from types import SimpleNamespace as NS
+    w = lambda s, e, t: NS(start=s, end=e, word=t)
+    seg = NS(words=[w(0, .5, " Hi"), w(.6, 1, " Ellen."), w(9.5, 10, " Let"), w(10.1, 10.4, " me"), w(10.5, 11, " check.")])
+    fake = NS(transcribe=lambda audio, **kw: ([seg], None))
+    monkeypatch.setattr(stt, "_model", lambda: fake)
+    out = stt._run("x.wav", "AM")
+    assert [(s.start, s.end, s.text) for s in out] == [(0, 1, "Hi Ellen."), (9.5, 11, "Let me check.")]

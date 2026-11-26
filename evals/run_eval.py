@@ -28,6 +28,7 @@ def score(call: dict, r) -> dict:
     return {"churn": lo <= i.churn_risk <= hi, "upsell": any(c.found for c in r.checks if c.kind == "upsell_signals") == e["upsell"],
             "actions": len(i.action_items) >= e["min_action_items"], "sentiment": i.sentiment in e["sentiment"],
             "quotes_found": sum(c.found for c in r.checks), "quotes": len(r.checks),
+            "review": any("person should check" in a for a in r.alerts),
             "pii_leaks": [p for p in call.get("pii", []) if p.lower() in masked.lower()]}
 
 
@@ -36,6 +37,7 @@ def summarise(rows: list[dict]) -> dict:
     out = {k: f"{sum(r[k] for r in rows)}/{n}" for k in ("churn", "upsell", "actions", "sentiment")}
     out["quotes_found"] = f"{sum(r['quotes_found'] for r in rows)}/{sum(r['quotes'] for r in rows)}"
     out["pii_leaks"] = sum(len(r["pii_leaks"]) for r in rows)
+    out["flagged_for_review"] = [r["id"] for r in rows if r["review"]]
     out["misses"] = [f"{r['id']}:{k}" for r in rows for k in ("churn", "upsell", "actions", "sentiment") if not r[k]]
     return out
 
