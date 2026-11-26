@@ -1,4 +1,4 @@
-# Callsight
+# CallSight
 
 Client calls in; checked facts, alerts and follow-ups out. Built for a made-up lead agency ("Acme Leads") whose
 account managers talk to insurance agents all day: who is about to leave, who wants more, and what we promised.

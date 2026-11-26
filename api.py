@@ -1,4 +1,4 @@
-"""Callsight web app. Run: uvicorn api:app --port 8012"""
+"""CallSight web app. Run: uvicorn api:app --port 8012"""
 import hashlib
 import hmac
 import json
@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from callsight import ask, extract, pipeline, redact, store
 from callsight.config import CLIENTS, ROOT
 
-app = FastAPI(title="Callsight", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="CallSight", docs_url=None, redoc_url=None, openapi_url=None)
 conn = store.connect()
 COOKIE = "cs_session"
 MAX_AUDIO = 25 * 1024 * 1024  # ~25 min of compressed phone audio
