@@ -1,0 +1,9 @@
+{
+  "_note": "Business rules for call alerts. Edit, restart, re-run the eval.",
+  "churn_alert_min": 0.6,
+  "_churn_note": "churn_risk at or above this alerts the account manager to call back today",
+  "unsupported_quote_review": true,
+  "_unsupported_note": "a signal whose quote is not in the transcript is shown as unverified and never alerts on its own",
+  "vocabulary": "IUL, Medicare Supplement, final expense, annuity, Acme Leads, exclusive leads, aged leads, TCPA, CRM",
+  "_vocabulary_note": "words Whisper should expect; passed as its initial prompt"
+}
