@@ -74,33 +74,38 @@ def phone(x, sr, rng):
 
 
 def main(models):
+    conds = os.getenv("CONDS", "clean,phone").split(","); groups = os.getenv("GROUPS", "US,IN").split(",")
     rng = np.random.default_rng(0)
     clips = []
     for group, name, v, sid in voices():
+        if group not in groups:
+            continue
         for line in LINES:
             x, sr = synth(v, sid, line)
             clips.append((group, name, line, {"clean": resample(x, sr, 16000), "phone": phone(x, sr, rng)}))
     results = {}
-    for m in models:
+    for spec in models:
+        m, _, beam = spec.partition(":")  # "small.en:5" = beam size 5
         model = WhisperModel(m, device="cpu", compute_type="int8", cpu_threads=int(os.getenv("WHISPER_THREADS", "2")))
-        for cond in ("clean", "phone"):
-            for group in ("US", "IN"):
+        for cond in conds:
+            for group in groups:
                 ref, hyp, names_ok, names_n, audio_s, cpu_s = [], [], 0, 0, 0.0, 0.0
                 for g, _, line, audio in clips:
                     if g != group:
                         continue
                     t = time.perf_counter()
-                    segs, _ = model.transcribe(audio[cond], language="en", beam_size=1, vad_filter=True, initial_prompt=PROMPT)
+                    segs, _ = model.transcribe(audio[cond], language="en", beam_size=int(beam or 1), vad_filter=True, initial_prompt=PROMPT)
                     text = " ".join(s.text for s in segs)
                     cpu_s += time.perf_counter() - t; audio_s += len(audio[cond]) / 16000
                     ref += words(line); hyp += words(text)
                     for n in NAMES:
                         if n in line.lower():
                             names_n += 1; names_ok += n in " ".join(words(text))
-                key = f"{m}|{cond}|{group}"
+                key = f"{spec}|{cond}|{group}"
                 results[key] = {"wer": round(wer(ref, hyp), 3), "names": f"{names_ok}/{names_n}", "rtf": round(cpu_s / audio_s, 2)}
                 print(key, results[key], flush=True)
-    json.dump(results, open("evals/stt_bench.json", "w"), indent=1)
+    old = json.load(open("evals/stt_bench.json")) if os.path.exists("evals/stt_bench.json") else {}
+    json.dump(old | results, open("evals/stt_bench.json", "w"), indent=1)
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ ponytail: no diarization model (pyannote needs a GPU to be quick). Add one if mo
 import os
 from functools import lru_cache
 
+from . import voice
 from .config import CLIENTS, RULES
 from .models import Segment
 
@@ -37,8 +38,11 @@ def _run(audio, speaker: str, gap: float = 1.0, on_progress=None) -> list[Segmen
         if not out or w.start - out[-1][-1].end > gap:
             out.append([])
         out[-1].append(w)
-    return [Segment(start=round(ws[0].start, 2), end=round(ws[-1].end, 2), speaker=speaker,
+    segs = [Segment(start=round(ws[0].start, 2), end=round(ws[-1].end, 2), speaker=speaker,
                     text="".join(w.word for w in ws).strip()) for ws in out if "".join(w.word for w in ws).strip()]
+    for s in segs:  # how it was said: pitch, loudness, pace (voice.py)
+        s.voice = voice.features(audio[int(s.start * voice.SR):int(s.end * voice.SR)], s.text)
+    return segs
 
 
 def transcribe(path: str, on_progress=None) -> list[Segment]:
@@ -48,7 +52,7 @@ def transcribe(path: str, on_progress=None) -> list[Segment]:
     with av.open(path) as f:
         stereo = f.streams.audio[0].channels == 2
     if not stereo:
-        return _run(path, "Speaker", on_progress=on_progress)
+        return _run(decode_audio(path), "Speaker", on_progress=on_progress)
     names = os.getenv("CHANNEL_SPEAKERS", "Account manager,Client").split(",")
     left, right = decode_audio(path, split_stereo=True)
     half = (lambda base: lambda f, d: on_progress(base + f / 2, d)) if on_progress else (lambda base: None)

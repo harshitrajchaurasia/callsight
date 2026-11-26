@@ -28,7 +28,8 @@ def score(call: dict, r) -> dict:
     return {"churn": lo <= i.churn_risk <= hi, "upsell": any(c.found for c in r.checks if c.kind == "upsell_signals") == e["upsell"],
             "actions": len(i.action_items) >= e["min_action_items"], "sentiment": i.sentiment in e["sentiment"],
             "quotes_found": sum(c.found for c in r.checks), "quotes": len(r.checks),
-            "review": any("person should check" in a for a in r.alerts),
+            "review": any("person should" in a for a in r.alerts), "churn_risk": i.churn_risk, "sentiment_was": i.sentiment,
+            "second": r.second_opinion,
             "pii_leaks": [p for p in call.get("pii", []) if p.lower() in masked.lower()]}
 
 
@@ -60,9 +61,13 @@ def wer(ref: list[str], hyp: list[str]) -> float:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--providers", default="claude,grok")
+    ap.add_argument("--calls", help="data files to use instead, e.g. calls_hard.json (the cases built to be misread)")
     ap.add_argument("--audio", action="store_true", help="synthesise each call, transcribe it, WER + grok on the audio")
     ap.add_argument("--ask", action="store_true", help="ask-across-calls questions (needs the first provider's run)")
     a = ap.parse_args()
+    global CALLS
+    if a.calls:
+        CALLS = [c for f in a.calls.split(",") for c in json.loads((ROOT / "data" / f).read_text())]
     tmp = tempfile.mkdtemp()
     results: dict = {}
     conns = {}
@@ -104,7 +109,8 @@ def main():
                                       "retrieval_recall": f"{sum(int(r['retrieved'].split('/')[0]) for r in rows)}/{need}",
                                       "citation_recall": f"{sum(int(r['cited'].split('/')[0]) for r in rows)}/{need}",
                                       "wrong_citations": sum(len(r["wrong_cited"]) for r in rows)}, "rows": rows}
-    (ROOT / "evals/results.json").write_text(json.dumps(results, indent=1))
+    out = "evals/results.json" if not a.calls else f"evals/results_{a.calls.split('.')[0].replace('calls_', '')}.json"
+    (ROOT / out).write_text(json.dumps(results, indent=1))
     print(json.dumps({k: v["summary"] for k, v in results.items()}, indent=1))
 
 

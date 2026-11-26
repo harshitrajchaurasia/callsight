@@ -533,7 +533,7 @@ function recorder(el, {label, maxSec, onDone, onError}) {
     r.pending++;
     r.queue = r.queue.then(async () => {
       const fd = new FormData(); fd.append("audio", wav(piece), "piece.wav");
-      try { (await api("/api/live", {method: "POST", body: fd})).forEach(s => r.segs.push({start: +(s.start + offset).toFixed(2), end: +(s.end + offset).toFixed(2), text: s.text})); }
+      try { (await api("/api/live", {method: "POST", body: fd})).forEach(s => r.segs.push({start: +(s.start + offset).toFixed(2), end: +(s.end + offset).toFixed(2), text: s.text, voice: s.voice})); }
       catch (err) { r.error = err.message; }
       r.pending--; draw(r.on && r.pending ? '<div class="ln wait">listening...</div>' : "");
     });
@@ -614,7 +614,7 @@ $("#filter").oninput = drawCalls;
 $("#calls").onclick = e => { if (e.target.closest("a") && narrow.matches) $("#callsFold").open = false; };
 if (narrow.matches) $("#callsFold").open = false;
 
-const STAGE = {starting: "Starting...", masking: "Masking personal details...", checking: "Checking the quotes...", waiting: "Waiting..."};
+const STAGE = {starting: "Starting...", masking: "Masking personal details...", checking: "Checking the quotes...", waiting: "Waiting...", "second opinion": "Borderline: asking the other model too..."};
 $("#callForm").onsubmit = async e => {
   e.preventDefault(); $("#callErr").textContent = ""; $("#callBtn").disabled = true;
   const p = pick(), fd = new FormData(e.target), job = Math.random().toString(36).slice(2, 12).padEnd(10, "0");
@@ -685,7 +685,7 @@ function renderCall(r) {
       <p class="summary">${esc(i.summary)}</p>
       <div class="tiles">
         <div class="tile"><small>Churn risk</small><b style="color:${rc}">${pct}%</b> <span class="due">${rl}</span><div class="meter"><i style="width:${pct}%;background:${rc}"></i></div></div>
-        <div class="tile"><small>Sentiment</small><b>${esc(i.sentiment)}</b></div>
+        <div class="tile"><small>Sentiment</small><b>${esc(i.sentiment)}</b>${r.second_opinion ? `<div class="due" title="A borderline reading, so the other model was asked too">2nd opinion (${esc(r.second_opinion.provider)}): ${Math.round(r.second_opinion.churn_risk * 100)}%, ${esc(r.second_opinion.sentiment)}</div>` : ""}</div>
         <div class="tile"><small>Alerts</small><b>${r.alerts.length}</b></div>
         <div class="tile"><small>Analysed by</small><b>${esc(r.provider)}</b> <span class="due">${(r.latency_ms / 1000).toFixed(1)} s</span></div>
       </div>
@@ -706,7 +706,8 @@ function renderCall(r) {
       <h3 class="sub">Follow-ups</h3><p class="help">What each side agreed to do, and who said they'd do it. "Us" is Acme Leads; "client" is the agency. Tick one off when it's done.</p>
       ${i.action_items.map((a, n) => `<div class="todo ${a.done ? "done" : ""}"><input type="checkbox" data-done="${n}" ${a.done ? "checked" : ""} aria-label="Done: ${esc(a.task)}">
         <span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "Us" : "Client"}</span>
-        <span>${person(r, a) ? `<span class="who-name">${esc(person(r, a))}</span>: ` : ""}<span class="task">${esc(a.task)}</span> ${a.done ? '<span class="due">· done</span>' : a.due ? `<span class="due">· due ${esc(a.due)}</span>` : '<span class="nodue">· no due date</span>'}</span></div>`).join("") || '<p class="help" style="margin:0">None agreed on this call.</p>'}</section>
+        <span>${person(r, a) ? `<span class="who-name">${esc(person(r, a))}</span>: ` : ""}<span class="task">${esc(a.task)}</span> ${a.done ? '<span class="due">· done</span>' : a.due ? `<span class="due">· due ${esc(a.due)}</span>` : '<span class="nodue">· no due date</span>'}</span></div>`).join("") || '<p class="help" style="margin:0">None agreed on this call.</p>'}
+      ${voicePanel(r, where)}</section>
     <section class="card" data-dtab="evidence" hidden><p class="help">Every point the AI made, with the words it quoted. <b>Found</b> means code found that
       quote in the transcript; click the ${timed ? "time" : "line"} to see it. <b>Unverified</b> points are ignored by the alerts.</p>
       ${ev || '<p class="help" style="margin:0">The AI found nothing to report on this call.</p>'}</section>
@@ -714,7 +715,17 @@ function renderCall(r) {
         ? `The ${unmasked.join(" and ")} on this call were sent as said (a setting); phone numbers, emails and similar are masked.`
         : "Names, phone numbers, emails and similar are already masked."}</p>
       <div class="chat">${r.segments.map(s => `<div class="line" data-at="${s.start}"><span class="who-tag s${Math.min(speakers.indexOf(base(s)), 2)}" title="${esc(s.speaker)}">${esc(s.speaker)}</span>
-        <span>${timed ? `<span class="t">${mmss(s.start)}</span>` : ""}${esc(s.text)}</span></div>`).join("")}</div></section>`;
+        <span>${timed ? `<span class="t">${mmss(s.start)}</span>` : ""}${esc(s.text)}${(r.voice?.moments || []).some(m => m.at === s.start) ? ' <span class="tag">voice raised</span>' : ""}</span></div>`).join("")}</div></section>`;
+}
+const WHY = {loud: "louder", pitch: "higher", pitch_var: "more animated", wpm: "faster"};
+function voicePanel(r, where) {
+  const v = r.voice || {}, sp = Object.entries(v.speakers || {});
+  if (!sp.length) return "";
+  const trend = x => x >= 0.8 ? '<span class="nodue">rose a lot</span>' : x >= 0.4 ? '<span class="due">rose a little</span>' : x <= -0.4 ? '<span class="due">calmed down</span>' : '<span class="due">steady</span>';
+  return `<h3 class="sub">How it was said</h3><p class="help">Measured from the audio in code: each speaker is compared with their own normal on this call, so a naturally loud or fast voice isn't marked. It's a prompt to listen, not a verdict, and not an emotion model.</p>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Speaker</th><th class="num">Talk share</th><th class="num">Pace</th><th class="num">Pitch</th><th>Over the call</th></tr></thead><tbody>
+    ${sp.map(([who, s]) => `<tr><td>${esc(who)}</td><td class="num">${Math.round(s.talk_share * 100)}%</td><td class="num">${s.wpm} wpm</td><td class="num">${s.pitch} Hz</td><td>${trend(s.rise)}</td></tr>`).join("")}</tbody></table></div>
+    ${(v.moments || []).length ? `<p class="help" style="margin:12px 0 6px">Moments a voice rose well above its normal:</p>${v.moments.map(m => `<div class="todo"><span class="owner o-client">${esc(m.speaker)}</span><span>${m.why.map(k => WHY[k]).join(", ") || "raised"} <button class="ts" data-at="${m.at}">${where(m.at)}</button></span></div>`).join("")}` : '<p class="help" style="margin:10px 0 0">No moment rose well above the speakers\' own normal.</p>'}`;
 }
 function highlight(at) {
   $$(".line").forEach(el => el.classList.toggle("hl", Number(el.dataset.at) === Number(at)));

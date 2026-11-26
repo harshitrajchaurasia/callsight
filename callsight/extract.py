@@ -21,7 +21,10 @@ insurance and financial agents (our clients). Extract only what was said; never 
 
 - summary: 2-3 neutral sentences on what the call covered and what was agreed. Refer to people by role
   (the client, the account manager), not by name.
-- sentiment: the client's overall mood by the end of the call.
+- sentiment: the client's mood towards us across the whole call. If they were frustrated or angry for a real part
+  of it, say so even if they calmed down or apologised at the end; politeness doesn't make bad news positive, and
+  sarcasm means the opposite of the words. Mood and churn are separate: a furious client can be staying, and a
+  friendly one leaving.
 - churn_risk: 0-1 that the client cancels soon. Says they will leave or are comparing vendors >= 0.7;
   unresolved repeated complaints 0.4-0.6; happy or routine <= 0.2.
 - churn_reasons, upsell_signals, objections: concrete points, each with a quote.

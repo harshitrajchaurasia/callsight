@@ -131,7 +131,7 @@ def test_live_recording(tmp_path, monkeypatch):
     buf = io.BytesIO()
     with wave.open(buf, "wb") as w:
         w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000); w.writeframes(b"\0\0" * 16000 * 3)
-    assert c.post("/api/live", files={"audio": ("c.wav", buf.getvalue())}).json() == [{"start": 0.5, "end": 2.0, "text": "hello there"}]
+    assert c.post("/api/live", files={"audio": ("c.wav", buf.getvalue())}).json() == [{"start": 0.5, "end": 2.0, "text": "hello there", "voice": None}]
     segs = [{"start": 0.5, "end": 2, "text": "hello there"}, {"start": 5.1, "end": 7, "text": "we may cancel"}]
     r = c.post("/api/calls", data={"client_id": "C-03", "provider": "claude", "segments": json.dumps(segs)}).json()
     assert [(s["start"], s["text"]) for s in r["segments"]] == [(0.5, "hello there"), (5.1, "we may cancel")]

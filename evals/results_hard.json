@@ -1,0 +1,303 @@
+{
+ "claude": {
+  "summary": {
+   "churn": "8/8",
+   "upsell": "8/8",
+   "actions": "8/8",
+   "sentiment": "8/8",
+   "quotes_found": "29/29",
+   "pii_leaks": 0,
+   "flagged_for_review": [
+    "CALL-35",
+    "CALL-38"
+   ],
+   "misses": []
+  },
+  "rows": [
+   {
+    "id": "CALL-31",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "churn_risk": 0.97,
+    "sentiment_was": "positive",
+    "second": {
+     "provider": "grok",
+     "churn_risk": 0.9,
+     "sentiment": "positive"
+    },
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-32",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "churn_risk": 0.2,
+    "sentiment_was": "frustrated",
+    "second": null,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-33",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 7,
+    "quotes": 7,
+    "review": false,
+    "churn_risk": 0.6,
+    "sentiment_was": "frustrated",
+    "second": {
+     "provider": "grok",
+     "churn_risk": 0.6,
+     "sentiment": "frustrated"
+    },
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-34",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": false,
+    "churn_risk": 0.1,
+    "sentiment_was": "positive",
+    "second": null,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-35",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 3,
+    "quotes": 3,
+    "review": true,
+    "churn_risk": 0.55,
+    "sentiment_was": "positive",
+    "second": {
+     "provider": "grok",
+     "churn_risk": 0.8,
+     "sentiment": "positive"
+    },
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-36",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": false,
+    "churn_risk": 0.45,
+    "sentiment_was": "neutral",
+    "second": {
+     "provider": "grok",
+     "churn_risk": 0.3,
+     "sentiment": "neutral"
+    },
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-37",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 3,
+    "quotes": 3,
+    "review": false,
+    "churn_risk": 0.1,
+    "sentiment_was": "frustrated",
+    "second": {
+     "provider": "grok",
+     "churn_risk": 0.1,
+     "sentiment": "frustrated"
+    },
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-38",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": true,
+    "churn_risk": 0.05,
+    "sentiment_was": "positive",
+    "second": null,
+    "pii_leaks": []
+   }
+  ]
+ },
+ "grok": {
+  "summary": {
+   "churn": "7/8",
+   "upsell": "7/8",
+   "actions": "8/8",
+   "sentiment": "8/8",
+   "quotes_found": "24/24",
+   "pii_leaks": 0,
+   "flagged_for_review": [
+    "CALL-35",
+    "CALL-38"
+   ],
+   "misses": [
+    "CALL-32:upsell",
+    "CALL-35:churn"
+   ]
+  },
+  "rows": [
+   {
+    "id": "CALL-31",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 2,
+    "quotes": 2,
+    "review": false,
+    "churn_risk": 0.8,
+    "sentiment_was": "positive",
+    "second": {
+     "provider": "claude",
+     "churn_risk": 0.97,
+     "sentiment": "positive"
+    },
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-32",
+    "churn": true,
+    "upsell": false,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "churn_risk": 0.1,
+    "sentiment_was": "frustrated",
+    "second": {
+     "provider": "claude",
+     "churn_risk": 0.25,
+     "sentiment": "frustrated"
+    },
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-33",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 5,
+    "quotes": 5,
+    "review": false,
+    "churn_risk": 0.6,
+    "sentiment_was": "frustrated",
+    "second": {
+     "provider": "claude",
+     "churn_risk": 0.7,
+     "sentiment": "frustrated"
+    },
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-34",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 2,
+    "quotes": 2,
+    "review": false,
+    "churn_risk": 0.1,
+    "sentiment_was": "positive",
+    "second": null,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-35",
+    "churn": false,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 4,
+    "quotes": 4,
+    "review": true,
+    "churn_risk": 0.8,
+    "sentiment_was": "positive",
+    "second": {
+     "provider": "claude",
+     "churn_risk": 0.55,
+     "sentiment": "positive"
+    },
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-36",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 3,
+    "quotes": 3,
+    "review": false,
+    "churn_risk": 0.3,
+    "sentiment_was": "neutral",
+    "second": null,
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-37",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 2,
+    "quotes": 2,
+    "review": false,
+    "churn_risk": 0.1,
+    "sentiment_was": "frustrated",
+    "second": {
+     "provider": "claude",
+     "churn_risk": 0.1,
+     "sentiment": "frustrated"
+    },
+    "pii_leaks": []
+   },
+   {
+    "id": "CALL-38",
+    "churn": true,
+    "upsell": true,
+    "actions": true,
+    "sentiment": true,
+    "quotes_found": 1,
+    "quotes": 1,
+    "review": true,
+    "churn_risk": 0.1,
+    "sentiment_was": "positive",
+    "second": null,
+    "pii_leaks": []
+   }
+  ]
+ }
+}

@@ -1,9 +1,10 @@
 """audio or transcript -> segments -> PII Shield -> LLM extraction -> quote check -> rules -> store -> Monday / GHL."""
+import os
 import time
 from functools import partial
 
-from . import ask, extract, redact, rules, sinks, store, stt
-from .config import CLIENTS
+from . import ask, extract, redact, rules, sinks, store, stt, voice
+from .config import CLIENTS, RULES
 from .models import ActionItem, CallResult, Segment
 
 
@@ -11,7 +12,7 @@ def process(call_id: str, client_id: str, conn, *, audio_path: str | None = None
             segments: list[Segment] | None = None, provider: str | None = None, keep: set[str] = frozenset(),
             churn_min: float | None = None, write_out: bool = True, owner: str | None = None,
             speakers: dict[str, str] | None = None, rerun_of: str | None = None, on_progress=None,
-            analyze_fn=None, redact_fn=None, embed_fn=None) -> CallResult:
+            analyze_fn=None, second_fn=None, redact_fn=None, embed_fn=None) -> CallResult:
     """One of audio_path, text, or segments (already transcribed, e.g. live from a microphone).
     write_out=False leaves Monday/GHL until a person approves the call (the web app); the CLI and evals write at once."""
     client = CLIENTS.get(client_id)
@@ -38,9 +39,14 @@ def process(call_id: str, client_id: str, conn, *, audio_path: str | None = None
     step("checking")
     for a in insight.action_items:
         a.done = False  # a person sets this, never the model
+    threshold = RULES["churn_alert_min"] if churn_min is None else churn_min
+    second = _second_opinion(segments, client, provider, insight, threshold, analyze_fn, second_fn, step)
     checks = extract.check_quotes(insight, segments)
+    heard = voice.summarise(segments)
     result = CallResult(id=call_id, client_id=client_id, segments=segments, insight=insight, checks=checks,
-                        alerts=rules.alerts(insight, checks, client, segments, churn_min), provider=provider,
+                        alerts=rules.alerts(insight, checks, client, segments, churn_min)
+                        + rules.review_flags(insight, heard, second, threshold, provider), provider=provider,
+                        voice=heard, second_opinion=second,
                         unmasked=sorted(keep), speakers=names, churn_min=churn_min, owner=owner, rerun_of=rerun_of,
                         latency_ms=int((time.perf_counter() - start) * 1000))
     store.save(conn, result)  # saved before any write-out, so a Monday/GHL failure never loses the call
@@ -48,6 +54,21 @@ def process(call_id: str, client_id: str, conn, *, audio_path: str | None = None
     if write_out:
         send(conn, result)
     return result
+
+
+def _second_opinion(segments, client, provider, insight, threshold, analyze_fn, second_fn, step) -> dict | None:
+    """A borderline reading gets a second model's view (SECOND_OPINION=0 turns it off). Grok costs ~0.2 cents."""
+    other = "grok" if provider == "claude" else "claude"
+    if not rules.borderline(insight, threshold) or os.getenv("SECOND_OPINION", "1") == "0":
+        return None
+    if second_fn is None and (analyze_fn is not None or not os.getenv("XAI_API_KEY" if other == "grok" else "ANTHROPIC_API_KEY")):
+        return None
+    step("second opinion", provider=other)
+    try:
+        i2 = extract.analyze(segments, client, other, second_fn)
+    except extract.ModelUnavailable:
+        return None
+    return {"provider": other, "churn_risk": i2.churn_risk, "sentiment": i2.sentiment}
 
 
 def send(conn, r: CallResult) -> CallResult:
@@ -67,7 +88,9 @@ def edit(conn, r: CallResult, user: str, *, summary: str | None = None, sentimen
                                  ("action_items", action_items)) if v is not None}
     r.insight = r.insight.model_copy(update=changes)
     open_items = r.insight.model_copy(update={"action_items": [a for a in r.insight.action_items if not a.done]})
-    r.alerts = rules.alerts(open_items, r.checks, CLIENTS[r.client_id], r.segments, r.churn_min)
+    threshold = RULES["churn_alert_min"] if r.churn_min is None else r.churn_min
+    r.alerts = rules.alerts(open_items, r.checks, CLIENTS[r.client_id], r.segments, r.churn_min) + rules.review_flags(
+        r.insight, r.voice, None if churn_risk is not None or sentiment is not None else r.second_opinion, threshold, r.provider)
     r.edited_by, r.approved_by, r.approved_at = user, None, None
     store.save(conn, r)
     if summary is not None:  # the summary is part of what "ask across calls" searches

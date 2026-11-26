@@ -17,6 +17,7 @@ class Segment(BaseModel):
     end: float
     speaker: str
     text: str
+    voice: dict | None = None  # pitch, pitch_var, loud, wpm measured from the audio (voice.py); None for text
 
 
 QUOTE = "Exact words copied from the transcript (5-25 words) that support this. Copy, don't paraphrase."
@@ -76,3 +77,5 @@ class CallResult(BaseModel):
     owner: str | None = None  # who processed it; None = a shared demo call everyone can see
     rerun_of: str | None = None  # the call this is a re-run of, with another model
     created: float | None = None  # filled from the database row
+    voice: dict = {}  # voice.summarise(): per-speaker baselines and moments where a voice rose above its own normal
+    second_opinion: dict | None = None  # the other model's churn and sentiment, when the first was borderline

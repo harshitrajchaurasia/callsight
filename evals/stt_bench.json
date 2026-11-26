@@ -1,0 +1,1 @@
+{"small.en|clean|US": {"wer": 0.048, "names": "17/18", "rtf": 1.02}, "small.en|clean|IN": {"wer": 0.053, "names": "27/27", "rtf": 0.99}, "small.en|phone|US": {"wer": 0.082, "names": "18/18", "rtf": 1.02}, "small.en|phone|IN": {"wer": 0.231, "names": "25/27", "rtf": 1.14}, "distil-large-v3.5|clean|US": {"wer": 0.063, "names": "13/18", "rtf": 4.35}}

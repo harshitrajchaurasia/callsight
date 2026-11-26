@@ -275,13 +275,21 @@ async def live_chunk(request: Request, audio: UploadFile):
         if _minutes(f.name) > 0.5:
             raise HTTPException(413, "chunk too long (30 s max)")
         segs = await run_in_threadpool(stt.transcribe, f.name)
-    return [{"start": s.start, "end": s.end, "text": s.text} for s in segs]
+    return [{"start": s.start, "end": s.end, "text": s.text, "voice": s.voice} for s in segs]
+
+
+class VoiceIn(BaseModel):  # what /api/live measured, sent back with the transcript
+    pitch: float = Field(ge=0, le=1000)
+    pitch_var: float = Field(ge=0, le=48)
+    loud: float = Field(ge=-200, le=20)
+    wpm: float = Field(ge=0, le=1000)
 
 
 class LiveSegment(BaseModel):
     start: float = Field(ge=0, le=3600)
     end: float = Field(ge=0, le=3600)
     text: str = Field(max_length=2000)
+    voice: VoiceIn | None = None
 
 
 @app.post("/api/calls", dependencies=api)

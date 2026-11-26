@@ -62,15 +62,16 @@ pasted transcript ────────────────────�
 ## Results
 20 made-up calls (`data/calls.json`, `data/calls_new.json`), each with expected outcomes written before the run: a churn band, whether
 there's an upsell, a minimum number of follow-ups, acceptable sentiments, and for one call the personal details read
-out on it. Two of the calls contain instructions aimed at the AI. Run on 27 Nov 2026 with `evals/run_eval.py`.
+out on it. Two of the calls contain instructions aimed at the AI. Text columns re-run on 27 Nov 2026 with
+`evals/run_eval.py` after the sentiment definition change below; the audio column is from the earlier run.
 
 | | Claude Sonnet 5.5, text | Grok 4.20, text | Grok 4.20, from audio |
 |---|---|---|---|
-| Churn risk in the expected band | 20/20 | 19/20 | 20/20 |
+| Churn risk in the expected band | 20/20 | 20/20 | 20/20 |
 | Upsell found / not found correctly | 20/20 | 20/20 | 20/20 |
 | Follow-ups extracted | 20/20 | 20/20 | 20/20 |
-| Sentiment | 19/20 | 18/20 | 19/20 |
-| Quotes found in the transcript | 85/85 | 65/65 | 66/66 |
+| Sentiment | 19/20 | 19/20 | 19/20 |
+| Quotes found in the transcript | 81/81 | 61/61 | 66/66 |
 | Personal details reaching the model | 0 | 0 | 0 |
 | Cost per call | ~1 cent | ~0.2 cents | ~0.2 cents |
 
@@ -87,6 +88,23 @@ out on it. Two of the calls contain instructions aimed at the AI. Run on 27 Nov 
   speakers; not in the table above), Whisper wrote an email as "name at example.com" and a card number as
   "4,111,1,100,...", and PII Shield missed both. CallSight now rewrites spoken emails before masking and masks any run of
   9+ digits left afterwards.
+- **Calls built to be misread** (`data/calls_hard.json`, 8 calls: polite but leaving, furious but loyal, sarcasm
+  with a deadline, a competitor turned down, a happy client whose agency is being sold, one-word answers, anger at
+  their own team, "cancel" meaning the opposite). First run: both models called the furious-but-loyal client
+  "neutral" or "positive", because the prompt defined sentiment as the mood *by the end of the call* and he apologised.
+  Sentiment is now the mood across the call (with churn kept separate). Re-run: Claude 8/8 churn and 8/8 sentiment;
+  Grok 8/8 sentiment and 7/8 churn, and its one churn miss was sent to a person by the second opinion (below).
+- **Second opinion on borderline calls.** When a churn score is within 15 points of the alert line, or the score and
+  the mood pull apart (positive but 40%+, angry but under 15%), the other model reads the call too. If they disagree
+  (25+ points, opposite sides of the line, or moods two steps apart), the call is flagged for a person. It costs about
+  0.2 cents when Grok is the second reader, and only on borderline calls.
+- **How it was said.** From audio, code measures each segment's pitch, pitch movement, loudness and pace and compares
+  each speaker with their own normal on the call (so a naturally loud or fast voice, or an accent, isn't penalised).
+  When the client's voice rises well above their normal while the words read neutral or positive, the call is
+  flagged for a person to listen. It is not an emotion model and doesn't change the scores: off-the-shelf
+  speech-emotion models are trained on acted speech and do worst on accents and phone lines. Checked on synthetic
+  tones (pitch to within a few Hz); not yet measured on real calls, since the test audio is synthetic and has no real
+  emotion in it.
 - The one sentiment miss both models share (a billing complaint from a client who also wants a new product) is
   arguable either way.
 
