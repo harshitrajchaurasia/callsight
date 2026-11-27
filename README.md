@@ -35,7 +35,9 @@ pasted transcript ────────────────────�
   analysis runs on what's already transcribed, so results come back in seconds. No audio is kept.
 - **A person approves before anything reaches the CRM.** Each call starts as a draft: tick off follow-ups, correct
   the summary, score or tasks (the alerts are re-run from the rules), then approve. Monday and GHL are written only on
-  approval. The CLI and the evals still write straight away.
+  approval. Approving opens a review window that shows exactly what will land on Monday (the item, a subitem per
+  follow-up, the report) and on which board, built by the same code that writes it; "Correct the draft" opens a matching
+  window for the summary, mood, risk and follow-ups. The CLI and the evals still write straight away.
 - **Follow-ups name who will do them.** The model returns the speaker label it saw ("Person 2"); the real name stays
   on the server and is put back only for display and the Monday subitem.
 - **Voice to action.** Say "create a task for Priya to send Summit the Texas quote by Friday, and note that Golden
