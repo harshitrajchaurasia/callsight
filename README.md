@@ -140,7 +140,11 @@ cp .env.example .env            # one model key is enough; PII Shield must be ru
 .venv/bin/python tools/make_audio.py samples/c1.txt samples/c1.wav   # a stereo test recording
 .venv/bin/python -m callsight CALL-01 C-03 samples/c1.wav           # or the .txt itself
 .venv/bin/python -m evals.run_eval --audio --ask               # the numbers above, ~$0.25
+.venv/bin/python -m evals.run_eval --calls calls_hard.json      # the 8 hard calls, ~10 cents
+.venv/bin/python -m evals.stt_bench                             # accents and phone lines, no API cost
 ```
+Settings that matter in `.env` (see `.env.example`): `WHISPER_MODEL` (default `small.en`), `SECOND_OPINION=0` to turn
+the second reader off, `DAILY_BUDGET_USD`, and the Monday/GHL ids (both off unless set).
 Test audio is synthesised with Piper (`tools/make_audio.py`, voices in `models/`), one voice per channel.
 
 MIT licence. All clients, people and calls are made up.
