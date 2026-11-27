@@ -393,7 +393,7 @@ details.more .toolbar { margin-top:10px }
         <div id="tab-mic" hidden><div id="callRec"></div>
           <p class="help" style="margin:10px 0 0">Uses this device's microphone, up to 10 minutes. One microphone hears everyone as one speaker,
             so the AI works out who is who; for a phone call, put it on speaker. Audio isn't kept: each few seconds is transcribed and deleted.</p></div>
-        <div class="using"><span id="using"></span><a href="#settings">Change</a></div>
+        <div class="using"><span id="using"></span><a href="#settings">Settings</a></div>
         <button id="callBtn" class="btn wide">Process call</button><div id="callProg" aria-live="polite"></div><div class="err" id="callErr" role="alert"></div>
         <p class="note"><b>Demo:</b> calls you process are visible to you and the admin; the test calls are shared. Use a test call or a made-up one,
           never real customer data. Up to 10 calls and 30 questions an hour.</p>
@@ -499,7 +499,7 @@ const STEPS = [
   ["mask", "2. Mask", "Names, phones, emails and card numbers become [NAME], [PHONE]... before any AI sees the call. No masking, no call."],
   ["extract", "3. Extract", "An AI model (Claude or Grok) writes the summary, the risk of leaving, signs they want more, and the follow-ups, quoting the words behind each."],
   ["check", "4. Check", "CallSight checks every quote against the transcript. A point whose quote isn't there is marked unverified and can't raise an alert."],
-  ["act", "5. Review and act", "Rules in code raise the alerts. A person corrects and approves; only then does the call go to Monday.com and GHL."]];
+  ["act", "5. Review and act", "Rules in code raise the alerts. A person corrects and approves; only then does the call go to Monday.com (and the CRM, where one is connected)."]];
 $$(".flow").forEach(el => el.innerHTML = STEPS.map(([i, t, d]) => `<li><span class="ic">${ICON[i]}</span><h3>${t}</h3><p>${d}</p></li>`).join(""));
 const EXAMPLES = ["Which clients are thinking about leaving?", "Who wants to expand to new states?", "What did we promise to send, and to whom?"];
 $("#examples").innerHTML = EXAMPLES.map(q => `<button type="button">${esc(q)}</button>`).join("");
@@ -537,8 +537,9 @@ function renderSettings() {
   const p = pick(), f = $("#setForm"), noAi = !server.providers.length;
   $("#callBtn").disabled = $("#askForm button").disabled = $("#vGo").disabled = noAi;
   $$(".noai").forEach(el => el.remove());
-  if (noAi) ["#callBtn", "#askForm", "#vGo"].forEach(sel => $(sel).insertAdjacentHTML("afterend",
-    '<p class="err noai">No AI is connected on this server, so calls can\'t be analysed and questions can\'t be answered here. The saved calls can still be opened and reviewed.</p>'));
+  if (noAi) [["#callBtn", "new calls can't be analysed here. Saved calls still open and can be reviewed."], ["#askForm", "questions can't be answered here."],
+             ["#vGo", "spoken tasks can't be understood here."]].forEach(([sel, what]) => $(sel).insertAdjacentHTML("afterend",
+    `<p class="err noai">No AI is connected on this server, so ${what}</p>`));
   $("#provOpts").innerHTML = server.providers.map(v => `<label class="opt"><input type="radio" name="provider" value="${v}" ${v === p.provider ? "checked" : ""}>
     <span>${PROVIDER[v] || esc(v)}${v === server.default_provider ? " <small style='display:inline'>(default)</small>" : ""}</span></label>`).join("")
     || '<p class="help" style="margin:0">No AI model is configured on this server.</p>';
@@ -611,7 +612,7 @@ async function start() {
   const [cs, st, sm] = await Promise.all([api("/api/clients"), api("/api/settings"), api("/api/samples")]);
   show(true); server = st; samples = sm; clientsList = cs;
   $("#logout").hidden = $("#logout2").hidden = !me.login_required;
-  $("#clients").innerHTML = cs.map(c => `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.plan)})</option>`).join("");
+  $("#clients").innerHTML = cs.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
   $("#sample").innerHTML = `<option value="">Choose one of ${samples.length} test calls...</option>` + samples.map((s, n) => `<option value="${n}">${esc(s.title)}</option>`).join("");
   renderSettings();
   await loadCalls();
@@ -840,11 +841,11 @@ function renderCall(r) {
     : `<span class="state st-draft">Waiting for review</span><span>${r.edited_by != null ? `Edited${by(r.edited_by)}. ` : ""}Nobody has checked the AI's draft yet${mon ? ", and nothing has gone to Monday" : ""}. Read it below. If something is wrong, <b>correct the draft</b>; when it's right, <b>${mon ? "review and send it to Monday" : "review and approve it"}</b>.</span>`;
   const explain = `<details class="more"><summary>What do these mean?</summary><div class="explain">
     <p><b>Waiting for review:</b> the AI has read the call and drafted the summary, scores and follow-ups, but no person has checked them yet. Nothing has been sent anywhere.</p>
-    <p><b>Approve:</b> you confirm the draft is right (use Edit first if it isn't). CallSight then creates an item for this call on the
+    <p><b>${mon ? "Review and send to Monday" : "Review and approve"}:</b> opens a preview of exactly what will be sent. If it's right, you send it (if not, <b>Correct the draft</b> first). CallSight then creates an item for this call on the
       ${mon ? `<a href="${esc(mon)}" target="_blank" rel="noopener">Monday board &#8599;</a>` : "Monday board (not connected on this server)"},
-      with each follow-up as a subitem and the summary and alerts as an update. A link to the item appears next to "Approved".</p>
+      with each follow-up as a subitem and the summary and alerts as an update. Afterwards an "Open in Monday" link appears here.</p>
     <p><b>Ticking a follow-up:</b> marks it done. It drops off Today and the client's open list and stays approved; on an approved call, a "Done: ..." note is added to the Monday item.</p>
-    <p><b>Editing after approval:</b> the call goes back to waiting for review. Approving it again posts the corrected report on the same Monday item, not a new one.</p></div></details>`;
+    <p><b>Correcting after approval:</b> the call goes back to waiting for review. Sending it again posts the corrected report on the same Monday item, not a new one.</p></div></details>`;
   const ev = r.checks.map(c => `<div class="ev ${c.found ? "found" : "miss"}"><span class="k">${esc(QKIND[c.kind] || c.kind.replace("_", " "))}</span>${esc(c.text)}
       ${c.found ? `<span class="tick b-low">&#10003; found</span><button class="ts" data-at="${c.at}" title="Show in transcript">${where(c.at)}</button>`
                 : '<span class="tick b-high">unverified</span>'}
@@ -915,18 +916,18 @@ function reviewHtml(r, mon, item) {
       + step(1, "The update: the corrected report", "Added to the existing item, like a comment.", update)
     : path + step(1, "The item", "One row on the board for this call. Its name gives the client, the call and the reading at a glance.",
         `<div class="mon-item"><span class="mi-bar"></span><span>${esc(pv.item)}</span></div>`)
-      + step(2, `Subitems: the follow-ups <span class="muted">(${pv.subitems.length})</span>`, "One under the item for each thing someone agreed to do, with who does it and when.", subs)
+      + step(2, `Subitems: the follow-ups <span class="muted">(${pv.subitems.length})</span>`, "One under the item for each thing someone agreed to do. Who: a person's name if it was said, else Acme Leads (us, the lead agency) or the client.", subs)
       + step(3, "The update: the report", "Posted on the item, like a comment, so anyone who opens it sees what happened on the call and why.", update);
   return `<header class="rv-head"><div><span class="rv-eyebrow">Review before ${mon ? "sending" : "approving"}</span>
       <h2 id="rvTitle">${!mon ? "Approve this call?" : again ? "Update this call on Monday?" : "Send this call to Monday?"}</h2>
-      <p>Nothing has been ${mon ? "sent" : "changed"} yet.${mon ? " Everything below is exactly what will appear on Monday." : ""}</p></div>
+      <p>Nothing has been ${mon ? "sent" : "changed"} yet.${mon ? " Everything below is exactly what will appear on Monday. Nobody there is assigned, mentioned or emailed." : ""}</p></div>
       <button type="button" class="rv-x" id="rvCancelX" aria-label="Close">&times;</button></header>
     <div class="rv-body">${body}
       <section class="rv-confirm"><h3>By ${mon ? "sending" : "approving"}, you confirm that</h3><ul>
         <li>the summary says what happened on the call</li>
         <li>a <b>${pct}%</b> risk of leaving and a <b>${esc(i.sentiment)}</b> client mood are right</li>
         <li>the ${i.action_items.length} follow-up${i.action_items.length === 1 ? "" : "s"}, and who does each, are right</li></ul>
-        ${mon ? '<p class="rv-hint">Nobody is assigned or notified on Monday. Ticking a follow-up here later adds a "Done" note to the item; editing the call later means reviewing it again.</p>' : ""}</section></div>
+        ${mon ? '<p class="rv-hint">Ticking a follow-up here later adds a "Done" note to the item; editing the call later means reviewing it again.</p>' : ""}</section></div>
     <footer class="rv-foot"><button type="button" class="btn ghost" id="rvEdit">Correct the draft first</button><span class="grow"></span>
       <button type="button" class="btn ghost" id="rvCancel">Cancel</button>
       <button type="button" class="btn" id="rvSend">${!mon ? "Approve" : again ? "Approve and update Monday" : "Send to Monday"}</button></footer>`;
@@ -967,7 +968,7 @@ function drawActivity() {
     const link = e.call_id && ids.has(e.call_id) ? ` <a href="#${esc(e.call_id)}">${esc(e.call_id)}</a>` : e.call_id ? ` <span class="muted">${esc(e.call_id)}</span>` : "";
     const more = e.kind === "processed" && got[e.call_id] ? ` ${esc(got[e.call_id])} <span class="muted">(each step is in the call's History tab)</span>` : "";
     return `${head}<ol class="hist"><li><time>${clock(e.ts)}</time><span>${kindTag(e.kind)}${esc(plain(e.text))}${more}${link}</span></li></ol>`;
-  }).join("") || `<p class="empty-line">${activityRows.length ? "Nothing of this kind yet. Each call processed, edited, ticked off or approved, each voice task and each question shows up here as it happens (recorded since 28 Nov 2026)." : "Nothing has happened yet. Process a call or say a task, and each step will show up here."}</p>`;
+  }).join("") || `<p class="empty-line">${activityRows.length ? "Nothing of this kind since 28 Nov 2026, when this log started. Older calls have their story in their own History tab. From now on each call processed, corrected, ticked off or sent, each voice task and each question shows up here." : "Nothing has happened yet. Process a call or say a task, and each step will show up here."}</p>`;
 }
 $("#actFilters").onclick = e => { const b = e.target.closest("[data-af]"); if (!b) return; actFilter = b.dataset.af;
   $$("#actFilters button").forEach(x => x.setAttribute("aria-pressed", x === b)); drawActivity(); };
@@ -1056,7 +1057,7 @@ function editForm() {
   dlg.innerHTML = `<form id="editForm" class="rv-form">
     <header class="rv-head"><div><span class="rv-eyebrow">${approved ? "Correct the approved report" : "Correct the AI's draft"}</span>
       <h2 id="rvTitle">Fix anything the AI got wrong</h2>
-      <p>Change only what's wrong; your version replaces the AI's. ${approved ? "Nothing goes to Monday until you review and send it again." : "Nothing is sent anywhere when you save."}</p></div>
+      <p>Change only what's wrong; your version replaces the AI's (the History tab notes what you changed). ${approved ? "Nothing goes to Monday until you review and send it again." : "Nothing is sent anywhere when you save."}</p></div>
       <button type="button" class="rv-x" id="eCancelX" aria-label="Close">&times;</button></header>
     <div class="rv-body">
       ${step(1, "Summary", "What happened on the call, in two or three sentences. It's the first thing people read here and on Monday.",
@@ -1159,7 +1160,7 @@ async function renderToday() {
       ${attention.length > 6 ? `<a class="more" href="#calls/flag">See all ${attention.length}</a>` : ""}</section>
     <div class="grid">
       <section class="card"><h3 class="sub">Waiting for your review <span class="muted">${drafts.length}</span></h3>
-        <p class="help">The AI's drafts. Check one, fix anything wrong, approve it; only then does it go to Monday and the CRM.</p>
+        <p class="help">The AI's drafts. Check one, fix anything wrong, approve it; only then does it go to Monday. Each row is one call with that call's own risk score.</p>
         ${drafts.slice(0, 5).map(c => row(c, `${when(c.created)} · client mood ${c.sentiment}`)).join("") || '<p class="empty-line">All caught up.</p>'}
         ${drafts.length > 5 ? `<a class="more" href="#calls/draft">See all ${drafts.length} &rarr;</a>` : ""}</section>
       <section class="card"><h3 class="sub">What we promised <span class="muted">${promised.length}</span></h3>
@@ -1174,7 +1175,7 @@ function actionRows(list) {
   return list.map(a => `<div class="todo ${a.done ? "done" : ""}"><input type="checkbox" data-act="${a.id}" ${a.done ? "checked" : ""} aria-label="Done: ${esc(a.text)}">
     <span class="owner ${a.kind === "task" ? "o-us" : "o-client"}">${a.kind}</span>
     <span>${a.assignee ? `<span class="who-name">${esc(a.assignee)}</span>: ` : ""}<span class="task">${esc(a.text)}</span>
-      <span class="due">${a.client_id ? "· " + esc(CL(a.client_id).name) : ""}${a.due ? " · due " + esc(a.due) : ""}${a.monday_item_id ? (server.monday_board ? ` · <a href="${esc(server.monday_board)}/pulses/${esc(a.monday_item_id)}" target="_blank" rel="noopener">Monday #${esc(a.monday_item_id)} &#8599;</a>` : ` · Monday #${esc(a.monday_item_id)}`) : ""} · ${day(a.created)}${server.admin && a.by !== server.user ? " · by " + esc(a.by) : ""}</span></span></div>`).join("");
+      <span class="due">${a.client_id ? "· " + esc(CL(a.client_id).name) : ""}${a.due ? " · due " + esc(a.due) : ""}${a.monday_item_id ? (server.monday_board ? ` · <a href="${esc(server.monday_board)}/pulses/${esc(a.monday_item_id)}" target="_blank" rel="noopener">Monday #${esc(a.monday_item_id)} &#8599;</a>` : ` · Monday #${esc(a.monday_item_id)}`) : ""} · ${day(a.created)}${""}</span></span></div>`).join("");
 }
 document.addEventListener("change", async e => {
   const c = e.target.closest("[data-act]"); if (!c) return;
