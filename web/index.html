@@ -242,6 +242,8 @@ details.more .toolbar { margin-top:10px }
 .back { display:inline-block; margin:0 0 12px; font-size:14px; font-weight:600; text-decoration:none }
 .today h3.sub { display:flex; align-items:baseline; gap:8px } .today h3 .muted { font-weight:500 }
 .welcome { border-color:var(--brand) } .steps3 { margin:10px 0 0; padding-left:20px; font-size:14.5px } .steps3 li { margin:4px 0 }
+.approve { margin-top:14px; padding:14px 16px; border:1px solid var(--brand); border-radius:12px; background:var(--soft); font-size:14.5px }
+.approve p { margin:6px 0 } .pv { margin:0; padding-left:20px } .pv li { margin:3px 0 } .pv ul { margin:4px 0; padding-left:18px; color:var(--ink2) }
 #toasts { position:fixed; right:16px; bottom:16px; z-index:50; display:flex; flex-direction:column; gap:8px; width:min(420px, calc(100vw - 32px)) }
 .toast { background:var(--panel); color:var(--ink); border:1px solid var(--line); border-left:4px solid var(--brand); border-radius:10px; padding:10px 34px 10px 14px;
   box-shadow:0 8px 28px rgba(0,0,0,.14); font-size:14px; line-height:1.5; position:relative }
@@ -791,7 +793,7 @@ function renderCall(r) {
   const status = r.approved_by != null
     ? `<span class="state st-ok">Approved</span><span>${by(r.approved_by)} · ${when(r.approved_at)}${item ? ` · <a href="${esc(item)}" target="_blank" rel="noopener">Open in Monday &#8599;</a>`
         : mon ? "" : " · Monday isn't connected on this server, so nothing was sent"}</span>`
-    : `<span class="state st-draft">Waiting for review</span><span>${r.edited_by != null ? `Edited${by(r.edited_by)}. ` : ""}Nobody has checked the AI's draft yet. Nothing has gone to Monday.</span>`;
+    : `<span class="state st-draft">Waiting for review</span><span>${r.edited_by != null ? `Edited${by(r.edited_by)}. ` : ""}Nobody has checked the AI's draft yet${mon ? ", and nothing has gone to Monday. When it looks right, press Approve: you'll see exactly what will be sent before anything is" : ""}.</span>`;
   const explain = `<details class="more"><summary>What do these mean?</summary><div class="explain">
     <p><b>Waiting for review:</b> the AI has read the call and drafted the summary, scores and follow-ups, but no person has checked them yet. Nothing has been sent anywhere.</p>
     <p><b>Approve:</b> you confirm the draft is right (use Edit first if it isn't). CallSight then creates an item for this call on the
@@ -816,6 +818,7 @@ function renderCall(r) {
       </div>
       <div class="status">${status}<span class="grow"></span><button type="button" class="btn ghost" id="editBtn">Edit</button>
         ${r.approved_by != null ? "" : `<button type="button" class="btn" id="approveBtn">${mon ? "Approve and send to Monday" : "Approve"}</button>`}</div>
+      ${r.approved_by != null ? "" : approvePanel(r, mon, item)}
       ${explain}
       <details class="more"><summary>More actions</summary><div class="toolbar"><button type="button" class="btn ghost" data-x="copy">Copy report</button><button type="button" class="btn ghost" data-x="email">Email the client a recap</button>
         <button type="button" class="btn ghost" data-x="csv">Follow-ups as CSV</button>
@@ -845,6 +848,26 @@ function renderCall(r) {
       <div class="chat">${r.segments.map(s => `<div class="line" data-at="${s.start}"><span class="who-tag s${Math.min(speakers.indexOf(base(s)), 2)}" title="${esc(nm(s.speaker))}">${esc(nm(s.speaker))}</span>
         <span><span class="t">${timed ? mmss(s.start) : Number(s.start) + 1}</span>${esc(nm(s.text))}${(r.voice?.moments || []).some(m => m.at === s.start) ? ' <span class="tag">voice raised</span>' : ""}</span></div>`).join("")}</div></section>
     <section class="card" data-dtab="history" hidden>${historyHtml(r)}</section>`;
+}
+// --- approve: say what is being confirmed, and exactly what goes where, before anything is sent ---------------------
+function approvePanel(r, mon, item) {
+  const pv = r.monday_preview || {item: "", subitems: [], update_lines: 0}, board = server.monday_board_name || "the team's board";
+  const boardLink = `<a href="${esc(mon)}" target="_blank" rel="noopener">${esc(board)} &#8599;</a>`;
+  const subs = pv.subitems.slice(0, 8).map(x => `<li>${esc(nm(x))}</li>`).join("") + (pv.subitems.length > 8 ? `<li>and ${pv.subitems.length - 8} more</li>` : "");
+  const where = !mon ? '<p><b>Where it goes:</b> nowhere. Monday isn\'t connected on this server, so approving only marks the call as checked here.</p>'
+    : r.monday_item_id ? `<p><b>Where it goes:</b> the Monday item already made for this call (<a href="${esc(item)}" target="_blank" rel="noopener">#${esc(r.monday_item_id)} &#8599;</a>) on ${boardLink}.
+        The corrected report is added to it as an update. No new item is made.</p>`
+    : `<p><b>Where it goes:</b> Monday.com, the team's task board: ${boardLink}.</p>
+       <p style="margin-bottom:4px"><b>What is sent:</b></p>
+       <ul class="pv"><li>One item for this call, named <q>${esc(pv.item)}</q></li>
+         ${pv.subitems.length ? `<li>${pv.subitems.length} subitem${pv.subitems.length === 1 ? "" : "s"}, one per follow-up:<ul>${subs}</ul></li>` : "<li>No subitems: this call has no follow-ups</li>"}
+         <li>An update on the item with the summary, the alerts and the quotes that back them</li></ul>
+       <p class="help" style="margin:8px 0 0">Nobody is assigned or notified on Monday. Ticking a follow-up here later adds a "Done" note to the item.</p>`;
+  return `<div class="approve" id="approvePanel" hidden><h3 class="sub" style="margin-top:0">Before you approve</h3>
+    <p><b>Approving means</b> you've read the summary, the risk of leaving, the client's mood and the follow-ups above, and they're right.
+      If anything is wrong, press Cancel and use Edit first.</p>${where}
+    <div class="row" style="margin-top:12px"><button type="button" class="btn" id="approveGo">${mon ? (r.monday_item_id ? "Approve and update Monday" : "Approve and send to Monday") : "Approve"}</button>
+      <button type="button" class="btn ghost" id="approveCancel">Cancel</button></div></div>`;
 }
 // --- history of one call, and the Activity page ---------------------------------------------------------------------
 const KINDNAME = {processed: ["Sent in"], masked: ["Masked"], read: ["AI read it"], second: ["Second opinion"], checked: ["Quotes checked"],
@@ -994,7 +1017,10 @@ document.addEventListener("change", async e => {
 });
 document.addEventListener("click", async e => {
   if (e.target.closest("#editBtn")) { dtab("overview"); editForm(); $("#eSum").focus(); }
-  const b = e.target.closest("#approveBtn"); if (!b) return;
+  if (e.target.closest("#approveBtn")) { $("#approvePanel").hidden = false; $("#approveBtn").hidden = true;
+    $("#approvePanel").scrollIntoView({block: "nearest", behavior: "smooth"}); return; }
+  if (e.target.closest("#approveCancel")) { $("#approvePanel").hidden = true; $("#approveBtn").hidden = false; return; }
+  const b = e.target.closest("#approveGo"); if (!b) return;
   b.disabled = true; b.textContent = server.monday_board ? "Approving and sending to Monday..." : "Approving...";
   try {
     const r = await api(`/api/calls/${encodeURIComponent(shown.id)}/approve`, {method: "POST"});

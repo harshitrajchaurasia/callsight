@@ -7,6 +7,7 @@ already saved).
 import json
 import logging
 import os
+import re
 from html import escape
 
 import requests
@@ -31,9 +32,29 @@ def report(r: CallResult) -> list[str]:
     def _mmss(at: float | None) -> str:
         return "" if at is None else f" @{int(at) // 60:02d}:{int(at) % 60:02d}" if timed else f" (line {int(at) + 1})"
     i = r.insight
-    lines = [i.summary, f"Sentiment {i.sentiment}, churn risk {i.churn_risk:.0%}", *r.alerts]
-    lines += [f"{'' if c.found else '[unverified] '}{c.kind.replace('_', ' ')}: {c.text}{_mmss(c.at)}" for c in r.checks]
+    lines = [i.summary, f"Client mood {i.sentiment}, risk of leaving {i.churn_risk:.0%}", *r.alerts]
+    lines += [f"{'' if c.found else '[unverified] '}{KIND.get(c.kind, c.kind.replace('_', ' '))}: {c.text}{_mmss(c.at)}" for c in r.checks]
     return lines
+
+
+KIND = {"churn_reasons": "Why they might leave", "upsell_signals": "Wants more", "objections": "Complaint or concern",
+        "action_items": "Follow-up"}
+
+
+def item_name(r: CallResult) -> str:
+    """The Monday item for a call, as people will see it on the board. Shared with the approve preview."""
+    i = r.insight
+    return f"{CLIENTS[r.client_id].name}: {r.id} (risk of leaving {i.churn_risk:.0%}, {i.sentiment})"[:250]
+
+
+def subitem_names(r: CallResult) -> list[str]:
+    """[who] task (due ...). Who is the person's name when known, else the side: "Acme Leads" or the client."""
+    side = {"us": "Acme Leads", "client": CLIENTS[r.client_id].name}
+
+    def who(a) -> str:
+        name = r.speakers.get(a.speaker or "", a.speaker) or ""
+        return side[a.owner] if not name or re.fullmatch(r"(Speaker|Person) \d+", name) else name
+    return [f"[{who(a)}] {a.task}" + (f" (due {a.due})" if a.due else "") for a in r.insight.action_items]
 
 
 def _monday(what: str, post):
@@ -96,16 +117,14 @@ def board_url() -> str | None:
 def to_monday(r: CallResult, *, post=requests.post) -> str | None:
     if not (gql := _monday(r.id, post)):
         return None
-    i = r.insight
     try:
-        item = gql("item", name=f"{CLIENTS[r.client_id].name}: {r.id} (churn {i.churn_risk:.0%}, {i.sentiment})"[:250])
+        item = gql("item", name=item_name(r))
     except Exception as e:
         log.warning("monday item for %s failed: %r", r.id, e)
         return None
     try:  # the item exists now: a failed subitem/update is logged, not retried into a duplicate item
-        for a in i.action_items:
-            who = r.speakers.get(a.speaker or "", a.speaker) or a.owner
-            gql("subitem", parent=item, name=f"[{who}] {a.task}" + (f" (due {a.due})" if a.due else ""))
+        for name in subitem_names(r):
+            gql("subitem", parent=item, name=name)
         gql("update", item=item, body="".join(f"<p>{escape(x)}</p>" for x in report(r)))
     except Exception as e:
         log.warning("monday item %s incomplete: %r", item, e)

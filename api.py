@@ -159,7 +159,9 @@ def _get(call_id: str, user: str):
 
 
 def _out(r) -> dict:
-    return r.model_dump() | {"client": CLIENTS[r.client_id].model_dump(), "history": store.events(conn, call_id=r.id)}
+    return r.model_dump() | {"client": CLIENTS[r.client_id].model_dump(), "history": store.events(conn, call_id=r.id),
+                             "monday_preview": {"item": sinks.item_name(r), "subitems": sinks.subitem_names(r),
+                                                "update_lines": len(sinks.report(r))}}
 
 
 def _processed(r, user: str, source: str):
@@ -198,6 +200,7 @@ def settings(user: str = Depends(require_session)):
     """What the settings page can offer, and the server defaults it starts from."""
     from callsight.config import RULES
     return {"user": user, "admin": _admin(user), "team": command.TEAM, "monday_board": sinks.board_url(),
+            "monday_board_name": os.getenv("MONDAY_BOARD_NAME") or None,
             "providers": [p for p, k in (("claude", "ANTHROPIC_API_KEY"), ("grok", "XAI_API_KEY")) if os.getenv(k)],
             "default_provider": extract.default_provider(), "keepable": sorted(redact.KEEPABLE),
             "churn_alert": RULES["churn_alert_min"]}
