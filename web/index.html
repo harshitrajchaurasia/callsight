@@ -229,16 +229,19 @@ input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12p
 .callrow { display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:6px 14px; align-items:center; padding:12px 6px; border-bottom:1px solid var(--line); color:inherit; text-decoration:none; border-radius:8px }
 .callrow:hover { background:var(--soft) } .callrow:last-child { border-bottom:0 }
 .callrow b { font-size:15px } .callrow .muted { display:block; margin-top:1px }
+.callrow .about { display:block; margin-top:2px; font-size:14px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
 .state { font-size:12px; font-weight:650; padding:3px 9px; border-radius:999px; white-space:nowrap }
 .st-draft { background:var(--warn-soft); color:var(--warn) } .st-ok { background:var(--ok-soft); color:var(--ok) } .st-flag { background:var(--bad-soft); color:var(--bad) }
 .tags { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; align-items:center }
-@media (max-width:640px) { .tags { flex-direction:column; align-items:flex-end } }
+@media (max-width:640px) { .callrow { grid-template-columns:1fr } .callrow .tags { flex-direction:row; justify-content:flex-start }
+  .callrow .about { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical } }
 details.more { margin-top:12px } details.more > summary { cursor:pointer; font-size:14px; font-weight:600; color:var(--ink2); list-style:none; display:inline-block }
 details.more > summary::-webkit-details-marker { display:none } details.more > summary::after { content:" \25BE" } details.more[open] > summary::after { content:" \25B4" }
 details.more .toolbar { margin-top:10px }
 .explain { margin-top:8px; padding:12px 14px; border-radius:10px; background:var(--soft); font-size:13.5px; color:var(--ink2) } .explain p { margin:0 0 8px } .explain p:last-child { margin:0 }
 .back { display:inline-block; margin:0 0 12px; font-size:14px; font-weight:600; text-decoration:none }
 .today h3.sub { display:flex; align-items:baseline; gap:8px } .today h3 .muted { font-weight:500 }
+.welcome { border-color:var(--brand) } .steps3 { margin:10px 0 0; padding-left:20px; font-size:14.5px } .steps3 li { margin:4px 0 }
 .today .more { display:inline-block; margin-top:10px; font-size:14px; font-weight:600; text-decoration:none }
 .empty-line { color:var(--muted); font-size:14px; margin:4px 0 0 }
 
@@ -296,10 +299,10 @@ details.more .toolbar { margin-top:10px }
           <div class="chips" id="callFilters" role="group" aria-label="Show">
             <button type="button" data-f="all" aria-pressed="true">All</button><button type="button" data-f="draft" aria-pressed="false">Waiting for review</button>
             <button type="button" data-f="approved" aria-pressed="false">Approved</button><button type="button" data-f="flag" aria-pressed="false">Needs a person</button>
-            <button type="button" data-f="high" aria-pressed="false">High churn risk</button></div></div>
+            <button type="button" data-f="high" aria-pressed="false">Likely to leave</button></div></div>
         <div id="calls"></div>
-        <p class="help" style="margin:14px 0 0"><b>Churn risk</b> is the AI's estimate of how likely the client is to leave, from what was said.
-          <b>Waiting for review</b> means nobody has checked the AI's draft yet, so nothing has gone to Monday or GHL.</p></div>
+        <p class="help" style="margin:14px 0 0"><b>Risk of leaving</b> is the AI's estimate of how likely the client is to stop buying, from what was said.
+          <b>Waiting for review</b> means nobody has checked the AI's draft yet, so nothing has gone to Monday or the CRM.</p></div>
     </section>
 
     <section data-view="new" hidden>
@@ -333,13 +336,13 @@ details.more .toolbar { margin-top:10px }
     </section>
 
     <section data-view="voice" hidden>
-      <div class="vhead"><h2>Voice to action</h2><p>Say what needs doing. CallSight works out the tasks and notes, you check them, and only what you confirm goes to Monday (tasks) or the client's GHL contact (notes).</p></div>
+      <div class="vhead"><h2>Voice to action</h2><p>Say what needs doing. CallSight works out the tasks and notes, you check them, and only what you confirm is saved: tasks go to Monday, notes go on the client's record in the CRM (GHL).</p></div>
       <div class="card">
         <div id="voiceRec"></div>
         <label for="vText">What was heard (or type it)</label>
         <textarea id="vText" style="min-height:84px" maxlength="1000" placeholder="Create a task for Priya to send Summit Annuity the Texas quote by Friday, and note that Golden Years wants a call next week."></textarea>
         <div class="chips" id="vExamples"></div>
-        <button type="button" class="btn wide" id="vGo" style="margin-top:16px">Understand</button><div class="err" id="vErr" role="alert"></div>
+        <button type="button" class="btn wide" id="vGo" style="margin-top:16px">Show me the actions</button><div class="err" id="vErr" role="alert"></div>
         <p class="help" style="margin:12px 0 0">People are matched to the team list (<span id="vTeam"></span>) and clients to the client list in code, never guessed.
           A person is named in the Monday item's title, not set in a people column, so nobody is notified.</p>
       </div>
@@ -348,7 +351,7 @@ details.more .toolbar { margin-top:10px }
     </section>
 
     <section data-view="clients" hidden>
-      <div class="vhead"><h2>Clients</h2><p>Churn risk across each client's calls, oldest to newest, and the promises still open.</p></div>
+      <div class="vhead"><h2>Clients</h2><p>Each client's risk of leaving, call by call (oldest to newest), and what we still owe them.</p></div>
       <div class="card scroll" id="clientsBody"></div>
     </section>
     <section data-view="client" hidden id="clientBody"></section>
@@ -376,7 +379,7 @@ details.more .toolbar { margin-top:10px }
             <label class="opt"><input type="checkbox" name="keep" value="NAME"><span>Send names as said<small>Off by default: names are swapped for "Person 1, 2..." and put back on our side, so follow-ups still show who.</small></span></label>
             <label class="opt"><input type="checkbox" name="keep" value="LOCATION"><span>Send places as said<small>Cities and states, e.g. "leads in Austin".</small></span></label>
             <p class="help" style="margin:4px 0 0">Phone numbers, emails, card, account and ID numbers are always masked. Company names are never masked.</p></div></div>
-        <div class="set"><div><h3>Churn alert</h3><p>Alert the account manager when the churn risk is at or above this.</p></div>
+        <div class="set"><div><h3>Leaving alert</h3><p>Alert the account manager when a client's risk of leaving is at or above this.</p></div>
           <div><div class="row"><input type="range" name="churn" min="30" max="90" step="5" aria-label="Churn alert threshold"><b id="churnVal"></b></div>
             <p class="help" style="margin:4px 0 0">Applies to calls processed from now on. Default <span id="churnDef"></span>.</p></div></div>
         <div class="set" id="usageRow" hidden><div><h3>Usage and cost</h3><p>Admins only.</p></div><div><a class="btn ghost" href="#usage">Open the usage page</a></div></div>
@@ -395,7 +398,7 @@ details.more .toolbar { margin-top:10px }
   </div>
 </main>
 <footer class="foot"><div class="wrap">CallSight · MIT licence · all clients, people and calls are made up ·
-  <a href="https://github.com/harshitrajchaurasia/callsight">source</a> · <a href="https://harshit.saakura.dev/projects/">more projects</a></div></footer>
+  <a href="#how">how it works</a> · <a href="https://github.com/harshitrajchaurasia/callsight">source</a> · <a href="https://harshit.saakura.dev/projects/">more projects</a></div></footer>
 
 <script>
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -463,7 +466,7 @@ function renderSettings() {
   f.churn.value = Math.round(p.churn * 100); $("#churnVal").textContent = f.churn.value + "%";
   $("#churnDef").textContent = Math.round(server.churn_alert * 100) + "%";
   const keep = p.keep.map(k => KEEP[k]);
-  $("#using").innerHTML = `<b>${PROVIDER[p.provider] || "No model"}</b> · ${keep.length ? `${keep.join(" and ")} sent as said` : "names and places masked"} · churn alert at ${Math.round(p.churn * 100)}%`;
+  $("#using").innerHTML = `<b>${PROVIDER[p.provider] || "No model"}</b> · ${keep.length ? `${keep.join(" and ")} sent as said` : "names and places masked"} · alert when risk of leaving ≥ ${Math.round(p.churn * 100)}%`;
   $("#whoami").innerHTML = server.user ? `Signed in as <b>${esc(server.user)}</b> (${server.admin ? "admin" : "member"}).` : "";
   $("#usageRow").hidden = !server.admin;
   $("#vTeam").textContent = server.team.join(", ");
@@ -491,7 +494,7 @@ const json = (method, body) => ({method, headers: {"content-type": "application/
 function show(authed) { $("#app").hidden = $("#appnav").hidden = $("#newLink").hidden = $("#gear").hidden = !authed;
   $("#landing").hidden = authed; $("#howLink").hidden = authed; }
 const risk = v => v >= .6 ? ["High", "b-high", "var(--bad)"] : v >= .3 ? ["Medium", "b-med", "var(--warn)"] : ["Low", "b-low", "var(--ok)"];
-const badge = v => { const [l, cls] = risk(v); return `<span class="badge ${cls}" title="Churn risk: how likely the client is to leave (${l.toLowerCase()})">Churn ${Math.round(v * 100)}%</span>`; };
+const badge = v => { const [l, cls] = risk(v); return `<span class="badge ${cls}" title="How likely the client is to leave, judged from what was said (${l.toLowerCase()})">Risk of leaving ${Math.round(v * 100)}%</span>`; };
 
 $("#loginForm").onsubmit = async e => {
   e.preventDefault(); $("#loginErr").textContent = "";
@@ -645,11 +648,12 @@ function drawCalls() {
   const shown = calls.filter(c => TESTS[callFilter](c) && (!q || c.client.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)));
   $("#ncalls").textContent = `${shown.length} of ${calls.length}`;
   $("#calls").innerHTML = shown.map(c => `<a class="callrow" href="#${esc(c.id)}"><span><b>${esc(c.client)}</b>${c.rerun_of ? '<span class="tag">re-run</span>' : ""}
-      <span class="muted">${when(c.created)} · client mood ${esc(c.sentiment)}${c.alerts ? ` · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}` : ""}</span></span>
+      ${c.headline ? `<span class="about">${esc(c.headline)}</span>` : ""}<span class="muted">${when(c.created)} · client mood ${esc(c.sentiment)}${c.alerts ? ` · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}` : ""}</span></span>
       <span class="tags">${["draft", "approved"].includes(callFilter) ? "" : stateChip(c)}${badge(c.churn_risk)}</span></a>`).join("")
     || `<p class="empty-line">${calls.length ? "No calls match." : "No calls yet. Use New call to process one."}</p>`;
 }
 $("#filter").oninput = drawCalls;
+document.addEventListener("click", e => { if (e.target.id === "welcomeOk") { try { localStorage.setItem("cs-welcome", "1"); } catch {} $("#welcome")?.remove(); } });
 $("#callFilters").onclick = e => { const b = e.target.closest("[data-f]"); if (b) { setFilter(b.dataset.f); drawCalls(); } };
 
 const STAGE = {starting: "Starting...", masking: "Masking personal details...", checking: "Checking the quotes...", waiting: "Waiting...", "second opinion": "Borderline: asking the other model too..."};
@@ -675,10 +679,12 @@ $("#callForm").onsubmit = async e => {
 };
 
 // --- one call ----------------------------------------------------------------------------------------------------
+// stored alerts say "churn"; show plain words (the rules and saved calls keep their wording)
+const plain = t => t.replace(/\bChurn risk\b/g, "Risk of leaving").replace(/\bchurn risk\b/g, "risk of leaving").replace(/\bscores churn\b/g, "scores the risk of leaving").replace(/quoted churn reasons/g, "quoted reasons for leaving");
 function alertHtml(a) {
   const [cls, ic] = /^Churn risk \d+%:/.test(a) ? ["a-bad", "warn"] : /person should check/.test(a) ? ["a-warn", "warn"]
     : /^Upsell/.test(a) ? ["a-ok", "up"] : ["a-info", "info"];
-  return `<div class="alert ${cls}">${ICON[ic]}<span>${esc(a)}</span></div>`;
+  return `<div class="alert ${cls}">${ICON[ic]}<span>${esc(plain(a))}</span></div>`;
 }
 function dtab(name) {
   $$("#detail [data-dtab]").forEach(s => s.hidden = s.dataset.dtab !== name);
@@ -731,10 +737,10 @@ function renderCall(r) {
       ${r.rerun_of ? `<p class="help" style="margin:8px 0 0">A re-run of <a href="#${esc(r.rerun_of)}">${esc(r.rerun_of)}</a> with ${PROVIDER[r.provider] || esc(r.provider)}. <a href="#compare/${esc(r.rerun_of)}/${esc(r.id)}">Compare the two</a></p>` : ""}
       <p class="summary">${esc(i.summary)}</p>
       <div class="tiles">
-        <div class="tile"><small>Churn risk</small><b style="color:${rc}">${pct}%</b> <span class="due">${rl}</span><div class="meter"><i style="width:${pct}%;background:${rc}"></i></div></div>
-        <div class="tile"><small>Sentiment</small><b>${esc(i.sentiment)}</b>${r.second_opinion ? `<div class="due" title="A borderline reading, so the other model was asked too">2nd opinion (${esc(r.second_opinion.provider)}): ${Math.round(r.second_opinion.churn_risk * 100)}%, ${esc(r.second_opinion.sentiment)}</div>` : ""}</div>
+        <div class="tile"><small>Risk of leaving</small><b style="color:${rc}">${pct}%</b> <span class="due">${rl}</span><div class="meter"><i style="width:${pct}%;background:${rc}"></i></div></div>
+        <div class="tile"><small>Client mood</small><b>${esc(i.sentiment)}</b>${r.second_opinion ? `<div class="due" title="A borderline reading, so the other model was asked too">2nd opinion (${esc(r.second_opinion.provider)}): ${Math.round(r.second_opinion.churn_risk * 100)}%, ${esc(r.second_opinion.sentiment)}</div>` : ""}</div>
         <div class="tile"><small>Alerts</small><b>${r.alerts.length}</b></div>
-        <div class="tile"><small>Analysed by</small><b>${esc(r.provider)}</b> <span class="due">${(r.latency_ms / 1000).toFixed(1)} s</span></div>
+        <div class="tile" title="The AI model that read the masked call, and how long it took"><small>Read by</small><b>${esc(r.provider)}</b> <span class="due">${(r.latency_ms / 1000).toFixed(1)} s</span></div>
       </div>
       <div class="status">${status}<span class="grow"></span><button type="button" class="btn ghost" id="editBtn">Edit</button>
         ${r.approved_by != null ? "" : `<button type="button" class="btn" id="approveBtn">${mon ? "Approve and send to Monday" : "Approve"}</button>`}</div>
@@ -746,15 +752,15 @@ function renderCall(r) {
       ${flash ? `<p class="flash" role="status">${esc(flash)}</p>` : ""}</section>
     <div class="tabs dtabs" role="tablist">
       <button type="button" role="tab" data-to="overview" aria-selected="true">Overview</button>
-      <button type="button" role="tab" data-to="evidence">Evidence (${r.checks.length}${missing ? `, ${missing} unverified` : ""})</button>
+      <button type="button" role="tab" data-to="evidence">Quotes (${r.checks.length}${missing ? `, ${missing} unverified` : ""})</button>
       <button type="button" role="tab" data-to="transcript">Transcript</button></div>
     <section class="card" data-dtab="overview">
-      <h3 class="sub">Alerts</h3><p class="help">Raised by rules in code, not by the AI. A churn or upsell alert needs a quote that was found in the transcript.</p>
+      <h3 class="sub">Alerts</h3><p class="help">Raised by rules in code, not by the AI. An alert needs a quote that was really found in the transcript.</p>
       ${r.alerts.map(alertHtml).join("") || `<div class="alert a-ok">${ICON.check}<span>No alerts: nothing on this call needs action.</span></div>`}
-      <h3 class="sub">Follow-ups</h3><p class="help">What each side agreed to do, and who said they'd do it. "Us" is Acme Leads; "client" is the agency.
+      <h3 class="sub">Follow-ups</h3><p class="help">What each side agreed to do, and who said they'd do it. "We do" means us (Acme Leads, the lead agency); "They do" means the client.
       Tick one when it's done${r.approved_by != null && r.monday_item_id ? "; it's also noted on the Monday item" : ""}.</p>
       ${i.action_items.map((a, n) => `<div class="todo ${a.done ? "done" : ""}"><input type="checkbox" data-done="${n}" ${a.done ? "checked" : ""} aria-label="Done: ${esc(a.task)}">
-        <span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "Us" : "Client"}</span>
+        <span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "We do" : "They do"}</span>
         <span>${person(r, a) ? `<span class="who-name">${esc(person(r, a))}</span>: ` : ""}<span class="task">${esc(a.task)}</span> ${a.done ? '<span class="due">· done</span>' : a.due ? `<span class="due">· due ${esc(a.due)}</span>` : '<span class="nodue">· no due date</span>'}</span></div>`).join("") || '<p class="help" style="margin:0">None agreed on this call.</p>'}
       ${voicePanel(r, where)}</section>
     <section class="card" data-dtab="evidence" hidden><p class="help">Every point the AI made, with the words it quoted. <b>Found</b> means code found that
@@ -832,7 +838,7 @@ function editForm() {
   const r = shown, i = r.insight, labels = [...new Set(r.segments.map(s => s.speaker.split(" (")[0]))];
   const draft = items();
   const row = (a, n) => `<div class="erow" data-n="${n}">
-      <select data-k="owner" aria-label="Side"><option value="us" ${a.owner === "us" ? "selected" : ""}>Us</option><option value="client" ${a.owner === "client" ? "selected" : ""}>Client</option></select>
+      <select data-k="owner" aria-label="Side"><option value="us" ${a.owner === "us" ? "selected" : ""}>We do it</option><option value="client" ${a.owner === "client" ? "selected" : ""}>Client does it</option></select>
       <select data-k="speaker" aria-label="Person"><option value="">Who? (unclear)</option>${labels.map(l => `<option value="${esc(l)}" ${a.speaker === l ? "selected" : ""}>${esc(r.speakers?.[l] || l)}</option>`).join("")}</select>
       <input type="text" class="task" data-k="task" value="${esc(a.task)}" aria-label="Task" maxlength="300" required>
       <input type="text" data-k="due" value="${esc(a.due || "")}" placeholder="Due (optional)" aria-label="Due" maxlength="80">
@@ -840,8 +846,8 @@ function editForm() {
   const sec = $("#detail [data-dtab=overview]");
   sec.innerHTML = `<form id="editForm"><h3 class="sub">Edit this call</h3><p class="help">Your changes replace the AI's. Alerts are re-run from the rules when you save; the quote checks stay as they were.</p>
     <label for="eSum">Summary</label><textarea id="eSum" name="summary" style="min-height:110px" maxlength="2000" required>${esc(i.summary)}</textarea>
-    <div class="grid2"><div><label for="eSent">Sentiment</label><select id="eSent" name="sentiment">${["positive", "neutral", "frustrated", "angry"].map(v => `<option ${v === i.sentiment ? "selected" : ""}>${v}</option>`).join("")}</select></div>
-      <div><label for="eRisk">Churn risk (%)</label><input id="eRisk" type="number" name="risk" min="0" max="100" step="1" value="${Math.round(i.churn_risk * 100)}" required></div></div>
+    <div class="grid2"><div><label for="eSent">Client mood</label><select id="eSent" name="sentiment">${["positive", "neutral", "frustrated", "angry"].map(v => `<option ${v === i.sentiment ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+      <div><label for="eRisk">Risk of leaving (%)</label><input id="eRisk" type="number" name="risk" min="0" max="100" step="1" value="${Math.round(i.churn_risk * 100)}" required></div></div>
     <h3 class="sub">Follow-ups</h3><div id="eItems"></div>
     <button type="button" class="btn ghost" id="eAdd">Add a follow-up</button>
     <div class="row" style="margin-top:18px"><button class="btn">Save changes</button><button type="button" class="btn ghost" id="eCancel">Cancel</button></div>
@@ -886,7 +892,7 @@ async function renderToday() {
   firsts.forEach(c => { if (!latest[c.client_id] || c.created > latest[c.client_id].created) latest[c.client_id] = c; });
   // needs attention: a client whose latest call is over the churn line, or any call the checks sent to a person
   const attention = [...Object.values(latest).filter(c => c.churn_risk >= th).map(c => ({c, why: c.headline})),
-    ...firsts.filter(c => c.flags.length).map(c => ({c, why: c.flags[0] + "."}))]
+    ...firsts.filter(c => c.flags.length).map(c => ({c, why: plain(c.flags[0]) + ".", chip: '<span class="state st-flag">Check this call</span>'}))]
     .filter((x, i, all) => all.findIndex(y => y.c.client_id === x.c.client_id) === i)  // one row per client
     .sort((a, b) => b.c.churn_risk - a.c.churn_risk);
   const drafts = firsts.filter(c => !c.approved).sort((a, b) => b.churn_risk - a.churn_risk);
@@ -897,15 +903,26 @@ async function renderToday() {
   $("#todaySub").textContent = `${new Date().toLocaleDateString([], {weekday: "long", month: "long", day: "numeric"})}. `
     + (attention.length ? `${attention.length} client${attention.length === 1 ? " needs" : "s need"} attention` : "Nothing urgent")
     + (drafts.length ? `, and ${drafts.length} call${drafts.length === 1 ? " is" : "s are"} waiting for review.` : ".");
-  const row = (c, why, extra = "") => `<a class="rowlink" href="#${esc(c.id)}"><span class="grow"><b>${esc(c.client)}</b><br><span class="muted">${esc(why)}</span></span>${extra}${badge(c.churn_risk)}</a>`;
+  const row = (c, why, chip) => `<a class="rowlink" href="#${esc(c.id)}"><span class="grow"><b>${esc(c.client)}</b><br><span class="muted">${esc(why)}</span></span>${chip || badge(c.churn_risk)}</a>`;
+  let seen = false; try { seen = localStorage.getItem("cs-welcome") === "1"; } catch {}
   $("#todayBody").innerHTML = `<div class="today">
+    ${seen ? "" : `<section class="card welcome" id="welcome"><h3 class="sub">New here? Here's what CallSight does</h3>
+      <p class="help">An account manager talks to a client. CallSight listens to the call and writes up what matters: is the client
+        likely to leave, what do they want, and what did we promise. Every point comes with the client's own words, and a person
+        checks it before anything is sent to the team's tools. All the clients and calls here are made up.</p>
+      <ol class="steps3">
+        <li><b>Open a call</b> below to see what the AI found and the quotes behind it.</li>
+        <li><b>Approve it</b> once it looks right. Only approved calls go to Monday (the task board).</li>
+        <li><b>Try your own</b>: <a href="#new">paste, upload or record a call</a>, or <a href="#voice">say a task out loud</a>.</li></ol>
+      <p style="margin:12px 0 0"><button type="button" class="btn ghost" id="welcomeOk">Got it</button>
+        <a href="#how" style="margin-left:12px;font-size:14px">How it works, step by step</a></p></section>`}
     <section class="card"><h3 class="sub">Needs attention</h3>
-      <p class="help">Clients likely to leave (their latest call is at or above ${Math.round(th * 100)}% churn risk), and calls the checks want a person to look at.</p>
-      ${attention.slice(0, 6).map(x => row(x.c, x.why)).join("") || '<p class="empty-line">Nobody right now.</p>'}
+      <p class="help">Clients who may stop buying (their latest call scored ${Math.round(th * 100)}% or more), and calls where the automatic checks found something a person should look at.</p>
+      ${attention.slice(0, 6).map(x => row(x.c, x.why, x.chip)).join("") || '<p class="empty-line">Nobody right now.</p>'}
       ${attention.length > 6 ? `<a class="more" href="#calls/flag">See all ${attention.length}</a>` : ""}</section>
     <div class="grid">
       <section class="card"><h3 class="sub">Waiting for your review <span class="muted">${drafts.length}</span></h3>
-        <p class="help">The AI's drafts. Check one, fix anything wrong, approve it; only then does it go to Monday and GHL.</p>
+        <p class="help">The AI's drafts. Check one, fix anything wrong, approve it; only then does it go to Monday and the CRM.</p>
         ${drafts.slice(0, 5).map(c => row(c, `${day(c.created)} · client mood ${c.sentiment}`)).join("") || '<p class="empty-line">All caught up.</p>'}
         ${drafts.length > 5 ? `<a class="more" href="#calls/draft">See all ${drafts.length} &rarr;</a>` : ""}</section>
       <section class="card"><h3 class="sub">What we promised <span class="muted">${promised.length}</span></h3>
@@ -935,14 +952,14 @@ let plan = [];
 async function understand() {
   const text = $("#vText").value.trim(); $("#vErr").textContent = "";
   if (text.length < 3) return $("#vErr").textContent = "Say or type an instruction first.";
-  $("#vGo").disabled = true; $("#vGo").textContent = "Understanding...";
+  $("#vGo").disabled = true; $("#vGo").textContent = "Working it out...";
   try {
     const r = await api("/api/command", json("POST", {text, provider: pick().provider}));
     plan = r.actions;
     $("#vPlan").innerHTML = `<section class="card"><h3 class="sub">Here's what I understood</h3><p class="help">${esc(r.reply)}
         ${r.heard !== text ? `<br>Sent to the AI as: <i>${esc(r.heard)}</i>` : ""}</p>${plan.map(actionCard).join("") || ""}</section>`;
   } catch (err) { $("#vErr").textContent = err.message; }
-  finally { $("#vGo").disabled = false; $("#vGo").textContent = "Understand"; }
+  finally { $("#vGo").disabled = false; $("#vGo").textContent = "Show me the actions"; }
 }
 function actionCard(a, n) {
   if (a.kind === "question") return `<div class="act"><span class="kind">Question</span><p style="margin:6px 0">${esc(a.text)}</p>${answerHtml(a.answer)}</div>`;
@@ -1009,10 +1026,10 @@ async function renderClient(id) {
   if (!actions.length) { try { actions = await api("/api/actions"); } catch {} }
   const open = list.flatMap(x => x.open.map(a => ({...a, call: x})));
   $("#clientBody").innerHTML = `<div class="vhead"><h2>${esc(c.name)}</h2><p>${esc(c.plan)} · ${esc((c.states || []).join(", "))} · account manager ${esc(c.account_manager)} · <a href="#clients">all clients</a></p></div>
-    <section class="card"><h3 class="sub">Churn risk, call by call</h3>${list.length ? riskChart(list, 640, 200, true) : '<p class="help" style="margin:0">No calls yet.</p>'}</section>
+    <section class="card"><h3 class="sub">Risk of leaving, call by call</h3>${list.length ? riskChart(list, 640, 200, true) : '<p class="help" style="margin:0">No calls yet.</p>'}</section>
     <div class="grid">
       <section class="card"><h3 class="sub">Open follow-ups</h3><p class="help">Across all this client's calls.</p>
-        ${open.map(a => `<a class="rowlink" href="#${esc(a.call.id)}"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "Us" : "Client"}</span><span class="grow">${a.person ? `<span class="who-name">${esc(a.person)}</span>: ` : ""}${esc(a.task)}<br><span class="muted">${esc(a.call.id)} · ${a.due ? "due " + esc(a.due) : '<span class="nodue">no due date</span>'}</span></span></a>`).join("") || '<p class="help" style="margin:0">Nothing open.</p>'}
+        ${open.map(a => `<a class="rowlink" href="#${esc(a.call.id)}"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "We do" : "They do"}</span><span class="grow">${a.person ? `<span class="who-name">${esc(a.person)}</span>: ` : ""}${esc(a.task)}<br><span class="muted">${esc(a.call.id)} · ${a.due ? "due " + esc(a.due) : '<span class="nodue">no due date</span>'}</span></span></a>`).join("") || '<p class="help" style="margin:0">Nothing open.</p>'}
         ${open.length ? '<div class="toolbar"><button type="button" class="btn ghost" id="csvClient">These as CSV</button></div>' : ""}</section>
       <section class="card"><h3 class="sub">Calls</h3>
         ${list.slice().reverse().map(x => `<a class="rowlink" href="#${esc(x.id)}"><span class="grow"><b>${esc(x.id)}</b><br><span class="muted">${when(x.created)} · ${esc(x.sentiment)} · ${x.approved ? "approved" : "draft"}</span></span>${badge(x.churn_risk)}</a>`).join("") || '<p class="help" style="margin:0">None.</p>'}
@@ -1030,11 +1047,11 @@ async function renderCompare(a, b) {
   const differ = (f) => f(x) !== f(y) ? "diff" : "";
   const col = r => { const i = r.insight, found = r.checks.filter(c => c.found).length;
     return `<div class="card"><h3>${PROVIDER[r.provider] || esc(r.provider)} <span class="muted">· <a href="#${esc(r.id)}">${esc(r.id)}</a> · ${(r.latency_ms / 1000).toFixed(1)} s</span></h3>
-      <p><span class="${differ(r => Math.round(r.insight.churn_risk * 20))}">Churn risk ${badge(i.churn_risk)}</span> · <span class="${differ(r => r.insight.sentiment)}">${esc(i.sentiment)}</span></p>
+      <p><span class="${differ(r => Math.round(r.insight.churn_risk * 20))}">${badge(i.churn_risk)}</span> · <span class="${differ(r => r.insight.sentiment)}">${esc(i.sentiment)}</span></p>
       <p class="summary" style="margin:8px 0">${esc(i.summary)}</p>
       <p class="muted">Quotes found <b>${found}/${r.checks.length}</b> · alerts <b>${r.alerts.length}</b> · follow-ups <b>${i.action_items.length}</b></p>
       <h3 class="sub">Alerts</h3>${r.alerts.map(alertHtml).join("") || '<p class="help">None.</p>'}
-      <h3 class="sub">Follow-ups</h3>${i.action_items.map(a => `<div class="todo"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "Us" : "Client"}</span><span>${person(r, a) ? `<span class="who-name">${esc(person(r, a))}</span>: ` : ""}${esc(a.task)}${a.due ? ` <span class="due">· ${esc(a.due)}</span>` : ""}</span></div>`).join("") || '<p class="help">None.</p>'}</div>`; };
+      <h3 class="sub">Follow-ups</h3>${i.action_items.map(a => `<div class="todo"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "We do" : "They do"}</span><span>${person(r, a) ? `<span class="who-name">${esc(person(r, a))}</span>: ` : ""}${esc(a.task)}${a.due ? ` <span class="due">· ${esc(a.due)}</span>` : ""}</span></div>`).join("") || '<p class="help">None.</p>'}</div>`; };
   $("#compareBody").innerHTML = `<div class="vhead"><h2>${esc(x.client.name)}: two models, one call</h2><p>The same masked transcript, read by each model. Highlighted values differ. Quotes are checked in code for both.</p></div>
     <div class="cmp">${col(x)}${col(y)}</div>`;
 }
