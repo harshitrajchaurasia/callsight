@@ -98,10 +98,12 @@ def listing(conn, user: str | None) -> list[dict]:
     return [json.loads(act) | {"id": i, "created": c} for i, c, o, act in rows if user is None or o == user]
 
 
-def set_done(conn, action_id: int, done: bool, user: str | None) -> bool:
+def set_done(conn, action_id: int, done: bool, user: str | None) -> dict | None:
+    """The updated action, or None if it doesn't exist or isn't this user's."""
     row = conn.execute("SELECT owner, action FROM actions WHERE id = ?", (action_id,)).fetchone()
     if not row or (user is not None and row[0] != user):
-        return False
-    conn.execute("UPDATE actions SET action = ? WHERE id = ?", (json.dumps(json.loads(row[1]) | {"done": done}), action_id))
+        return None
+    a = json.loads(row[1]) | {"done": done}
+    conn.execute("UPDATE actions SET action = ? WHERE id = ?", (json.dumps(a), action_id))
     conn.commit()
-    return True
+    return a

@@ -124,3 +124,27 @@ def test_ticking_a_follow_up_keeps_approval_and_notes_it_on_monday(tmp_path, mon
     assert r.approved_by is None  # a real change needs approving again
     r = pipeline.approve(conn, r, "dana")
     assert notes[-1][0] == "77" and notes[-1][1][0] == "Approved again after changes by dana."  # same item, not a new one
+
+
+def test_history_says_what_happened_and_members_see_only_their_part(tmp_path, monkeypatch):
+    c = _app(tmp_path, monkeypatch)
+    _login(c, "garrett", "q")
+    r = c.post("/api/calls", data={"client_id": "C-03", "provider": "claude", "transcript": "Marcus (Acme): call me on [PHONE]"}).json()
+    h = c.get(f"/api/calls/{r['id']}").json()["history"]
+    kinds = [e["kind"] for e in reversed(h)]
+    assert kinds[:3] == ["processed", "masked", "read"] and kinds[-1] == "waiting"
+    assert "1 phone number" in h[-2]["text"] and "Person 1" in h[-2]["text"]  # what was masked, in words
+    items = c.get(f"/api/calls/{r['id']}").json()["insight"]["action_items"]
+    items[0]["done"] = True
+    h = c.patch(f"/api/calls/{r['id']}", json={"action_items": items}).json()["history"]
+    assert h[0]["kind"] == "ticked" and h[0]["text"].startswith("garrett marked done:")
+    h = c.patch(f"/api/calls/{r['id']}", json={"churn_risk": 0.1}).json()["history"]
+    assert h[0]["kind"] == "edited" and "risk of leaving" in h[0]["text"] and "to 10%" in h[0]["text"]
+    h = c.post(f"/api/calls/{r['id']}/approve").json()["history"]
+    assert h[0]["kind"] == "approved" and "Monday isn't connected" in h[0]["text"]
+    _login(c, "admin", "p")
+    mine = c.post("/api/calls", data={"client_id": "C-03", "provider": "claude", "transcript": "AM: hi"}).json()["id"]
+    assert {e["kind"] for e in c.get("/api/activity").json()} >= {"login", "approved"}  # the admin sees everything
+    _login(c, "garrett", "q")
+    seen = c.get("/api/activity").json()
+    assert all(e["call_id"] != mine for e in seen) and all(e["user"] == "garrett" for e in seen if e["kind"] == "login")

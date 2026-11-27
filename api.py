@@ -16,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from callsight import ask, command, extract, pipeline, redact, sinks, store, stt
+from callsight import activity, ask, command, extract, pipeline, redact, sinks, store, stt
 from callsight.models import ActionItem, Segment
 from callsight.config import CLIENTS, ROOT
 
@@ -122,6 +122,7 @@ def login(body: Login, request: Request, response: Response):
         raise HTTPException(401, "Incorrect username or password")
     _fails.pop(ip, None)
     log.info("login ok user=%s ip=%s", body.username, ip)
+    store.event(conn, "login", f"{body.username} signed in.", user=body.username)
     response.set_cookie(COOKIE, _token(int(now) + SESSION_TTL, body.username), httponly=True, secure=True, samesite="lax", max_age=SESSION_TTL)
     return {"ok": True}
 
@@ -158,7 +159,22 @@ def _get(call_id: str, user: str):
 
 
 def _out(r) -> dict:
-    return r.model_dump() | {"client": CLIENTS[r.client_id].model_dump()}
+    return r.model_dump() | {"client": CLIENTS[r.client_id].model_dump(), "history": store.events(conn, call_id=r.id)}
+
+
+def _processed(r, user: str, source: str):
+    for kind, text in activity.processed(r, user, source):
+        store.event(conn, kind, text, call_id=r.id, user=user)
+    return r
+
+
+def _failed(user: str, client_id: str, why: str) -> None:
+    store.event(conn, "failed", f"{user or 'someone'}'s call with {CLIENTS[client_id].name} couldn't be processed: {why} "
+                                "Nothing was saved or sent.", user=user)
+
+
+def _mmss(sec: float) -> str:
+    return f"{int(sec) // 60}:{int(sec) % 60:02d}"
 
 
 def _as(user: str, fn, *a, **kw):
@@ -247,6 +263,7 @@ def delete_call(call_id: str, user: str = Depends(require_session)):
         raise HTTPException(403, "only the person who processed this call (or an admin) can delete it")
     store.delete(conn, call_id)
     log.info("delete user=%s id=%s", user, call_id)
+    store.event(conn, "deleted", f"{user or 'someone'} deleted {call_id} ({CLIENTS[r.client_id].name}).", call_id=call_id, user=user)
     return {"ok": True}
 
 
@@ -335,11 +352,13 @@ async def new_call(request: Request, user: str = Depends(require_session), clien
           "owner": user, "on_progress": _tracker(job)}
     try:
         if live:
-            return (await run_in_threadpool(pipeline.process, call_id, client_id, conn, segments=live, **kw)).model_dump()
+            r = await run_in_threadpool(pipeline.process, call_id, client_id, conn, segments=live, **kw)
+            return _processed(r, user, f"a microphone recording ({_mmss(live[-1].end)})").model_dump()
         if transcript:
             if len(transcript) > 60_000:
                 raise HTTPException(413, "transcript too long (60k characters max)")
-            return (await run_in_threadpool(pipeline.process, call_id, client_id, conn, text=transcript, **kw)).model_dump()
+            r = await run_in_threadpool(pipeline.process, call_id, client_id, conn, text=transcript, **kw)
+            return _processed(r, user, "a pasted transcript").model_dump()
         suffix = Path(audio.filename).suffix.lower()
         if suffix not in AUDIO:
             raise HTTPException(415, f"audio must be one of {', '.join(sorted(AUDIO))}")
@@ -349,12 +368,15 @@ async def new_call(request: Request, user: str = Depends(require_session), clien
         with tempfile.NamedTemporaryFile(suffix=suffix) as f:  # deleted as soon as it's transcribed
             f.write(data)
             f.flush()
-            if _minutes(f.name) > MAX_MINUTES:
+            if (minutes := _minutes(f.name)) > MAX_MINUTES:
                 raise HTTPException(413, f"recording too long ({MAX_MINUTES:g} minutes max)")
-            return (await run_in_threadpool(pipeline.process, call_id, client_id, conn, audio_path=f.name, **kw)).model_dump()
+            r = await run_in_threadpool(pipeline.process, call_id, client_id, conn, audio_path=f.name, **kw)
+            return _processed(r, user, f"an uploaded recording ({_mmss(minutes * 60)})" if minutes else "an uploaded recording").model_dump()
     except redact.RedactionUnavailable as e:
+        _failed(user, client_id, "the masking service (PII Shield) wasn't available, so the call was stopped before any AI saw it.")
         raise HTTPException(503, str(e))
     except extract.ModelUnavailable as e:
+        _failed(user, client_id, f"the AI model didn't answer ({e}).")
         raise HTTPException(502, str(e))
 
 
@@ -378,18 +400,26 @@ class Edit(BaseModel):
 async def edit_call(call_id: str, body: Edit, user: str = Depends(require_session)):
     if any(len(a.task) > 300 or len(a.quote) > 500 or len(a.due or "") > 80 or len(a.speaker or "") > 80 for a in body.action_items or []):
         raise HTTPException(422, "a follow-up is too long")
-    r = await run_in_threadpool(pipeline.edit, conn, _get(call_id, user), user, **body.model_dump(exclude_none=True, exclude={"action_items"}),
+    r = _get(call_id, user)
+    before = r.model_copy(deep=True)  # edit() changes r in place
+    r = await run_in_threadpool(pipeline.edit, conn, r, user, **body.model_dump(exclude_none=True, exclude={"action_items"}),
                                 action_items=body.action_items)
     log.info("edit user=%s id=%s", user, call_id)
+    for kind, text in activity.edited(before, r, user):
+        store.event(conn, kind, text, call_id=call_id, user=user)
     return _out(r)
 
 
 @app.post("/api/calls/{call_id}/approve", dependencies=api)
 async def approve_call(call_id: str, user: str = Depends(require_session)):
-    r = await run_in_threadpool(pipeline.approve, conn, _get(call_id, user), user)
+    r = _get(call_id, user)
+    had_item = r.monday_item_id
+    r = await run_in_threadpool(pipeline.approve, conn, r, user)
     log.info("approve user=%s id=%s monday=%s", user, call_id, r.monday_item_id)
-    return _out(r) | {"connected": {"monday": bool(os.getenv("MONDAY_API_TOKEN") and os.getenv("MONDAY_CALLS_BOARD_ID")),
-                                    "ghl": bool(os.getenv("GHL_API_KEY") and os.getenv("GHL_CONTACTS"))}}
+    connected = {"monday": bool(os.getenv("MONDAY_API_TOKEN") and os.getenv("MONDAY_CALLS_BOARD_ID")),
+                 "ghl": bool(os.getenv("GHL_API_KEY") and os.getenv("GHL_CONTACTS"))}
+    store.event(conn, "approved", activity.approved(r, user, had_item, connected["monday"]), call_id=call_id, user=user)
+    return _out(r) | {"connected": connected}
 
 
 class Rerun(BaseModel):
@@ -411,6 +441,9 @@ async def rerun_call(call_id: str, body: Rerun, request: Request, user: str = De
         raise HTTPException(503, str(e))
     except extract.ModelUnavailable as e:
         raise HTTPException(502, str(e))
+    name = activity.PROVIDER[body.provider]
+    store.event(conn, "rerun", f"{user or 'someone'} had {name} read this call too, to compare: {new_id}.", call_id=call_id, user=user)
+    _processed(out, user, f"the masked transcript of {call_id} for {name} to read")
     return _out(out)
 
 
@@ -479,8 +512,19 @@ async def run_action(body: ActionIn, user: str = Depends(require_session)):
         raise HTTPException(422, "unknown client")
     out = await run_in_threadpool(command.run, conn, body.model_dump(), user)
     log.info("action user=%s kind=%s monday=%s", user, body.kind, out.get("monday_item_id"))
-    return out | {"connected": {"monday": bool(os.getenv("MONDAY_API_TOKEN") and (os.getenv("MONDAY_TASKS_BOARD_ID") or os.getenv("MONDAY_CALLS_BOARD_ID"))),
-                                "ghl": bool(os.getenv("GHL_API_KEY") and os.getenv("GHL_CONTACTS"))}}
+    connected = {"monday": bool(os.getenv("MONDAY_API_TOKEN") and (os.getenv("MONDAY_TASKS_BOARD_ID") or os.getenv("MONDAY_CALLS_BOARD_ID"))),
+                 "ghl": bool(os.getenv("GHL_API_KEY") and os.getenv("GHL_CONTACTS"))}
+    who, client = user or "someone", CLIENTS[body.client_id].name if body.client_id else None
+    if body.kind == "task":
+        where = (f"Created Monday item #{out['monday_item_id']}." if out.get("monday_item_id") else
+                 "Saved here; the Monday write didn't go through." if connected["monday"] else "Saved here (Monday isn't connected).")
+        text = f"{who} confirmed a task for {body.assignee or 'nobody yet'}: {body.text}" + (f" ({client})" if client else "") + f". {where}"
+    else:
+        where = ("Added to the client's CRM record." if out.get("ghl") else
+                 "Saved here; the CRM write didn't go through." if connected["ghl"] else "Saved here (the CRM isn't connected).")
+        text = f"{who} confirmed a note" + (f" on {client}" if client else "") + f": {body.text}. {where}"
+    store.event(conn, "voice", text, user=user)
+    return out | {"connected": connected}
 
 
 @app.get("/api/actions", dependencies=api)
@@ -494,9 +538,21 @@ class Done(BaseModel):
 
 @app.patch("/api/actions/{action_id}", dependencies=api)
 def action_done(action_id: int, body: Done, user: str = Depends(require_session)):
-    if not command.set_done(conn, action_id, body.done, None if _admin(user) else user):
+    if not (a := command.set_done(conn, action_id, body.done, None if _admin(user) else user)):
         raise HTTPException(404, "no such task")
+    store.event(conn, "ticked", f"{user or 'someone'} {'marked done' if body.done else 'reopened'} a voice task: {a['text']}.", user=user)
     return {"ok": True}
+
+
+@app.get("/api/activity", dependencies=api)
+def activity_log(user: str = Depends(require_session)):
+    """What happened, newest first. Members see their own actions and what happened on calls they can see; sign-ins
+    of other people are the admin's business."""
+    rows = store.events(conn, limit=400)
+    if _admin(user):
+        return rows
+    visible = {r.id for r in store.all_calls(conn) if _can_see(r, user)}
+    return [e for e in rows if e["user"] == user or (e["call_id"] in visible and e["kind"] != "login")]
 
 
 class Question(BaseModel):
@@ -508,6 +564,7 @@ class Question(BaseModel):
 async def ask_calls(q: Question, request: Request, user: str = Depends(require_session)):
     rate_limit("ask", request)
     log.info("ask user=%s q=%r", user, q.question[:120])
+    store.event(conn, "ask", f'{user or "someone"} asked across the calls: "{q.question[:200]}"', user=user)
     visible = {r.id for r in store.all_calls(conn) if _can_see(r, user)}
     try:
         return await _as(user, ask.answer, conn, q.question, q.provider if q.provider in ("claude", "grok") else None, calls=visible)

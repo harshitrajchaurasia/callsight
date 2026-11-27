@@ -242,6 +242,25 @@ details.more .toolbar { margin-top:10px }
 .back { display:inline-block; margin:0 0 12px; font-size:14px; font-weight:600; text-decoration:none }
 .today h3.sub { display:flex; align-items:baseline; gap:8px } .today h3 .muted { font-weight:500 }
 .welcome { border-color:var(--brand) } .steps3 { margin:10px 0 0; padding-left:20px; font-size:14.5px } .steps3 li { margin:4px 0 }
+#toasts { position:fixed; right:16px; bottom:16px; z-index:50; display:flex; flex-direction:column; gap:8px; width:min(420px, calc(100vw - 32px)) }
+.toast { background:var(--panel); color:var(--ink); border:1px solid var(--line); border-left:4px solid var(--brand); border-radius:10px; padding:10px 34px 10px 14px;
+  box-shadow:0 8px 28px rgba(0,0,0,.14); font-size:14px; line-height:1.5; position:relative }
+.toast.err { border-left-color:var(--bad) } .toast.ok { border-left-color:var(--ok) }
+.toast button { position:absolute; right:4px; top:2px; background:none; border:0; font-size:20px; line-height:1; padding:6px; color:var(--muted); cursor:pointer }
+.prog { list-style:none; margin:16px 0 0; padding:12px 14px; background:var(--soft); border-radius:10px }
+.prog li { display:flex; gap:10px; padding:5px 0; color:var(--muted); font-size:14.5px }
+.prog li::before { content:""; flex:none; width:10px; height:10px; margin-top:7px; border-radius:50%; border:2px solid var(--line); box-sizing:border-box }
+.prog li.done { color:var(--ink2) } .prog li.done::before { background:var(--ok); border-color:var(--ok) }
+.prog li.now { color:var(--ink); font-weight:600 } .prog li.now::before { border-color:var(--brand); animation:pulse 1s infinite }
+@keyframes pulse { 50% { background:var(--brand) } }
+@media (prefers-reduced-motion:reduce) { .prog li.now::before { animation:none; background:var(--brand) } }
+.hist { list-style:none; margin:0; padding:0 } .hist li { display:grid; grid-template-columns:128px minmax(0, 1fr); gap:12px; padding:9px 0; border-bottom:1px solid var(--line); font-size:14.5px }
+.hist li:last-child { border-bottom:0 } .hist time { color:var(--muted); font-size:13px; padding-top:1px }
+.hist .k { display:inline-block; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-right:6px }
+.hist .k.bad { color:var(--bad) } .hist .k.ok { color:var(--ok) }
+.dayhead { margin:18px 0 4px; font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em } .dayhead:first-child { margin-top:0 }
+#actBody .hist li { grid-template-columns:84px minmax(0, 1fr) }
+@media (max-width:640px) { .hist li, #actBody .hist li { grid-template-columns:1fr; gap:2px } }
 .today .more { display:inline-block; margin-top:10px; font-size:14px; font-weight:600; text-decoration:none }
 .empty-line { color:var(--muted); font-size:14px; margin:4px 0 0 }
 
@@ -253,7 +272,7 @@ details.more .toolbar { margin-top:10px }
   <a class="logo" href="#today" aria-label="CallSight home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2b59c3"/>
     <path d="M8 16h2M12 11v10M16 7v18M20 12v8M24 15v2" stroke="#ffc65c" stroke-width="2.6" stroke-linecap="round"/></svg>CallSight</a>
   <nav class="appnav" id="appnav" aria-label="App" hidden><a href="#today">Today</a><a href="#calls">Calls</a><a href="#clients">Clients</a>
-    <a href="#voice">Voice</a><a href="#ask">Ask</a></nav>
+    <a href="#voice">Voice</a><a href="#ask">Ask</a><a href="#activity">Activity</a></nav>
   <nav class="tools" aria-label="Site"><a href="#how" class="hide-sm" id="howLink">How it works</a>
     <a href="#new" class="newcall" id="newLink" hidden>+ New call</a>
     <a href="#settings" id="gear" hidden aria-label="Settings" title="Settings"></a>
@@ -329,7 +348,7 @@ details.more .toolbar { margin-top:10px }
           <p class="help" style="margin:10px 0 0">Uses this device's microphone, up to 10 minutes. One microphone hears everyone as one speaker,
             so the AI works out who is who; for a phone call, put it on speaker. Audio isn't kept: each few seconds is transcribed and deleted.</p></div>
         <div class="using"><span id="using"></span><a href="#settings">Change</a></div>
-        <button id="callBtn" class="btn wide">Process call</button><div class="err" id="callErr" role="alert"></div>
+        <button id="callBtn" class="btn wide">Process call</button><div id="callProg" aria-live="polite"></div><div class="err" id="callErr" role="alert"></div>
         <p class="note"><b>Demo:</b> calls you process are visible to you and the admin; the test calls are shared. Use a test call or a made-up one,
           never real customer data. Up to 10 calls and 30 questions an hour.</p>
       </form>
@@ -387,6 +406,16 @@ details.more .toolbar { margin-top:10px }
       </form>
     </section>
 
+    <section data-view="activity" hidden>
+      <div class="vhead"><h2>Activity</h2><p>What happened, newest first: calls sent in and what the AI made of them, edits, ticked follow-ups, approvals and
+        what was sent to Monday, tasks from voice, and questions. <span id="actScope"></span></p></div>
+      <div class="card"><div class="chips" id="actFilters" role="group" aria-label="Show">
+          <button type="button" data-af="all" aria-pressed="true">Everything</button><button type="button" data-af="mine" aria-pressed="false">Only mine</button>
+          <button type="button" data-af="calls" aria-pressed="false">Calls</button><button type="button" data-af="voice" aria-pressed="false">Voice and questions</button>
+          <button type="button" data-af="login" aria-pressed="false" id="afLogin" hidden>Sign-ins</button></div>
+        <div id="actBody" style="margin-top:14px"></div></div>
+    </section>
+
     <section data-view="usage" hidden><div class="vhead"><h2>Usage and cost</h2><p>AI spend from the app's own log (tests and evals not included). Times are UTC.</p></div><div id="usageBody"></div></section>
 
     <section data-view="how" hidden>
@@ -397,6 +426,7 @@ details.more .toolbar { margin-top:10px }
     <section data-view="call" hidden id="detail"></section>
   </div>
 </main>
+<div id="toasts" aria-live="polite"></div>
 <footer class="foot"><div class="wrap">CallSight · MIT licence · all clients, people and calls are made up ·
   <a href="#how">how it works</a> · <a href="https://github.com/harshitrajchaurasia/callsight">source</a> · <a href="https://harshit.saakura.dev/projects/">more projects</a></div></footer>
 
@@ -432,7 +462,7 @@ const VEXAMPLES = ["Create a task for Priya to send Summit Annuity the Texas quo
   "Which clients asked for new states?"];
 $("#vExamples").innerHTML = VEXAMPLES.map(q => `<button type="button">${esc(q)}</button>`).join("");
 const PROVIDER = {claude: "Claude", grok: "Grok"}, KEEP = {NAME: "names", LOCATION: "places"};
-const VIEWS = ["today", "calls", "new", "voice", "clients", "ask", "settings", "usage", "how"];
+const VIEWS = ["today", "calls", "new", "voice", "clients", "ask", "settings", "usage", "how", "activity"];
 $("#gear").innerHTML = ICON.gear;
 let current = null, samples = [], calls = [], clientsList = [], server = {providers: [], keepable: [], churn_alert: .6, team: []};
 const CL = id => clientsList.find(c => c.id === id) || {name: id};
@@ -483,11 +513,30 @@ $("#setForm").churn.oninput = e => $("#churnVal").textContent = e.target.value +
 $("#reset").onclick = () => { prefs = {}; save("cs-settings", prefs); setTheme("light"); renderSettings(); };
 
 // --- server ------------------------------------------------------------------------------------------------------
+// --- messages: one place for "what just happened", errors in plain words with what to do next --------------------
+function notify(text, kind = "ok", ms = kind === "err" ? 0 : 6000) {
+  const el = document.createElement("div"); el.className = "toast " + kind; el.setAttribute("role", kind === "err" ? "alert" : "status");
+  el.innerHTML = `<span>${text}</span><button type="button" aria-label="Close">&times;</button>`;
+  el.querySelector("button").onclick = () => el.remove();
+  $("#toasts").append(el); while ($("#toasts").children.length > 3) $("#toasts").firstChild.remove();
+  if (ms) setTimeout(() => el.remove(), ms);
+}
+const cap = t => { t = String(t || "").trim(); return t ? t[0].toUpperCase() + t.slice(1) + (/[.!?]$/.test(t) ? "" : ".") : t; };
+function friendly(status, said) {
+  if (status === 429 && /limit/.test(said)) return `${cap(said)} The demo limits how much each person can use per hour, to keep AI costs down.`;
+  if (status === 503) return "The masking service (PII Shield) isn't answering, so CallSight stopped before any AI saw the call. Nothing was saved or sent. Try again in a minute.";
+  if (status === 502) return `The AI model didn't answer (${said}). Nothing was saved. Try again, or pick the other model in Settings.`;
+  if (status === 404) return "That isn't here any more. It may have been deleted, or it belongs to someone else.";
+  if (status >= 500) return "Something went wrong on the server, and it's in the server log. Nothing was changed. Please try again.";
+  return cap(said);
+}
 async function api(path, opts) {
-  const r = await fetch(path, opts);
-  if (r.status === 401 && path !== "/api/login") { show(false); throw new Error("sign in required"); }
+  let r;
+  try { r = await fetch(path, opts); }
+  catch { throw new Error("Couldn't reach CallSight's server. Check your connection, then try again."); }
+  if (r.status === 401 && path !== "/api/login") { show(false); notify("Your session ended, so you've been signed out. Sign in again to carry on.", "err"); throw new Error("Please sign in again."); }
   const body = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(Array.isArray(body.detail) ? body.detail.map(d => d.msg).join("; ") : body.detail || `HTTP ${r.status}`);
+  if (!r.ok) throw new Error(friendly(r.status, Array.isArray(body.detail) ? body.detail.map(d => d.msg).join("; ") : body.detail || `error ${r.status}`));
   return body;
 }
 const json = (method, body) => ({method, headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
@@ -530,7 +579,7 @@ function route() {
   if (parts[0] === "calls") { if (parts[1]) setFilter(parts[1]); return go("calls", drawCalls); }
   if (!id || VIEWS.includes(id)) {
     const name = id || "today";
-    return go(name, {today: renderToday, voice: renderActions, clients: renderClients, usage: renderUsage}[name]);
+    return go(name, {today: renderToday, voice: renderActions, clients: renderClients, usage: renderUsage, activity: renderActivity}[name]);
   }
   view("call"); openCall(id, at);
 }
@@ -663,24 +712,37 @@ $("#callForm").onsubmit = async e => {
   if (!fd.get("audio")?.name) fd.delete("audio"); if (!fd.get("transcript")) fd.delete("transcript");
   if (mode === "mic") fd.set("segments", JSON.stringify(callRec.segs));
   if (p.provider) fd.set("provider", p.provider); fd.set("keep", p.keep.join(",")); fd.set("churn_alert", p.churn); fd.set("job", job);
-  const say = t => { $("#callBtn").textContent = t; if (mode === "mic") callRec.say(`<div class="ln wait">${esc(t)}</div>`); };
-  say(fd.has("audio") ? "Uploading..." : "Masking and analysing...");
-  const poll = setInterval(async () => {  // live progress: transcribing 1:20 of 3:45, then masking, analysing, checking
+  const model = PROVIDER[p.provider] || "The AI", upload = fd.has("audio");
+  let stage = upload ? "upload" : "masking", detail = "", second = false;
+  const steps = () => [...(upload ? [["upload", "Uploading the recording"], ["transcribing", `Turning speech into text on this server${detail}`]] : []),
+    ["masking", "Hiding personal details (names, phone numbers, emails, card numbers) with PII Shield"],
+    ["analysing", `${model} reads the masked call and drafts a summary, the risk of leaving, the client's mood and the follow-ups`],
+    ...(second ? [["second opinion", "The reading is borderline, so the other model reads the call too"]] : []),
+    ["checking", "Code checks every quote against the transcript, then the rules decide the alerts"]];
+  const draw = () => { const list = steps(), at = list.findIndex(([k]) => k === stage);
+    $("#callProg").innerHTML = `<ol class="prog">${list.map(([k, t], n) => `<li class="${n < at ? "done" : n === at ? "now" : ""}">${esc(t)}</li>`).join("")}</ol>`; };
+  $("#callBtn").textContent = "Working on it..."; draw();
+  if (mode === "mic") callRec.say('<div class="ln wait">The recording is done; processing it below.</div>');
+  const poll = setInterval(async () => {  // live progress from the server: transcribing 1:20 of 3:45, masking, analysing...
     try { const s = await api(`/api/progress/${job}`);
-      say(s.stage === "transcribing" ? `Transcribing ${mmss(s.fraction * s.seconds)} of ${mmss(s.seconds)}...`
-        : s.stage === "analysing" ? `Analysing with ${PROVIDER[s.provider] || s.provider}...` : STAGE[s.stage] || "Working..."); } catch {}
+      if (s.stage === "waiting") return;
+      if (s.stage === "second opinion") second = true;
+      if (s.stage === "transcribing") detail = s.seconds ? ` (${mmss(s.fraction * s.seconds)} of ${mmss(s.seconds)})` : "";
+      stage = s.stage; draw(); } catch {}
   }, 1000);
   try { const r = await api("/api/calls", {method:"POST", body:fd}); e.target.transcript.value = ""; e.target.audio.value = ""; $("#sample").value = "";
         if (mode === "mic") callRec.reset();
-        await loadCalls(); location.hash = r.id; }
-  catch (err) { $("#callErr").textContent = err.message; if (mode === "mic") callRec.say(""); }
+        $("#callProg").innerHTML = "";
+        await loadCalls(); arrival = "Done. This is the AI's draft. Check the alerts and follow-ups (and the quotes behind them), fix anything with Edit, then Approve. The History tab shows each step.";
+        location.hash = r.id; }
+  catch (err) { $("#callProg").innerHTML = ""; $("#callErr").textContent = err.message; if (mode === "mic") callRec.say(""); }
   finally { clearInterval(poll); $("#callBtn").disabled = false; $("#callBtn").textContent = "Process call";
             $("#callBtn").hidden = mode === "mic" && !callRec.segs.length; }  // a failed analysis of a recording can be retried
 };
 
 // --- one call ----------------------------------------------------------------------------------------------------
 // stored alerts say "churn"; show plain words (the rules and saved calls keep their wording)
-const plain = t => t.replace(/\bChurn risk\b/g, "Risk of leaving").replace(/\bchurn risk\b/g, "risk of leaving").replace(/\bscores churn\b/g, "scores the risk of leaving").replace(/quoted churn reasons/g, "quoted reasons for leaving");
+const plain = t => t.replace(/\bChurn risk\b/g, "Risk of leaving").replace(/\bchurn risk\b/g, "risk of leaving").replace(/\bscores churn\b/g, "scores the risk of leaving").replace(/quoted churn reasons/g, "quoted reasons for leaving").replace(/: set one in Monday$/, ": give them a date with Edit, or on Monday once it's approved");
 function alertHtml(a) {
   const [cls, ic] = /^Churn risk \d+%:/.test(a) ? ["a-bad", "warn"] : /person should check/.test(a) ? ["a-warn", "warn"]
     : /^Upsell/.test(a) ? ["a-ok", "up"] : ["a-info", "info"];
@@ -692,16 +754,16 @@ function dtab(name) {
 }
 async function openCall(id, at) {
   if (id !== current || !$("#detail [data-dtab]")) {
-    current = id; flash = "";
+    current = id; flash = arrival; arrival = "";
     $("#detail").innerHTML = '<div class="card"><p class="help" style="margin:0">Loading the call...</p></div>';
     let r;
     try { r = await api(`/api/calls/${encodeURIComponent(id)}`); }
-    catch (err) { $("#detail").innerHTML = `<div class="card"><p class="err" style="margin:0">${esc(err.message)}</p></div>`; return; }
+    catch (err) { $("#detail").innerHTML = `<a class="back" href="#calls">&larr; All calls</a><div class="card"><p class="err" style="margin:0">${esc(err.message)}</p></div>`; return; }
     renderCall(r);
   }
   if (at != null) { dtab("transcript"); highlight(at); } else window.scrollTo(0, 0);
 }
-let shown = null, flash = "";
+let shown = null, flash = "", arrival = "";
 const person = (r, a) => { const n = a.speaker ? (r.speakers?.[a.speaker] || a.speaker) : ""; return /^(speaker|client|account manager)?$/i.test(n) ? "" : n; };
 const canDelete = r => server.admin || (r.owner != null && r.owner === server.user);
 function renderCall(r) {
@@ -753,7 +815,8 @@ function renderCall(r) {
     <div class="tabs dtabs" role="tablist">
       <button type="button" role="tab" data-to="overview" aria-selected="true">Overview</button>
       <button type="button" role="tab" data-to="evidence">Quotes (${r.checks.length}${missing ? `, ${missing} unverified` : ""})</button>
-      <button type="button" role="tab" data-to="transcript">Transcript</button></div>
+      <button type="button" role="tab" data-to="transcript">Transcript</button>
+      <button type="button" role="tab" data-to="history">History</button></div>
     <section class="card" data-dtab="overview">
       <h3 class="sub">Alerts</h3><p class="help">Raised by rules in code, not by the AI. An alert needs a quote that was really found in the transcript.</p>
       ${r.alerts.map(alertHtml).join("") || `<div class="alert a-ok">${ICON.check}<span>No alerts: nothing on this call needs action.</span></div>`}
@@ -770,8 +833,49 @@ function renderCall(r) {
         ? `The ${unmasked.join(" and ")} on this call were sent as said (a setting); phone numbers, emails and similar are masked.`
         : "Names, phone numbers, emails and similar are already masked."}</p>
       <div class="chat">${r.segments.map(s => `<div class="line" data-at="${s.start}"><span class="who-tag s${Math.min(speakers.indexOf(base(s)), 2)}" title="${esc(s.speaker)}">${esc(s.speaker)}</span>
-        <span>${timed ? `<span class="t">${mmss(s.start)}</span>` : ""}${esc(s.text)}${(r.voice?.moments || []).some(m => m.at === s.start) ? ' <span class="tag">voice raised</span>' : ""}</span></div>`).join("")}</div></section>`;
+        <span>${timed ? `<span class="t">${mmss(s.start)}</span>` : ""}${esc(s.text)}${(r.voice?.moments || []).some(m => m.at === s.start) ? ' <span class="tag">voice raised</span>' : ""}</span></div>`).join("")}</div></section>
+    <section class="card" data-dtab="history" hidden>${historyHtml(r)}</section>`;
 }
+// --- history of one call, and the Activity page ---------------------------------------------------------------------
+const KINDNAME = {processed: ["Sent in"], masked: ["Masked"], read: ["AI read it"], second: ["Second opinion"], checked: ["Quotes checked"],
+  alerts: ["Alerts"], waiting: ["Draft ready"], edited: ["Edited"], ticked: ["Follow-up"], approved: ["Approved", "ok"], rerun: ["Re-run"],
+  deleted: ["Deleted", "bad"], failed: ["Failed", "bad"], login: ["Signed in"], voice: ["Voice"], ask: ["Question"]};
+const kindTag = k => { const [n, c] = KINDNAME[k] || [k]; return `<span class="k ${c || ""}">${esc(n)}</span>`; };
+const clock = t => new Date(t * 1000).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
+function historyHtml(r) {
+  const h = (r.history || []).slice().reverse();  // oldest first: it reads as the call's story
+  const intro = '<p class="help">Every step this call has been through, oldest first: what the masking, the AI and the checks did, and what people changed or approved.</p>';
+  if (h.length) return intro + `<ol class="hist">${h.map(e => `<li><time datetime="${new Date(e.ts * 1000).toISOString()}">${day(e.ts)}, ${clock(e.ts)}</time><span>${kindTag(e.kind)}${esc(plain(e.text))}</span></li>`).join("")}</ol>`;
+  const old = [[r.created, "processed", `Processed and read by ${PROVIDER[r.provider] || r.provider}.`],
+    ...(r.edited_by != null ? [[null, "edited", `Edited by ${r.edited_by || "someone"}.`]] : []),
+    ...(r.approved_by != null ? [[r.approved_at, "approved", `Approved by ${r.approved_by || "someone"}${r.monday_item_id ? ` and sent to Monday as item #${r.monday_item_id}` : ""}.`]] : [])];
+  return intro + '<p class="help">This call is older than the step-by-step history, so only what was saved with it is shown.</p>'
+    + `<ol class="hist">${old.map(([t, k, x]) => `<li><time>${t ? `${day(t)}, ${clock(t)}` : ""}</time><span>${kindTag(k)}${esc(x)}</span></li>`).join("")}</ol>`;
+}
+let actFilter = "all", activityRows = [];
+const ACT = {all: () => true, mine: e => e.user === server.user, calls: e => e.call_id, voice: e => ["voice", "ask"].includes(e.kind), login: e => e.kind === "login"};
+async function renderActivity() {
+  $("#afLogin").hidden = !server.admin;
+  $("#actScope").textContent = server.admin ? "As the admin you see everyone's activity, including sign-ins." : "You see your own activity and what happened on the calls you can open.";
+  $("#actBody").innerHTML = '<p class="help" style="margin:0">Loading the activity...</p>';
+  try { activityRows = await api("/api/activity"); } catch (err) { $("#actBody").innerHTML = `<p class="err" style="margin:0">${esc(err.message)}</p>`; return; }
+  drawActivity();
+}
+const STEPS_ONLY = new Set(["masked", "read", "second", "checked", "alerts", "waiting"]);  // shown in each call's History tab
+function drawActivity() {
+  const ids = new Set(calls.map(c => c.id)), rows = activityRows.filter(e => !STEPS_ONLY.has(e.kind) && ACT[actFilter](e));
+  const got = Object.fromEntries(activityRows.filter(e => e.kind === "read").map(e => [e.call_id, e.text]));
+  let last = "";
+  $("#actBody").innerHTML = rows.map(e => {
+    const d = new Date(e.ts * 1000).toLocaleDateString([], {weekday: "long", month: "long", day: "numeric"}), head = d !== last ? `<h3 class="dayhead">${d}</h3>` : "";
+    last = d;
+    const link = e.call_id && ids.has(e.call_id) ? ` <a href="#${esc(e.call_id)}">${esc(e.call_id)}</a>` : e.call_id ? ` <span class="muted">${esc(e.call_id)}</span>` : "";
+    const more = e.kind === "processed" && got[e.call_id] ? ` ${esc(got[e.call_id])} <span class="muted">(each step is in the call's History tab)</span>` : "";
+    return `${head}<ol class="hist"><li><time>${clock(e.ts)}</time><span>${kindTag(e.kind)}${esc(plain(e.text))}${more}${link}</span></li></ol>`;
+  }).join("") || `<p class="empty-line">${activityRows.length ? "Nothing of this kind yet." : "Nothing has happened yet. Process a call or say a task, and each step will show up here."}</p>`;
+}
+$("#actFilters").onclick = e => { const b = e.target.closest("[data-af]"); if (!b) return; actFilter = b.dataset.af;
+  $$("#actFilters button").forEach(x => x.setAttribute("aria-pressed", x === b)); drawActivity(); };
 const WHY = {loud: "louder", pitch: "higher", pitch_var: "more animated", wpm: "faster"};
 function voicePanel(r, where) {
   const v = r.voice || {}, sp = Object.entries(v.speakers || {});
@@ -814,17 +918,20 @@ document.addEventListener("click", async e => {
   const d = e.target.closest(".dtabs button"); if (d) dtab(d.dataset.to);
   const x = e.target.closest("[data-x]"); if (!x || !shown) return;
   const r = shown;
-  if (x.dataset.x === "copy") { try { await navigator.clipboard.writeText(report(r)); x.textContent = "Copied"; } catch { prompt("Copy the report:", report(r)); } }
-  if (x.dataset.x === "email") location.href = recap(r);
-  if (x.dataset.x === "csv") download(`${r.id}-follow-ups.csv`, [CSV_HEAD, ...followRows(r)].map(row => row.map(csvCell).join(",")).join("\n"));
-  if (x.dataset.x === "delete" && confirm(`Delete ${r.id}? This can't be undone.`)) {
-    try { await api(`/api/calls/${encodeURIComponent(r.id)}`, {method: "DELETE"}); await loadCalls(); location.hash = "today"; } catch (err) { alert(err.message); }
+  if (x.dataset.x === "copy") { try { await navigator.clipboard.writeText(report(r)); notify("Report copied: summary, scores, alerts and follow-ups as plain text. Paste it into an email, chat or doc."); } catch { prompt("Copy the report:", report(r)); } }
+  if (x.dataset.x === "email") { location.href = recap(r); notify("Opening your email app with a recap draft for the client. Nothing is sent until you send it yourself.", "info"); }
+  if (x.dataset.x === "csv") { download(`${r.id}-follow-ups.csv`, [CSV_HEAD, ...followRows(r)].map(row => row.map(csvCell).join(",")).join("\n"));
+    notify(`Downloaded ${esc(r.id)}-follow-ups.csv: one row per follow-up. It opens in Excel or Google Sheets.`); }
+  if (x.dataset.x === "delete" && confirm(`Delete ${r.id}? It disappears for everyone, and its quotes leave "Ask". This can't be undone.`)) {
+    try { await api(`/api/calls/${encodeURIComponent(r.id)}`, {method: "DELETE"}); await loadCalls(); location.hash = "calls"; notify(`Deleted ${esc(r.id)}. It's recorded on the Activity page.`); }
+    catch (err) { notify(esc(err.message), "err"); }
   }
   if (x.dataset.x === "rerun") {
-    x.disabled = true; x.textContent = `Running ${PROVIDER[x.dataset.p]}...`;
+    x.disabled = true; x.textContent = `${PROVIDER[x.dataset.p]} is reading the call (about 10 seconds)...`;
+    notify(`${PROVIDER[x.dataset.p]} is reading the same masked transcript. You'll see the two readings side by side when it's done.`, "info");
     try { const n = await api(`/api/calls/${encodeURIComponent(r.id)}/rerun`, json("POST", {provider: x.dataset.p}));
           await loadCalls(); location.hash = `compare/${r.rerun_of || r.id}/${n.id}`; }
-    catch (err) { x.disabled = false; x.textContent = "Re-run failed"; alert(err.message); }
+    catch (err) { x.disabled = false; x.textContent = `Re-run with ${PROVIDER[x.dataset.p]} and compare`; notify(esc(err.message), "err"); }
   }
 });
 
@@ -860,7 +967,7 @@ function editForm() {
   $("#eCancel").onclick = () => renderCall(shown);
   $("#editForm").onsubmit = async e => {
     e.preventDefault(); const f = e.target;
-    try { flash = "Saved. Approve it when it's right."; await saveCall({summary: f.summary.value.trim(), sentiment: f.sentiment.value,
+    try { flash = "Saved your changes, and the alerts were re-run from the rules. Approve it when it's right."; await saveCall({summary: f.summary.value.trim(), sentiment: f.sentiment.value,
                       churn_risk: Number(f.risk.value) / 100, action_items: draft.filter(a => a.task.trim())}); }
     catch (err) { flash = ""; $("#eErr").textContent = err.message; }
   };
@@ -868,26 +975,29 @@ function editForm() {
 document.addEventListener("change", async e => {
   const d = e.target.closest("[data-done]"); if (!d) return;
   const all = items(); all[+d.dataset.done].done = d.checked;
-  flash = d.checked ? (shown.approved_by != null && shown.monday_item_id ? "Marked done, and noted on the Monday item." : "Marked done.") : "Reopened.";
-  try { await saveCall({action_items: all}); } catch (err) { flash = ""; d.checked = !d.checked; alert(err.message); }
+  flash = ""; const task = all[+d.dataset.done].task, onMonday = shown.approved_by != null && shown.monday_item_id;
+  try { await saveCall({action_items: all});
+        notify(d.checked ? `Marked done: ${esc(task)}. It's off Today and the client's open list${onMonday ? ", and noted on the Monday item" : ""}.${shown.approved_by != null ? " The call stays approved." : ""}`
+                         : `Reopened: ${esc(task)}. It's back on the open lists.`); }
+  catch (err) { d.checked = !d.checked; notify(esc(err.message), "err"); }
 });
 document.addEventListener("click", async e => {
   if (e.target.closest("#editBtn")) { dtab("overview"); editForm(); $("#eSum").focus(); }
   const b = e.target.closest("#approveBtn"); if (!b) return;
-  b.disabled = true; b.textContent = "Approving...";
+  b.disabled = true; b.textContent = server.monday_board ? "Approving and sending to Monday..." : "Approving...";
   try {
     const r = await api(`/api/calls/${encodeURIComponent(shown.id)}/approve`, {method: "POST"});
     flash = r.monday_item_id ? `Approved and sent to Monday: item #${r.monday_item_id}, with the follow-ups as subitems. Use "Open in Monday" above to see it.`
-      : r.connected.monday || r.connected.ghl ? "Approved. The CRM write didn't go through; it's in the server log."
+      : r.connected.monday || r.connected.ghl ? "Approved, but the write to Monday didn't go through. Edit and approve again to retry; the History tab has the details."
       : "Approved. This demo isn't connected to Monday or GHL, so nothing was sent; in a real setup this is when it would be.";
-    renderCall(r); loadCalls();
-  } catch (err) { b.disabled = false; b.textContent = "Approve"; alert(err.message); }
+    renderCall(r); loadCalls(); notify(esc(flash), r.monday_item_id || !(r.connected.monday || r.connected.ghl) ? "ok" : "err");
+  } catch (err) { b.disabled = false; b.textContent = server.monday_board ? "Approve and send to Monday" : "Approve"; notify(esc(err.message), "err"); }
 });
 
 // --- today: the daily digest ---------------------------------------------------------------------------------------
 let actions = [];
 async function renderToday() {
-  try { actions = await api("/api/actions"); } catch { actions = []; }
+  try { actions = await api("/api/actions"); } catch (err) { actions = []; notify(`Couldn't load your voice tasks, so they're missing below. ${esc(err.message)}`, "err"); }
   const th = pick().churn, firsts = calls.filter(c => !c.rerun_of), latest = {};
   firsts.forEach(c => { if (!latest[c.client_id] || c.created > latest[c.client_id].created) latest[c.client_id] = c; });
   // needs attention: a client whose latest call is over the churn line, or any call the checks sent to a person
@@ -941,8 +1051,9 @@ function actionRows(list) {
 }
 document.addEventListener("change", async e => {
   const c = e.target.closest("[data-act]"); if (!c) return;
-  try { await api(`/api/actions/${c.dataset.act}`, json("PATCH", {done: c.checked})); c.closest(".todo").classList.toggle("done", c.checked); }
-  catch (err) { c.checked = !c.checked; alert(err.message); }
+  try { await api(`/api/actions/${c.dataset.act}`, json("PATCH", {done: c.checked})); c.closest(".todo").classList.toggle("done", c.checked);
+        notify(c.checked ? "Task marked done here. (The Monday item, if there is one, is updated on Monday itself.)" : "Task reopened."); }
+  catch (err) { c.checked = !c.checked; notify(esc(err.message), "err"); }
 });
 
 // --- voice to action -------------------------------------------------------------------------------------------------
@@ -953,12 +1064,16 @@ async function understand() {
   const text = $("#vText").value.trim(); $("#vErr").textContent = "";
   if (text.length < 3) return $("#vErr").textContent = "Say or type an instruction first.";
   $("#vGo").disabled = true; $("#vGo").textContent = "Working it out...";
+  $("#vPlan").innerHTML = '<section class="card"><p class="help" style="margin:0">Masking any phone numbers or emails, then asking the AI what you want done (a few seconds). Nothing is saved yet.</p></section>';
   try {
     const r = await api("/api/command", json("POST", {text, provider: pick().provider}));
     plan = r.actions;
+    const todo = plan.filter(a => a.kind !== "question").length;
     $("#vPlan").innerHTML = `<section class="card"><h3 class="sub">Here's what I understood</h3><p class="help">${esc(r.reply)}
-        ${r.heard !== text ? `<br>Sent to the AI as: <i>${esc(r.heard)}</i>` : ""}</p>${plan.map(actionCard).join("") || ""}</section>`;
-  } catch (err) { $("#vErr").textContent = err.message; }
+        ${r.heard !== text ? `<br>Sent to the AI as: <i>${esc(r.heard)}</i>` : ""}
+        ${todo ? `<br><b>Nothing is saved yet.</b> Check ${todo === 1 ? "it" : "each one"}, change anything that's wrong, then Confirm or Skip.` : ""}</p>${plan.map(actionCard).join("")
+        || '<p class="help" style="margin:0">No task, note or question was found in that. Try something like the examples above.</p>'}</section>`;
+  } catch (err) { $("#vPlan").innerHTML = ""; $("#vErr").textContent = err.message; }
   finally { $("#vGo").disabled = false; $("#vGo").textContent = "Show me the actions"; }
 }
 function actionCard(a, n) {
@@ -976,11 +1091,11 @@ function actionCard(a, n) {
     <div class="row"><button type="button" class="btn" data-confirm="${n}">Confirm</button><button type="button" class="btn ghost" data-skip="${n}">Skip</button></div></div>`;
 }
 document.addEventListener("click", async e => {
-  const s = e.target.closest("[data-skip]"); if (s) s.closest(".act").outerHTML = '<p class="help" style="margin:12px 0 0">Skipped.</p>';
+  const s = e.target.closest("[data-skip]"); if (s) s.closest(".act").outerHTML = '<p class="help" style="margin:12px 0 0">Skipped: nothing was saved for this one.</p>';
   const c = e.target.closest("[data-confirm]"); if (!c) return;
   const card = c.closest(".act"), a = {...plan[+c.dataset.confirm]};
   card.querySelectorAll("[data-k]").forEach(el => a[el.dataset.k] = el.value || null);
-  c.disabled = true; c.textContent = "Saving...";
+  c.disabled = true; c.textContent = a.kind === "task" ? "Saving, and creating it on Monday..." : "Saving, and adding it to the CRM...";
   try {
     const r = await api("/api/actions", json("POST", {kind: a.kind, text: a.text, assignee: a.assignee, client_id: a.client_id, due: a.due}));
     const where = r.monday_item_id ? `Created Monday item <a href="${esc(server.monday_board || "")}/pulses/${esc(r.monday_item_id)}" target="_blank" rel="noopener">#${esc(r.monday_item_id)} &#8599;</a>.` : r.ghl ? "Added to the client's GHL contact." :
@@ -988,11 +1103,13 @@ document.addEventListener("click", async e => {
       : `Saved here. This demo isn't connected to ${a.kind === "task" ? "Monday" : "GHL"}; in a real setup it would be ${a.kind === "task" ? "created there" : "added to the client's contact"} now.`;
     card.innerHTML = `<span class="kind">${a.kind === "task" ? "Task" : "Note"} saved</span><p style="margin:6px 0 0">${a.assignee ? `<b>${esc(a.assignee)}</b>: ` : ""}${esc(a.text)}</p><p class="flash">${where}</p>`;
     renderActions();
-  } catch (err) { c.disabled = false; c.textContent = "Confirm"; alert(err.message); }
+  } catch (err) { c.disabled = false; c.textContent = "Confirm"; notify(esc(err.message), "err"); }
 });
 async function renderActions() {
-  try { actions = await api("/api/actions"); } catch { actions = []; }
-  $("#vList").innerHTML = actionRows(actions) || '<p class="help" style="margin:0">Nothing yet.</p>';
+  $("#vList").innerHTML = '<p class="help" style="margin:0">Loading your tasks and notes...</p>';
+  try { actions = await api("/api/actions"); }
+  catch (err) { $("#vList").innerHTML = `<p class="err" style="margin:0">Couldn't load the tasks and notes. ${esc(err.message)}</p>`; return; }
+  $("#vList").innerHTML = actionRows(actions) || '<p class="help" style="margin:0">Nothing yet. Tasks and notes you confirm above are listed here, with a link to the Monday item when one was created.</p>';
 }
 
 // --- clients: risk over time, open promises --------------------------------------------------------------------------
@@ -1059,6 +1176,7 @@ async function renderCompare(a, b) {
 // --- usage (admin) ----------------------------------------------------------------------------------------------------
 async function renderUsage() {
   let u;
+  $("#usageBody").innerHTML = '<div class="card"><p class="help" style="margin:0">Adding up the usage log...</p></div>';
   try { u = await api("/api/usage"); } catch (err) { $("#usageBody").innerHTML = `<div class="card"><p class="err" style="margin:0">${esc(err.message)}</p></div>`; return; }
   const usd = v => "$" + (v || 0).toFixed(v < 1 ? 3 : 2), days = Object.entries(u.by_day), max = Math.max(...days.map(([, v]) => v.usd), 0.001);
   const table = (title, o, label) => `<section class="card"><h3 class="sub">${title}</h3><table class="tbl"><thead><tr><th>${label}</th><th class="num">Requests</th><th class="num">Tokens in / out</th><th class="num">Cost</th></tr></thead><tbody>
@@ -1082,7 +1200,7 @@ function answerHtml(r) {
 }
 $("#examples").onclick = e => { if (e.target.tagName === "BUTTON") { $("#askForm").question.value = e.target.textContent; $("#askForm").requestSubmit(); } };
 $("#askForm").onsubmit = async e => {
-  e.preventDefault(); const btn = e.target.querySelector("button"); btn.disabled = true; $("#answer").innerHTML = '<div class="answer">Searching the calls...</div>';
+  e.preventDefault(); const btn = e.target.querySelector("button"); btn.disabled = true; $("#answer").innerHTML = '<div class="answer">Searching the calls you can see for the most relevant moments, then asking the AI to answer only from them (a few seconds)...</div>';
   try { $("#answer").innerHTML = answerHtml(await api("/api/ask", json("POST", {question: e.target.question.value, provider: pick().provider}))); }
   catch (err) { $("#answer").innerHTML = `<p class="err">${esc(err.message)}</p>`; }
   finally { btn.disabled = false; }

@@ -44,6 +44,11 @@ pasted transcript ────────────────────�
   lists in code, never guessed; an unknown name is flagged. Nothing is written until you confirm each action: then a
   task becomes a Monday item (the person named in its title, never a people column, so nobody is notified) and a note
   goes on the client's GHL contact. Questions are answered from the calls, with sources.
+- **It says what's happening, and keeps a record.** While a call is processed the page lists the steps (transcribing,
+  masking, the AI reading it, the quote check) and ticks them off. Each call has a History tab that says, step by step,
+  what was masked ("3 personal details: 2 names, 1 card"), what the AI concluded, how many quotes were found, which
+  alerts fired, and who edited, ticked off or approved what, including the Monday item it went to. An Activity page shows
+  the same across the app (the admin also sees sign-ins). Errors say what happened and what to do, in plain words.
 - **Today, Clients, Compare.** A daily digest (clients at risk, drafts to approve, what we promised, open voice tasks);
   a per-client page with churn risk call by call and the open follow-ups across all its calls; and a re-run of any call
   with the other model, shown side by side.
