@@ -321,7 +321,8 @@ details.more .toolbar { margin-top:10px }
         <div id="calls"></div>
         <p class="help" style="margin:14px 0 0"><b>Risk of leaving</b> is the AI's estimate of how likely the client is to stop buying, from what was said.
           <b>Waiting for review</b> means nobody has checked the AI's draft yet, so nothing has gone to Monday or the CRM.
-          <b>Needs a person</b> means an automatic check found something the AI may have got wrong, so someone should read the call.</p></div>
+          <b>Needs a person</b> means an automatic check found something the AI may have got wrong, so someone should read the call.
+          <b>From the recording</b> is a demo call also processed from its audio, so you can compare; it isn't counted twice.</p></div>
     </section>
 
     <section data-view="new" hidden>
@@ -362,8 +363,7 @@ details.more .toolbar { margin-top:10px }
         <textarea id="vText" style="min-height:84px" maxlength="1000" placeholder="Create a task for Priya to send Summit Annuity the Texas quote by Friday, and note that Golden Years wants a call next week."></textarea>
         <div class="chips" id="vExamples"></div>
         <button type="button" class="btn wide" id="vGo" style="margin-top:16px">Show me the actions</button><div class="err" id="vErr" role="alert"></div>
-        <p class="help" style="margin:12px 0 0">Only people on your team (<span id="vTeam"></span>) and your clients are used; anyone else is flagged for you to pick. Nobody gets notified.
-          A person is named in the Monday item's title, not set in a people column, so nobody is notified.</p>
+        <p class="help" style="margin:12px 0 0">Only people on your team (<span id="vTeam"></span>) and your clients are used; anyone else is flagged for you to pick. Nobody gets notified.</p>
       </div>
       <div id="vPlan"></div>
       <section class="card"><h3 class="sub">Tasks and notes from voice</h3><div id="vList"></div></section>
@@ -391,9 +391,9 @@ details.more .toolbar { margin-top:10px }
         <div class="set"><div><h3>Theme</h3><p>Also on the button in the top bar.</p></div>
           <div class="opts"><label class="opt"><input type="radio" name="theme" value="light">Light</label>
             <label class="opt"><input type="radio" name="theme" value="dark">Dark</label></div></div>
-        <div class="set"><div><h3>AI model</h3><p>Which model reads the masked call and answers questions.</p></div>
+        <div class="set"><div><h3>AI model</h3><p>Which AI reads the call (with names and numbers hidden) and answers questions.</p></div>
           <div class="opts" id="provOpts"></div></div>
-        <div class="set"><div><h3>Privacy</h3><p>What is hidden before the AI sees a call. PII Shield, a masking service running on this server, does it.</p></div>
+        <div class="set"><div><h3>Privacy</h3><p>What is hidden before the AI sees a call. This happens on this server, before anything leaves it.</p></div>
           <div class="opts">
             <label class="opt"><input type="checkbox" name="keep" value="NAME"><span>Send names as said<small>Off by default: names are swapped for "Person 1, 2..." and put back on our side, so follow-ups still show who.</small></span></label>
             <label class="opt"><input type="checkbox" name="keep" value="LOCATION"><span>Send places as said<small>Cities and states, e.g. "leads in Austin".</small></span></label>
@@ -459,7 +459,7 @@ const EXAMPLES = ["Which clients are thinking about leaving?", "Who wants to exp
 $("#examples").innerHTML = EXAMPLES.map(q => `<button type="button">${esc(q)}</button>`).join("");
 const VEXAMPLES = ["Create a task for Priya to send Summit Annuity the Texas quote by Friday.",
   "Remind me to call Golden Years back tomorrow morning, and note that they want a consent export.",
-  "Which clients asked for new states?"];
+  "Note that Northstar wants Minnesota added next month."];
 $("#vExamples").innerHTML = VEXAMPLES.map(q => `<button type="button">${esc(q)}</button>`).join("");
 const PROVIDER = {claude: "Claude", grok: "Grok"}, KEEP = {NAME: "names", LOCATION: "places"};
 const VIEWS = ["today", "calls", "new", "voice", "clients", "ask", "settings", "usage", "how", "activity"];
@@ -488,7 +488,11 @@ $("#theme").onclick = () => setTheme(document.documentElement.dataset.theme === 
 setTheme(document.documentElement.dataset.theme);
 
 function renderSettings() {
-  const p = pick(), f = $("#setForm");
+  const p = pick(), f = $("#setForm"), noAi = !server.providers.length;
+  $("#callBtn").disabled = $("#askForm button").disabled = $("#vGo").disabled = noAi;
+  $$(".noai").forEach(el => el.remove());
+  if (noAi) ["#callBtn", "#askForm", "#vGo"].forEach(sel => $(sel).insertAdjacentHTML("afterend",
+    '<p class="err noai">No AI is connected on this server, so calls can\'t be analysed and questions can\'t be answered here. The saved calls can still be opened and reviewed.</p>'));
   $("#provOpts").innerHTML = server.providers.map(v => `<label class="opt"><input type="radio" name="provider" value="${v}" ${v === p.provider ? "checked" : ""}>
     <span>${PROVIDER[v] || esc(v)}${v === server.default_provider ? " <small style='display:inline'>(default)</small>" : ""}</span></label>`).join("")
     || '<p class="help" style="margin:0">No AI model is configured on this server.</p>';
@@ -850,7 +854,7 @@ const kindTag = k => { const [n, c] = KINDNAME[k] || [k]; return `<span class="k
 const clock = t => new Date(t * 1000).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
 function historyHtml(r) {
   const h = (r.history || []).slice().reverse();  // oldest first: it reads as the call's story
-  const intro = '<p class="help">Every step this call has been through, oldest first: what the masking, the AI and the checks did, and what people changed or approved.</p>';
+  const intro = '<p class="help">What happened to this call, oldest first: processing, edits, ticked follow-ups and approvals.</p>';
   if (h.length) return intro + `<ol class="hist">${h.map(e => `<li><time datetime="${new Date(e.ts * 1000).toISOString()}">${day(e.ts)}, ${clock(e.ts)}</time><span>${kindTag(e.kind)}${esc(plain(e.text))}</span></li>`).join("")}</ol>`;
   const old = [[r.created, "processed", `Processed and read by ${PROVIDER[r.provider] || r.provider}.`],
     ...(r.edited_by != null ? [[null, "edited", `Edited by ${r.edited_by || "someone"}.`]] : []),
@@ -1040,7 +1044,7 @@ async function renderToday() {
     <div class="grid">
       <section class="card"><h3 class="sub">Waiting for your review <span class="muted">${drafts.length}</span></h3>
         <p class="help">The AI's drafts. Check one, fix anything wrong, approve it; only then does it go to Monday and the CRM.</p>
-        ${drafts.slice(0, 5).map(c => row(c, `${day(c.created)} · client mood ${c.sentiment}`)).join("") || '<p class="empty-line">All caught up.</p>'}
+        ${drafts.slice(0, 5).map(c => row(c, `${when(c.created)} · client mood ${c.sentiment}`)).join("") || '<p class="empty-line">All caught up.</p>'}
         ${drafts.length > 5 ? `<a class="more" href="#calls/draft">See all ${drafts.length} &rarr;</a>` : ""}</section>
       <section class="card"><h3 class="sub">What we promised <span class="muted">${promised.length}</span></h3>
         <p class="help">Our open follow-ups that have a due date.</p>
@@ -1129,7 +1133,7 @@ function riskChart(list, w = 120, h = 28, big = false) {
     ${big ? `<text x="${w - pad}" y="${y(th) - 4}" text-anchor="end">alert ${Math.round(th * 100)}%</text><text x="${left - 8}" y="${y(1) + 4}" text-anchor="end">100%</text><text x="${left - 8}" y="${y(0) + 4}" text-anchor="end">0%</text>` : ""}
     <polyline points="${pts}" fill="none" stroke="var(--brand)" stroke-width="${big ? 2 : 1.5}" stroke-linejoin="round"/>
     ${list.map((c, i) => `<circle cx="${x(i)}" cy="${y(c.churn_risk)}" r="${big ? 4 : 2.2}" fill="${risk(c.churn_risk)[2]}"><title>${esc(c.id)}: ${Math.round(c.churn_risk * 100)}%</title></circle>
-      ${big ? `<text x="${x(i)}" y="${h - 8}" text-anchor="middle">${day(c.created)}</text>` : ""}`).join("")}</svg>`;
+      ${big ? `<text x="${x(i)}" y="${h - 8}" text-anchor="middle">${new Set(list.map(z => day(z.created))).size === 1 ? "call " + (i + 1) : day(c.created)}</text>` : ""}`).join("")}</svg>`;
 }
 const clientCalls = id => calls.filter(c => c.client_id === id && !alt(c)).reverse();  // oldest first, same tie order as Today
 function allOpenCsv(list) {
@@ -1153,7 +1157,7 @@ async function renderClient(id) {
     <section class="card"><h3 class="sub">Risk of leaving, call by call</h3>${list.length ? riskChart(list, 640, 200, true) : '<p class="help" style="margin:0">No calls yet.</p>'}</section>
     <div class="grid">
       <section class="card"><h3 class="sub">Open follow-ups</h3><p class="help">Across all this client's calls.</p>
-        ${open.map(a => `<a class="rowlink" href="#${esc(a.call.id)}"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "We do" : "They do"}</span><span class="grow">${a.person ? `<span class="who-name">${esc(a.person)}</span>: ` : ""}${esc(a.task)}<br><span class="muted">${esc(a.call.id)} · ${a.due ? "due " + esc(a.due) : '<span class="nodue">no due date</span>'}</span></span></a>`).join("") || '<p class="help" style="margin:0">Nothing open.</p>'}
+        ${open.map(a => `<a class="rowlink" href="#${esc(a.call.id)}"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "We do" : "They do"}</span><span class="grow">${a.person ? `<span class="who-name">${esc(a.person)}</span>: ` : ""}${esc(a.task)}<br><span class="muted">from the ${when(a.call.created)} call · ${a.due ? "due " + esc(a.due) : "no due date"}</span></span></a>`).join("") || '<p class="help" style="margin:0">Nothing open.</p>'}
         ${open.length ? '<div class="toolbar"><button type="button" class="btn ghost" id="csvClient">These as CSV</button></div>' : ""}</section>
       <section class="card"><h3 class="sub">Calls</h3>
         ${list.slice().reverse().map(x => `<a class="rowlink" href="#${esc(x.id)}"><span class="grow">${esc(x.headline || x.id)}<br><span class="muted">${when(x.created)} · client mood ${esc(x.sentiment)} · ${x.approved ? "approved" : "waiting for review"}</span></span>${badge(x.churn_risk)}</a>`).join("") || '<p class="help" style="margin:0">None.</p>'}
