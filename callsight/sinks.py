@@ -25,16 +25,31 @@ MUTATIONS = {
 }
 
 
-def report(r: CallResult) -> list[str]:
-    """The summary, alerts and checked points as plain lines, shared by Monday and GHL."""
+def report_parts(r: CallResult) -> dict:
+    """The Monday update / GHL note for a call, in parts, so the approve preview shows exactly what report() sends."""
     timed = any(s.end > s.start for s in r.segments)  # audio has times; a pasted transcript only has line numbers
 
-    def _mmss(at: float | None) -> str:
-        return "" if at is None else f" @{int(at) // 60:02d}:{int(at) % 60:02d}" if timed else f" (line {int(at) + 1})"
+    def where(at: float | None) -> str:
+        return "" if at is None else f"{int(at) // 60:02d}:{int(at) % 60:02d}" if timed else f"line {int(at) + 1}"
     i = r.insight
-    lines = [i.summary, f"Client mood {i.sentiment}, risk of leaving {i.churn_risk:.0%}", *r.alerts]
-    lines += [f"{'' if c.found else '[unverified] '}{KIND.get(c.kind, c.kind.replace('_', ' '))}: {c.text}{_mmss(c.at)}" for c in r.checks]
-    return lines
+    return {"summary": i.summary, "scores": f"Client mood {i.sentiment}, risk of leaving {i.churn_risk:.0%}",
+            "alerts": [plain(a) for a in r.alerts],
+            "points": [{"kind": KIND.get(c.kind, c.kind.replace("_", " ")), "text": c.text, "where": where(c.at), "found": c.found}
+                       for c in r.checks]}
+
+
+def report(r: CallResult) -> list[str]:
+    """The summary, alerts and checked points as plain lines, shared by Monday and GHL."""
+    p = report_parts(r)
+    return [p["summary"], p["scores"], *p["alerts"],
+            *(f"{'' if x['found'] else '[unverified] '}{x['kind']}: {x['text']}" + (f" ({x['where']})" if x["where"] else "")
+              for x in p["points"])]
+
+
+def plain(alert: str) -> str:
+    """Alerts are stored in the rules' words; people read "risk of leaving", not "churn"."""
+    return (alert.replace("Churn risk", "Risk of leaving").replace("churn risk", "risk of leaving")
+            .replace("scores churn", "scores the risk of leaving").replace("quoted churn reasons", "quoted reasons for leaving"))
 
 
 KIND = {"churn_reasons": "Why they might leave", "upsell_signals": "Wants more", "objections": "Complaint or concern",
@@ -47,14 +62,23 @@ def item_name(r: CallResult) -> str:
     return f"{CLIENTS[r.client_id].name}: {r.id} (risk of leaving {i.churn_risk:.0%}, {i.sentiment})"[:250]
 
 
-def subitem_names(r: CallResult) -> list[str]:
-    """[who] task (due ...). Who is the person's name when known, else the side: "Acme Leads" or the client."""
+def subitems(r: CallResult) -> list[dict]:
+    """One per follow-up: who (the person's name when known, else the side: "Acme Leads" or the client), task, due."""
     side = {"us": "Acme Leads", "client": CLIENTS[r.client_id].name}
 
     def who(a) -> str:
         name = r.speakers.get(a.speaker or "", a.speaker) or ""
         return side[a.owner] if not name or re.fullmatch(r"(Speaker|Person) \d+", name) else name
-    return [f"[{who(a)}] {a.task}" + (f" (due {a.due})" if a.due else "") for a in r.insight.action_items]
+    return [{"who": who(a), "task": a.task, "due": a.due, "side": a.owner} for a in r.insight.action_items]
+
+
+def subitem_names(r: CallResult) -> list[str]:
+    return [f"[{x['who']}] {x['task']}" + (f" (due {x['due']})" if x["due"] else "") for x in subitems(r)]
+
+
+def preview(r: CallResult) -> dict:
+    """What approving this call would write to Monday, built by the same functions that write it."""
+    return {"item": item_name(r), "subitems": subitems(r), "subitem_names": subitem_names(r), "update": report_parts(r)}
 
 
 def _monday(what: str, post):

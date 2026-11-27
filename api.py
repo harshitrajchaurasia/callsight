@@ -160,8 +160,7 @@ def _get(call_id: str, user: str):
 
 def _out(r) -> dict:
     return r.model_dump() | {"client": CLIENTS[r.client_id].model_dump(), "history": store.events(conn, call_id=r.id),
-                             "monday_preview": {"item": sinks.item_name(r), "subitems": sinks.subitem_names(r),
-                                                "update_lines": len(sinks.report(r))}}
+                             "monday_preview": sinks.preview(r)}
 
 
 def _processed(r, user: str, source: str):
