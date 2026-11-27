@@ -310,6 +310,34 @@ details.more .toolbar { margin-top:10px }
 .empty-line { color:var(--muted); font-size:14px; margin:4px 0 0 }
 
 .foot { border-top:1px solid var(--line); padding:22px 0 40px; color:var(--muted); font-size:13.5px }
+
+/* --- feel: hover, press, focus and gentle entrances. One block so it's easy to tune or drop. --- */
+.btn, .newcall { transition:filter .15s, transform .12s, box-shadow .15s, border-color .15s, color .15s, background .15s }
+.btn:not(:disabled):hover, .newcall:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(37,84,200,.22) }
+.btn.ghost:not(:disabled):hover, .btn.danger:not(:disabled):hover { box-shadow:0 4px 12px rgba(0,0,0,.08); background:var(--panel) }
+.btn:not(:disabled):active, .newcall:active, .chips button:active, .tabs button:active { transform:translateY(0) scale(.97); box-shadow:none }
+.chips button, .tabs button, .bar nav a, .bar nav button, .list a, .rowlink, .callrow, .tile, .mood, .opt, .rv-x, .ts, .tbl tbody tr
+  { transition:background .15s, color .15s, border-color .15s, box-shadow .15s, transform .15s }
+.chips button:hover { background:var(--brand-soft); transform:translateY(-1px) }
+.tabs button:not([aria-selected=true]):hover { color:var(--ink); background:rgba(127,127,127,.08) }
+.callrow:hover, .list a:hover { transform:translateX(3px) }
+.rowlink:hover { background:var(--soft); padding-left:6px; padding-right:6px; border-radius:8px }
+.kpis .tile:hover { transform:translateY(-2px); box-shadow:var(--shadow) }
+.tbl tbody tr:hover { background:var(--soft) }
+.mood:hover, .opt:hover { color:var(--brand) }
+.ts:hover { color:var(--brand); text-decoration:underline }
+a, button, select, input, textarea, summary { -webkit-tap-highlight-color:transparent }
+:is(a, button, select, input, textarea, summary):focus-visible { outline:2px solid var(--brand); outline-offset:2px; border-radius:8px }
+@keyframes rise { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+@keyframes pop { from { opacity:0; transform:translateY(12px) scale(.98) } to { opacity:1; transform:none } }
+@keyframes fade { from { opacity:0 } to { opacity:1 } }
+[data-view]:not([hidden]), [data-dtab]:not([hidden]) { animation:rise .22s ease-out }
+.review[open] { animation:pop .22s cubic-bezier(.2,.8,.3,1) } .review[open]::backdrop { animation:fade .2s ease-out }
+.rv-more { position:sticky; bottom:8px; display:block; margin:8px auto 0; font:inherit; font-size:13px; font-weight:650; padding:7px 14px; border-radius:999px;
+  border:1px solid var(--brand); background:var(--panel); color:var(--brand); box-shadow:0 6px 18px rgba(0,0,0,.15); cursor:pointer; animation:fade .2s }
+.rv-more:hover { background:var(--brand); color:var(--brand-ink) } .rv-more[hidden] { display:none }
+@media (hover:none) { .callrow:hover, .list a:hover, .kpis .tile:hover, .chips button:hover, .btn:hover { transform:none } }
+@media (prefers-reduced-motion:reduce) { *, *::before, *::after, ::backdrop { animation:none !important; transition:none !important } }
 </style>
 </head>
 <body>
@@ -1093,7 +1121,7 @@ function editForm() {
           dlg.close(); notify(esc(flash)); }
     catch (err) { flash = ""; $("#eErr").textContent = err.message; $("#eSave").disabled = false; $("#eSave").textContent = "Save corrections"; }
   };
-  dlg.showModal(); dlg.querySelector(".rv-body").scrollTop = 0;
+  dlg.showModal(); dlg.querySelector(".rv-body").scrollTop = 0; moreCue(dlg);
 }
 document.addEventListener("change", async e => {
   const d = e.target.closest("[data-done]"); if (!d) return;
@@ -1107,7 +1135,7 @@ document.addEventListener("change", async e => {
 document.addEventListener("click", async e => {
   if (e.target.closest("#editBtn")) { editForm(); return; }
   const dlg = $("#reviewDlg"), mon = server.monday_board;
-  if (e.target.closest("#approveBtn")) { dlg.innerHTML = reviewHtml(shown, mon, shown.monday_item_id && mon ? `${mon}/pulses/${shown.monday_item_id}` : ""); dlg.showModal(); dlg.querySelector(".rv-body").scrollTop = 0; return; }
+  if (e.target.closest("#approveBtn")) { dlg.innerHTML = reviewHtml(shown, mon, shown.monday_item_id && mon ? `${mon}/pulses/${shown.monday_item_id}` : ""); dlg.showModal(); dlg.querySelector(".rv-body").scrollTop = 0; moreCue(dlg); return; }
   if (e.target.closest("#rvCancel, #rvCancelX")) return dlg.close();
   if (e.target.closest("#rvEdit")) { dlg.close(); editForm(); return; }
   if (e.target === dlg) return dlg.close();  // a click on the dimmed backdrop
@@ -1241,6 +1269,12 @@ async function renderActions() {
 }
 
 // --- clients: risk over time, open promises --------------------------------------------------------------------------
+function moreCue(d) {  // a pill that says there's more below, until you get there
+  const b = d.querySelector(".rv-body"); if (!b) return;
+  const p = Object.assign(document.createElement("button"), {type: "button", className: "rv-more", textContent: "More below \u2193"});
+  p.onclick = () => b.scrollBy({top: b.clientHeight * .8, behavior: "smooth"}); b.append(p);
+  const f = () => p.hidden = b.scrollTop + b.clientHeight >= b.scrollHeight - 30; b.addEventListener("scroll", f, {passive: true}); requestAnimationFrame(f);
+}
 function riskChart(list, w = 120, h = 28, big = false) {
   if (!list.length) return "";
   const pad = big ? 28 : 3, left = big ? 44 : 3, x = i => list.length === 1 ? (left + w - pad) / 2 : left + i * (w - left - pad) / (list.length - 1), y = v => h - pad - v * (h - 2 * pad);
@@ -1250,7 +1284,7 @@ function riskChart(list, w = 120, h = 28, big = false) {
     ${big ? `<text x="${w - pad}" y="${y(th) - 4}" text-anchor="end">alert ${Math.round(th * 100)}%</text><text x="${left - 8}" y="${y(1) + 4}" text-anchor="end">100%</text><text x="${left - 8}" y="${y(0) + 4}" text-anchor="end">0%</text>` : ""}
     <polyline points="${pts}" fill="none" stroke="var(--brand)" stroke-width="${big ? 2 : 1.5}" stroke-linejoin="round"/>
     ${list.map((c, i) => `<circle cx="${x(i)}" cy="${y(c.churn_risk)}" r="${big ? 4 : 2.2}" fill="${risk(c.churn_risk)[2]}"><title>${esc(c.id)}: ${Math.round(c.churn_risk * 100)}%</title></circle>
-      ${big ? `<text x="${x(i)}" y="${h - 8}" text-anchor="middle">${new Set(list.map(z => day(z.created))).size === 1 ? "call " + (i + 1) : day(c.created)}</text>` : ""}`).join("")}</svg>`;
+      ${big && i % Math.ceil(list.length / Math.max(2, Math.floor((w - left) / 56))) === 0 ? `<text x="${x(i)}" y="${h - 8}" text-anchor="middle">${new Set(list.map(z => day(z.created))).size === 1 ? "call " + (i + 1) : day(c.created)}</text>` : ""}`).join("")}</svg>`;
 }
 const clientCalls = id => calls.filter(c => c.client_id === id && !alt(c)).reverse();  // oldest first, same tie order as Today
 function allOpenCsv(list) {
@@ -1271,7 +1305,7 @@ async function renderClient(id) {
   if (!actions.length) { try { actions = await api("/api/actions"); } catch {} }
   const open = list.flatMap(x => x.open.map(a => ({...a, call: x})));
   $("#clientBody").innerHTML = `<div class="vhead"><h2>${esc(c.name)}</h2><p>${esc(c.plan)} · ${esc((c.states || []).join(", "))} · account manager ${esc(c.account_manager)} · <a href="#clients">all clients</a></p></div>
-    <section class="card"><h3 class="sub">Risk of leaving, call by call</h3>${list.length ? riskChart(list, 640, 200, true) : '<p class="help" style="margin:0">No calls yet.</p>'}</section>
+    <section class="card"><h3 class="sub">Risk of leaving, call by call</h3>${list.length ? riskChart(list, innerWidth < 640 ? 360 : 640, innerWidth < 640 ? 230 : 200, true) : '<p class="help" style="margin:0">No calls yet.</p>'}</section>
     <div class="grid">
       <section class="card"><h3 class="sub">Open follow-ups</h3><p class="help">Across all this client's calls.</p>
         ${open.map(a => `<a class="rowlink" href="#${esc(a.call.id)}"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "We do" : "They do"}</span><span class="grow">${a.person ? `<span class="who-name">${esc(a.person)}</span>: ` : ""}${esc(a.task)}<br><span class="muted">from the ${when(a.call.created)} call · ${a.due ? "due " + esc(a.due) : "no due date"}</span></span></a>`).join("") || '<p class="help" style="margin:0">Nothing open.</p>'}
