@@ -27,7 +27,7 @@
 body { margin:0; font:15px/1.6 "Plus Jakarta Sans", system-ui, sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased }
 a { color:var(--brand) } b, strong { font-weight:650 }
 .wrap { max-width:1240px; margin:0 auto; padding:0 24px }
-@media (max-width:640px) { .wrap { padding:0 16px } }
+@media (max-width:640px) { .wrap { padding:0 16px } .wide-only { display:none } }
 
 /* top bar */
 .bar { background:var(--panel); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5 }
@@ -160,7 +160,7 @@ input[type=range] { flex:1; max-width:340px; accent-color:var(--brand) }
 .line { display:grid; grid-template-columns:minmax(0, 150px) 1fr; gap:12px; padding:7px 8px; border-radius:10px; font-size:14.5px; transition:background .3s }
 @media (max-width:640px) { .line { grid-template-columns:1fr; gap:4px } }
 .line.hl { background:var(--hl) }
-.who-tag { font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; height:fit-content; justify-self:start; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px }
+.who-tag { font-size:12px; font-weight:700; padding:2px 8px; border-radius:6px; height:fit-content; justify-self:start; max-width:100%; margin-top:2px }
 .s0 { background:var(--brand-soft); color:var(--brand) } .s1 { background:var(--sun-soft); color:var(--warn) } .s2 { background:var(--ok-soft); color:var(--ok) }
 .line .t { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums; margin-right:6px }
 /* recording */
@@ -288,9 +288,8 @@ details.more .toolbar { margin-top:10px }
       spot who is about to leave or ready to buy more, and log what was promised. CallSight does it in seconds, shows
       the exact words behind every point, and lets a person check it before anything reaches the CRM.</p>
     <ul class="stats">
-      <li><b>20 / 20</b>test calls with churn risk in the right range</li>
+      <li><b>20 of 20</b>test calls scored at the right risk level</li>
       <li><b>0</b>personal details sent to the AI</li>
-      <li><b>3.6%</b>speech-to-text word error rate</li>
       <li><b>~1 cent</b>per call</li>
     </ul>
   </div></section>
@@ -321,7 +320,8 @@ details.more .toolbar { margin-top:10px }
             <button type="button" data-f="high" aria-pressed="false">Likely to leave</button></div></div>
         <div id="calls"></div>
         <p class="help" style="margin:14px 0 0"><b>Risk of leaving</b> is the AI's estimate of how likely the client is to stop buying, from what was said.
-          <b>Waiting for review</b> means nobody has checked the AI's draft yet, so nothing has gone to Monday or the CRM.</p></div>
+          <b>Waiting for review</b> means nobody has checked the AI's draft yet, so nothing has gone to Monday or the CRM.
+          <b>Needs a person</b> means an automatic check found something the AI may have got wrong, so someone should read the call.</p></div>
     </section>
 
     <section data-view="new" hidden>
@@ -362,7 +362,7 @@ details.more .toolbar { margin-top:10px }
         <textarea id="vText" style="min-height:84px" maxlength="1000" placeholder="Create a task for Priya to send Summit Annuity the Texas quote by Friday, and note that Golden Years wants a call next week."></textarea>
         <div class="chips" id="vExamples"></div>
         <button type="button" class="btn wide" id="vGo" style="margin-top:16px">Show me the actions</button><div class="err" id="vErr" role="alert"></div>
-        <p class="help" style="margin:12px 0 0">People are matched to the team list (<span id="vTeam"></span>) and clients to the client list in code, never guessed.
+        <p class="help" style="margin:12px 0 0">Only people on your team (<span id="vTeam"></span>) and your clients are used; anyone else is flagged for you to pick. Nobody gets notified.
           A person is named in the Monday item's title, not set in a people column, so nobody is notified.</p>
       </div>
       <div id="vPlan"></div>
@@ -393,7 +393,7 @@ details.more .toolbar { margin-top:10px }
             <label class="opt"><input type="radio" name="theme" value="dark">Dark</label></div></div>
         <div class="set"><div><h3>AI model</h3><p>Which model reads the masked call and answers questions.</p></div>
           <div class="opts" id="provOpts"></div></div>
-        <div class="set"><div><h3>Masking</h3><p>What PII Shield hides before the AI sees a call.</p></div>
+        <div class="set"><div><h3>Privacy</h3><p>What is hidden before the AI sees a call. PII Shield, a masking service running on this server, does it.</p></div>
           <div class="opts">
             <label class="opt"><input type="checkbox" name="keep" value="NAME"><span>Send names as said<small>Off by default: names are swapped for "Person 1, 2..." and put back on our side, so follow-ups still show who.</small></span></label>
             <label class="opt"><input type="checkbox" name="keep" value="LOCATION"><span>Send places as said<small>Cities and states, e.g. "leads in Austin".</small></span></label>
@@ -401,7 +401,7 @@ details.more .toolbar { margin-top:10px }
         <div class="set"><div><h3>Leaving alert</h3><p>Alert the account manager when a client's risk of leaving is at or above this.</p></div>
           <div><div class="row"><input type="range" name="churn" min="30" max="90" step="5" aria-label="Churn alert threshold"><b id="churnVal"></b></div>
             <p class="help" style="margin:4px 0 0">Applies to calls processed from now on. Default <span id="churnDef"></span>.</p></div></div>
-        <div class="set" id="usageRow" hidden><div><h3>Usage and cost</h3><p>Admins only.</p></div><div><a class="btn ghost" href="#usage">Open the usage page</a></div></div>
+        <div class="set" id="usageRow" hidden><div><h3>Usage and cost</h3><p>What the AI has cost, by day, person and call. Only the admin sees this.</p></div><div><a class="btn ghost" href="#usage">Open the usage page</a></div></div>
         <div class="set"><div></div><div><button type="button" class="btn ghost" id="reset">Reset to defaults</button></div></div>
       </form>
     </section>
@@ -410,7 +410,7 @@ details.more .toolbar { margin-top:10px }
       <div class="vhead"><h2>Activity</h2><p>What happened, newest first: calls sent in and what the AI made of them, edits, ticked follow-ups, approvals and
         what was sent to Monday, tasks from voice, and questions. <span id="actScope"></span></p></div>
       <div class="card"><div class="chips" id="actFilters" role="group" aria-label="Show">
-          <button type="button" data-af="all" aria-pressed="true">Everything</button><button type="button" data-af="mine" aria-pressed="false">Only mine</button>
+          <button type="button" data-af="all" aria-pressed="true">All work</button><button type="button" data-af="mine" aria-pressed="false">Only mine</button>
           <button type="button" data-af="calls" aria-pressed="false">Calls</button><button type="button" data-af="voice" aria-pressed="false">Voice and questions</button>
           <button type="button" data-af="login" aria-pressed="false" id="afLogin" hidden>Sign-ins</button></div>
         <div id="actBody" style="margin-top:14px"></div></div>
@@ -451,8 +451,8 @@ const ICON = {
 const STEPS = [
   ["listen", "1. Listen", "Speech-to-text on this server, from an upload or live from the microphone. In a stereo recording each speaker has a channel."],
   ["mask", "2. Mask", "Names, phones, emails and card numbers become [NAME], [PHONE]... before any AI sees the call. No masking, no call."],
-  ["extract", "3. Extract", "Claude or Grok writes the summary, churn risk, upsell signals and follow-ups, quoting the words behind each."],
-  ["check", "4. Check", "Code looks for every quote in the transcript. A point whose quote isn't there is marked unverified."],
+  ["extract", "3. Extract", "An AI model (Claude or Grok) writes the summary, the risk of leaving, signs they want more, and the follow-ups, quoting the words behind each."],
+  ["check", "4. Check", "CallSight checks every quote against the transcript. A point whose quote isn't there is marked unverified and can't raise an alert."],
   ["act", "5. Review and act", "Rules in code raise the alerts. A person corrects and approves; only then does the call go to Monday.com and GHL."]];
 $$(".flow").forEach(el => el.innerHTML = STEPS.map(([i, t, d]) => `<li><span class="ic">${ICON[i]}</span><h3>${t}</h3><p>${d}</p></li>`).join(""));
 const EXAMPLES = ["Which clients are thinking about leaving?", "Who wants to expand to new states?", "What did we promise to send, and to whom?"];
@@ -496,7 +496,8 @@ function renderSettings() {
   f.churn.value = Math.round(p.churn * 100); $("#churnVal").textContent = f.churn.value + "%";
   $("#churnDef").textContent = Math.round(server.churn_alert * 100) + "%";
   const keep = p.keep.map(k => KEEP[k]);
-  $("#using").innerHTML = `<b>${PROVIDER[p.provider] || "No model"}</b> · ${keep.length ? `${keep.join(" and ")} sent as said` : "names and places masked"} · alert when risk of leaving ≥ ${Math.round(p.churn * 100)}%`;
+  $("#using").innerHTML = (server.providers.length ? `AI: <b>${PROVIDER[p.provider] || esc(p.provider)}</b>` : "<b>No AI connected on this server</b>")
+    + ` · ${keep.length ? `${keep.join(" and ")} sent to the AI as said` : "names hidden from the AI"} · alert at ${Math.round(p.churn * 100)}% risk of leaving`;
   $("#whoami").innerHTML = server.user ? `Signed in as <b>${esc(server.user)}</b> (${server.admin ? "admin" : "member"}).` : "";
   $("#usageRow").hidden = !server.admin;
   $("#vTeam").textContent = server.team.join(", ");
@@ -525,7 +526,8 @@ const cap = t => { t = String(t || "").trim(); return t ? t[0].toUpperCase() + t
 function friendly(status, said) {
   if (status === 429 && /limit/.test(said)) return `${cap(said)} The demo limits how much each person can use per hour, to keep AI costs down.`;
   if (status === 503) return "The masking service (PII Shield) isn't answering, so CallSight stopped before any AI saw the call. Nothing was saved or sent. Try again in a minute.";
-  if (status === 502) return `The AI model didn't answer (${said}). Nothing was saved. Try again, or pick the other model in Settings.`;
+  if (status === 502) return /saved/.test(said) ? `The AI didn't respond: ${cap(said)}` + (server.providers.length > 1 ? " You can also pick the other model in Settings." : "")
+    : `The AI didn't respond (${said}). Nothing was saved. Try again in a minute.`;
   if (status === 404) return "That isn't here any more. It may have been deleted, or it belongs to someone else.";
   if (status >= 500) return "Something went wrong on the server, and it's in the server log. Nothing was changed. Please try again.";
   return cap(said);
@@ -687,6 +689,8 @@ $$("[data-tab]").forEach(b => b.onclick = () => tab(b.dataset.tab));
 $("#sample").onchange = e => { const s = samples[e.target.value]; if (!s) return;
   $("#clients").value = s.client_id; $("#transcript").value = s.transcript; };
 
+// a re-run with the other model, or the demo's audio version of a pasted call: same conversation, so not counted twice
+const alt = c => c.rerun_of || /-AUDIO$/.test(c.id);
 async function loadCalls() { calls = await api("/api/calls"); if (!$("[data-view=calls]").hidden) drawCalls(); }
 let callFilter = "all";
 function setFilter(f) { callFilter = f; $$("#callFilters button").forEach(b => b.setAttribute("aria-pressed", b.dataset.f === f)); }
@@ -696,7 +700,7 @@ function drawCalls() {
   const q = $("#filter").value.trim().toLowerCase();
   const shown = calls.filter(c => TESTS[callFilter](c) && (!q || c.client.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)));
   $("#ncalls").textContent = `${shown.length} of ${calls.length}`;
-  $("#calls").innerHTML = shown.map(c => `<a class="callrow" href="#${esc(c.id)}"><span><b>${esc(c.client)}</b>${c.rerun_of ? '<span class="tag">re-run</span>' : ""}
+  $("#calls").innerHTML = shown.map(c => `<a class="callrow" href="#${esc(c.id)}"><span><b>${esc(c.client)}</b>${c.rerun_of ? '<span class="tag">re-run</span>' : /-AUDIO$/.test(c.id) ? '<span class="tag">from the recording</span>' : ""}
       ${c.headline ? `<span class="about">${esc(c.headline)}</span>` : ""}<span class="muted">${when(c.created)} · client mood ${esc(c.sentiment)}${c.alerts ? ` · ${c.alerts} alert${c.alerts === 1 ? "" : "s"}` : ""}</span></span>
       <span class="tags">${["draft", "approved"].includes(callFilter) ? "" : stateChip(c)}${badge(c.churn_risk)}</span></a>`).join("")
     || `<p class="empty-line">${calls.length ? "No calls match." : "No calls yet. Use New call to process one."}</p>`;
@@ -735,7 +739,7 @@ $("#callForm").onsubmit = async e => {
         $("#callProg").innerHTML = "";
         await loadCalls(); arrival = "Done. This is the AI's draft. Check the alerts and follow-ups (and the quotes behind them), fix anything with Edit, then Approve. The History tab shows each step.";
         location.hash = r.id; }
-  catch (err) { $("#callProg").innerHTML = ""; $("#callErr").textContent = err.message; if (mode === "mic") callRec.say(""); }
+  catch (err) { $("#callProg").innerHTML = ""; $("#callErr").textContent = err.message; $("#callErr").scrollIntoView({block: "center", behavior: "smooth"}); if (mode === "mic") callRec.say(""); }
   finally { clearInterval(poll); $("#callBtn").disabled = false; $("#callBtn").textContent = "Process call";
             $("#callBtn").hidden = mode === "mic" && !callRec.segs.length; }  // a failed analysis of a recording can be retried
 };
@@ -764,7 +768,9 @@ async function openCall(id, at) {
   if (at != null) { dtab("transcript"); highlight(at); } else window.scrollTo(0, 0);
 }
 let shown = null, flash = "", arrival = "";
-const person = (r, a) => { const n = a.speaker ? (r.speakers?.[a.speaker] || a.speaker) : ""; return /^(speaker|client|account manager)?$/i.test(n) ? "" : n; };
+// older calls say "Speaker 2", and PII Shield turned "Speaker 2" said aloud into "[NAME] 2": show both as "Person 2"
+const nm = t => String(t ?? "").replace(/\[NAME\] (\d+)\b/g, "Person $1").replace(/\bSpeaker (\d+)\b/g, "Person $1");
+const person = (r, a) => { const n = nm(a.speaker ? (r.speakers?.[a.speaker] || a.speaker) : ""); return /^(speaker|client|account manager)?$/i.test(n) ? "" : n; };
 const canDelete = r => server.admin || (r.owner != null && r.owner === server.user);
 function renderCall(r) {
   shown = r;
@@ -789,10 +795,10 @@ function renderCall(r) {
       with each follow-up as a subitem and the summary and alerts as an update. A link to the item appears next to "Approved".</p>
     <p><b>Ticking a follow-up:</b> marks it done. It drops off Today and the client's open list and stays approved; on an approved call, a "Done: ..." note is added to the Monday item.</p>
     <p><b>Editing after approval:</b> the call goes back to waiting for review. Approving it again posts the corrected report on the same Monday item, not a new one.</p></div></details>`;
-  const ev = r.checks.map(c => `<div class="ev ${c.found ? "found" : "miss"}"><span class="k">${esc(c.kind.replace("_", " "))}</span>${esc(c.text)}
+  const ev = r.checks.map(c => `<div class="ev ${c.found ? "found" : "miss"}"><span class="k">${esc(QKIND[c.kind] || c.kind.replace("_", " "))}</span>${esc(c.text)}
       ${c.found ? `<span class="tick b-low">&#10003; found</span><button class="ts" data-at="${c.at}" title="Show in transcript">${where(c.at)}</button>`
                 : '<span class="tick b-high">unverified</span>'}
-      <blockquote>&ldquo;${esc(c.quote)}&rdquo;</blockquote></div>`).join("");
+      <blockquote>&ldquo;${esc(nm(c.quote))}&rdquo;</blockquote></div>`).join("");
   $("#detail").innerHTML = `<a class="back" href="#calls">&larr; All calls</a>
     <section class="card"><div class="dhead"><h2><a href="#client/${esc(r.client_id)}" style="color:inherit;text-decoration:none">${esc(r.client.name)}</a></h2>
       <span>${esc(r.id)} · ${day(r.created)} · ${esc(r.client.plan)} · account manager ${esc(r.client.account_manager)}</span></div>
@@ -801,8 +807,8 @@ function renderCall(r) {
       <div class="tiles">
         <div class="tile"><small>Risk of leaving</small><b style="color:${rc}">${pct}%</b> <span class="due">${rl}</span><div class="meter"><i style="width:${pct}%;background:${rc}"></i></div></div>
         <div class="tile"><small>Client mood</small><b>${esc(i.sentiment)}</b>${r.second_opinion ? `<div class="due" title="A borderline reading, so the other model was asked too">2nd opinion (${esc(r.second_opinion.provider)}): ${Math.round(r.second_opinion.churn_risk * 100)}%, ${esc(r.second_opinion.sentiment)}</div>` : ""}</div>
-        <div class="tile"><small>Alerts</small><b>${r.alerts.length}</b></div>
-        <div class="tile" title="The AI model that read the masked call, and how long it took"><small>Read by</small><b>${esc(r.provider)}</b> <span class="due">${(r.latency_ms / 1000).toFixed(1)} s</span></div>
+        <div class="tile"><small>Follow-ups</small><b>${i.action_items.filter(a => !a.done).length}</b> <span class="due">open of ${i.action_items.length}</span></div>
+        <div class="tile" title="The AI model that read the masked call, and how long the whole analysis took"><small>Analysed by AI</small><b>${PROVIDER[r.provider] || esc(r.provider)}</b> <span class="due">in ${Math.round(r.latency_ms / 1000)} s</span></div>
       </div>
       <div class="status">${status}<span class="grow"></span><button type="button" class="btn ghost" id="editBtn">Edit</button>
         ${r.approved_by != null ? "" : `<button type="button" class="btn" id="approveBtn">${mon ? "Approve and send to Monday" : "Approve"}</button>`}</div>
@@ -831,9 +837,9 @@ function renderCall(r) {
       ${ev || '<p class="help" style="margin:0">The AI found nothing to report on this call.</p>'}</section>
     <section class="card" data-dtab="transcript" hidden><p class="help">Exactly what the AI was given. ${unmasked.length
         ? `The ${unmasked.join(" and ")} on this call were sent as said (a setting); phone numbers, emails and similar are masked.`
-        : "Names, phone numbers, emails and similar are already masked."}</p>
-      <div class="chat">${r.segments.map(s => `<div class="line" data-at="${s.start}"><span class="who-tag s${Math.min(speakers.indexOf(base(s)), 2)}" title="${esc(s.speaker)}">${esc(s.speaker)}</span>
-        <span>${timed ? `<span class="t">${mmss(s.start)}</span>` : ""}${esc(s.text)}${(r.voice?.moments || []).some(m => m.at === s.start) ? ' <span class="tag">voice raised</span>' : ""}</span></div>`).join("")}</div></section>
+        : "Names, phone numbers, emails and similar are hidden: [PHONE], [EMAIL] and so on, with people shown as Person 1, 2... Line numbers match the Quotes tab."}</p>
+      <div class="chat">${r.segments.map(s => `<div class="line" data-at="${s.start}"><span class="who-tag s${Math.min(speakers.indexOf(base(s)), 2)}" title="${esc(nm(s.speaker))}">${esc(nm(s.speaker))}</span>
+        <span><span class="t">${timed ? mmss(s.start) : Number(s.start) + 1}</span>${esc(nm(s.text))}${(r.voice?.moments || []).some(m => m.at === s.start) ? ' <span class="tag">voice raised</span>' : ""}</span></div>`).join("")}</div></section>
     <section class="card" data-dtab="history" hidden>${historyHtml(r)}</section>`;
 }
 // --- history of one call, and the Activity page ---------------------------------------------------------------------
@@ -849,11 +855,11 @@ function historyHtml(r) {
   const old = [[r.created, "processed", `Processed and read by ${PROVIDER[r.provider] || r.provider}.`],
     ...(r.edited_by != null ? [[null, "edited", `Edited by ${r.edited_by || "someone"}.`]] : []),
     ...(r.approved_by != null ? [[r.approved_at, "approved", `Approved by ${r.approved_by || "someone"}${r.monday_item_id ? ` and sent to Monday as item #${r.monday_item_id}` : ""}.`]] : [])];
-  return intro + '<p class="help">This call is older than the step-by-step history, so only what was saved with it is shown.</p>'
+  return intro
     + `<ol class="hist">${old.map(([t, k, x]) => `<li><time>${t ? `${day(t)}, ${clock(t)}` : ""}</time><span>${kindTag(k)}${esc(x)}</span></li>`).join("")}</ol>`;
 }
 let actFilter = "all", activityRows = [];
-const ACT = {all: () => true, mine: e => e.user === server.user, calls: e => e.call_id, voice: e => ["voice", "ask"].includes(e.kind), login: e => e.kind === "login"};
+const ACT = {all: e => e.kind !== "login", mine: e => e.user === server.user, calls: e => e.call_id, voice: e => ["voice", "ask"].includes(e.kind), login: e => e.kind === "login"};
 async function renderActivity() {
   $("#afLogin").hidden = !server.admin;
   $("#actScope").textContent = server.admin ? "As the admin you see everyone's activity, including sign-ins." : "You see your own activity and what happened on the calls you can open.";
@@ -872,10 +878,11 @@ function drawActivity() {
     const link = e.call_id && ids.has(e.call_id) ? ` <a href="#${esc(e.call_id)}">${esc(e.call_id)}</a>` : e.call_id ? ` <span class="muted">${esc(e.call_id)}</span>` : "";
     const more = e.kind === "processed" && got[e.call_id] ? ` ${esc(got[e.call_id])} <span class="muted">(each step is in the call's History tab)</span>` : "";
     return `${head}<ol class="hist"><li><time>${clock(e.ts)}</time><span>${kindTag(e.kind)}${esc(plain(e.text))}${more}${link}</span></li></ol>`;
-  }).join("") || `<p class="empty-line">${activityRows.length ? "Nothing of this kind yet." : "Nothing has happened yet. Process a call or say a task, and each step will show up here."}</p>`;
+  }).join("") || `<p class="empty-line">${activityRows.length ? "Nothing of this kind yet. Each call processed, edited, ticked off or approved, each voice task and each question shows up here as it happens (recorded since 28 Nov 2026)." : "Nothing has happened yet. Process a call or say a task, and each step will show up here."}</p>`;
 }
 $("#actFilters").onclick = e => { const b = e.target.closest("[data-af]"); if (!b) return; actFilter = b.dataset.af;
   $$("#actFilters button").forEach(x => x.setAttribute("aria-pressed", x === b)); drawActivity(); };
+const QKIND = {churn_reasons: "Why they might leave", upsell_signals: "Wants more", objections: "Complaint or concern", action_items: "Follow-up"};
 const WHY = {loud: "louder", pitch: "higher", pitch_var: "more animated", wpm: "faster"};
 function voicePanel(r, where) {
   const v = r.voice || {}, sp = Object.entries(v.speakers || {});
@@ -998,7 +1005,7 @@ document.addEventListener("click", async e => {
 let actions = [];
 async function renderToday() {
   try { actions = await api("/api/actions"); } catch (err) { actions = []; notify(`Couldn't load your voice tasks, so they're missing below. ${esc(err.message)}`, "err"); }
-  const th = pick().churn, firsts = calls.filter(c => !c.rerun_of), latest = {};
+  const th = pick().churn, firsts = calls.filter(c => !alt(c)), latest = {};
   firsts.forEach(c => { if (!latest[c.client_id] || c.created > latest[c.client_id].created) latest[c.client_id] = c; });
   // needs attention: a client whose latest call is over the churn line, or any call the checks sent to a person
   const attention = [...Object.values(latest).filter(c => c.churn_risk >= th).map(c => ({c, why: c.headline})),
@@ -1124,19 +1131,19 @@ function riskChart(list, w = 120, h = 28, big = false) {
     ${list.map((c, i) => `<circle cx="${x(i)}" cy="${y(c.churn_risk)}" r="${big ? 4 : 2.2}" fill="${risk(c.churn_risk)[2]}"><title>${esc(c.id)}: ${Math.round(c.churn_risk * 100)}%</title></circle>
       ${big ? `<text x="${x(i)}" y="${h - 8}" text-anchor="middle">${day(c.created)}</text>` : ""}`).join("")}</svg>`;
 }
-const clientCalls = id => calls.filter(c => c.client_id === id && !c.rerun_of).sort((a, b) => a.created - b.created);
+const clientCalls = id => calls.filter(c => c.client_id === id && !alt(c)).reverse();  // oldest first, same tie order as Today
 function allOpenCsv(list) {
   const rows = list.flatMap(c => c.open.map(a => [c.id, c.client, a.owner, a.person, a.task, a.due, "no"]));
   download("open-follow-ups.csv", [CSV_HEAD, ...rows].map(r => r.map(csvCell).join(",")).join("\n"));
 }
 function renderClients() {
   const rows = clientsList.map(c => ({c, list: clientCalls(c.id)}));
-  $("#clientsBody").innerHTML = `<table class="tbl"><thead><tr><th>Client</th><th>Account manager</th><th class="num">Calls</th><th>Risk over time</th><th>Latest</th><th class="num">Open follow-ups</th></tr></thead><tbody>
-    ${rows.map(({c, list}) => `<tr><td><a href="#client/${esc(c.id)}"><b>${esc(c.name)}</b></a><br><span class="muted">${esc(c.plan)}</span></td><td>${esc(c.account_manager)}</td>
-      <td class="num">${list.length}</td><td>${riskChart(list)}</td><td>${list.length ? badge(list[list.length - 1].churn_risk) : '<span class="muted">no calls</span>'}</td>
+  $("#clientsBody").innerHTML = `<table class="tbl"><thead><tr><th>Client</th><th class="wide-only">Account manager</th><th class="num wide-only">Calls</th><th class="wide-only">Risk over time</th><th>Latest call</th><th class="num">Open follow-ups</th></tr></thead><tbody>
+    ${rows.map(({c, list}) => `<tr><td><a href="#client/${esc(c.id)}"><b>${esc(c.name)}</b></a><br><span class="muted wide-only">${esc(c.plan)}</span></td><td class="wide-only">${esc(c.account_manager)}</td>
+      <td class="num wide-only">${list.length}</td><td class="wide-only">${riskChart(list)}</td><td>${list.length ? badge(list[list.length - 1].churn_risk) : '<span class="muted">no calls</span>'}</td>
       <td class="num">${list.reduce((n, x) => n + x.open.length, 0)}</td></tr>`).join("")}</tbody></table>
     <div class="toolbar"><button type="button" class="btn ghost" id="csvAll">All open follow-ups as CSV</button></div>`;
-  $("#csvAll").onclick = () => allOpenCsv(calls.filter(c => !c.rerun_of));
+  $("#csvAll").onclick = () => allOpenCsv(calls.filter(c => !alt(c)));
 }
 async function renderClient(id) {
   const c = CL(id), list = clientCalls(id);
@@ -1149,7 +1156,7 @@ async function renderClient(id) {
         ${open.map(a => `<a class="rowlink" href="#${esc(a.call.id)}"><span class="owner ${a.owner === "us" ? "o-us" : "o-client"}">${a.owner === "us" ? "We do" : "They do"}</span><span class="grow">${a.person ? `<span class="who-name">${esc(a.person)}</span>: ` : ""}${esc(a.task)}<br><span class="muted">${esc(a.call.id)} · ${a.due ? "due " + esc(a.due) : '<span class="nodue">no due date</span>'}</span></span></a>`).join("") || '<p class="help" style="margin:0">Nothing open.</p>'}
         ${open.length ? '<div class="toolbar"><button type="button" class="btn ghost" id="csvClient">These as CSV</button></div>' : ""}</section>
       <section class="card"><h3 class="sub">Calls</h3>
-        ${list.slice().reverse().map(x => `<a class="rowlink" href="#${esc(x.id)}"><span class="grow"><b>${esc(x.id)}</b><br><span class="muted">${when(x.created)} · ${esc(x.sentiment)} · ${x.approved ? "approved" : "draft"}</span></span>${badge(x.churn_risk)}</a>`).join("") || '<p class="help" style="margin:0">None.</p>'}
+        ${list.slice().reverse().map(x => `<a class="rowlink" href="#${esc(x.id)}"><span class="grow">${esc(x.headline || x.id)}<br><span class="muted">${when(x.created)} · client mood ${esc(x.sentiment)} · ${x.approved ? "approved" : "waiting for review"}</span></span>${badge(x.churn_risk)}</a>`).join("") || '<p class="help" style="margin:0">None.</p>'}
         ${actionRows(actions.filter(a => a.client_id === id)) ? `<h3 class="sub">From voice</h3>${actionRows(actions.filter(a => a.client_id === id))}` : ""}</section>
     </div>`;
   $("#csvClient")?.addEventListener("click", () => allOpenCsv(list));
