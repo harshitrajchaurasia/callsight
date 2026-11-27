@@ -183,11 +183,6 @@ input[type=range] { flex:1; max-width:340px; accent-color:var(--brand) }
 .todo input[type=checkbox] { margin-top:5px; accent-color:var(--ok); flex:none; width:16px; height:16px }
 .todo.done .task { text-decoration:line-through; color:var(--muted) }
 .who-name { font-weight:650 }
-.erow { display:grid; grid-template-columns:110px 150px 1fr 140px 36px; gap:8px; align-items:center; margin-bottom:8px }
-.erow select, .erow input { padding:7px 9px; font-size:14px }
-.erow .x { font:inherit; border:1px solid var(--line); background:none; color:var(--muted); border-radius:8px; height:36px; cursor:pointer }
-.erow .x:hover { color:var(--bad); border-color:var(--bad) }
-@media (max-width:760px) { .erow { grid-template-columns:1fr 1fr; padding-bottom:10px; border-bottom:1px solid var(--line) } .erow .task { grid-column:1 / -1 } }
 .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 14px } @media (max-width:480px) { .grid2 { grid-template-columns:1fr } }
 input[type=number] { width:100%; font:inherit; font-size:14.5px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink) }
 
@@ -242,6 +237,20 @@ details.more .toolbar { margin-top:10px }
 .back { display:inline-block; margin:0 0 12px; font-size:14px; font-weight:600; text-decoration:none }
 .today h3.sub { display:flex; align-items:baseline; gap:8px } .today h3 .muted { font-weight:500 }
 .welcome { border-color:var(--brand) } .steps3 { margin:10px 0 0; padding-left:20px; font-size:14.5px } .steps3 li { margin:4px 0 }
+/* correct the draft */
+.rv-form { display:contents } .rv-body textarea { width:100%; box-sizing:border-box }
+.moods { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px }
+.mood { position:relative; cursor:pointer; margin:0 } .mood input { position:absolute; opacity:0 }
+.mood span { display:block; height:100%; box-sizing:border-box; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--panel) }
+.mood b { display:block; font-size:14.5px } .mood small { color:var(--muted); font-size:12.5px; font-weight:500 }
+.mood input:checked + span { border-color:var(--brand); box-shadow:0 0 0 2px var(--brand) inset; background:var(--soft) }
+.mood input:focus-visible + span { outline:2px solid var(--brand); outline-offset:2px }
+#eRisk { width:100% }
+.fu { border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; background:var(--panel) }
+.fu-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px } .fu-num { font-weight:700; font-size:13.5px }
+.fu-del { color:var(--bad); font-size:13.5px } .fu label { font-size:13px; margin-top:8px } .fu textarea { min-height:0; height:auto; resize:vertical }
+.fu-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px }
+@media (max-width:640px) { .moods { grid-template-columns:1fr 1fr } .fu-grid { grid-template-columns:1fr } }
 /* review before sending to Monday */
 .review { width:min(780px, calc(100vw - 32px)); max-height:min(88vh, 900px); padding:0; border:1px solid var(--line); border-radius:18px; background:var(--panel); color:var(--ink);
   box-shadow:0 24px 80px rgba(0,0,0,.28); overflow:hidden }
@@ -828,7 +837,7 @@ function renderCall(r) {
   const status = r.approved_by != null
     ? `<span class="state st-ok">Approved</span><span>${by(r.approved_by)} · ${when(r.approved_at)}${item ? ` · <a href="${esc(item)}" target="_blank" rel="noopener">Open in Monday &#8599;</a>`
         : mon ? "" : " · Monday isn't connected on this server, so nothing was sent"}</span>`
-    : `<span class="state st-draft">Waiting for review</span><span>${r.edited_by != null ? `Edited${by(r.edited_by)}. ` : ""}Nobody has checked the AI's draft yet${mon ? ", and nothing has gone to Monday. When it looks right, press Review: you'll see exactly what will be sent, and where, before anything is" : ""}.</span>`;
+    : `<span class="state st-draft">Waiting for review</span><span>${r.edited_by != null ? `Edited${by(r.edited_by)}. ` : ""}Nobody has checked the AI's draft yet${mon ? ", and nothing has gone to Monday" : ""}. Read it below. If something is wrong, <b>correct the draft</b>; when it's right, <b>${mon ? "review and send it to Monday" : "review and approve it"}</b>.</span>`;
   const explain = `<details class="more"><summary>What do these mean?</summary><div class="explain">
     <p><b>Waiting for review:</b> the AI has read the call and drafted the summary, scores and follow-ups, but no person has checked them yet. Nothing has been sent anywhere.</p>
     <p><b>Approve:</b> you confirm the draft is right (use Edit first if it isn't). CallSight then creates an item for this call on the
@@ -851,7 +860,7 @@ function renderCall(r) {
         <div class="tile"><small>Follow-ups</small><b>${i.action_items.filter(a => !a.done).length}</b> <span class="due">open of ${i.action_items.length}</span></div>
         <div class="tile" title="The AI model that read the masked call, and how long the whole analysis took"><small>Analysed by AI</small><b>${PROVIDER[r.provider] || esc(r.provider)}</b> <span class="due">in ${Math.round(r.latency_ms / 1000)} s</span></div>
       </div>
-      <div class="status">${status}<span class="grow"></span><button type="button" class="btn ghost" id="editBtn">Edit</button>
+      <div class="status">${status}<span class="grow"></span><button type="button" class="btn ghost" id="editBtn">${r.approved_by != null ? "Correct the report" : "Correct the draft"}</button>
         ${r.approved_by != null ? "" : `<button type="button" class="btn" id="approveBtn">${reviewLabel(r, mon)}</button>`}</div>
       ${explain}
       <details class="more"><summary>More actions</summary><div class="toolbar"><button type="button" class="btn ghost" data-x="copy">Copy report</button><button type="button" class="btn ghost" data-x="email">Email the client a recap</button>
@@ -918,7 +927,7 @@ function reviewHtml(r, mon, item) {
         <li>a <b>${pct}%</b> risk of leaving and a <b>${esc(i.sentiment)}</b> client mood are right</li>
         <li>the ${i.action_items.length} follow-up${i.action_items.length === 1 ? "" : "s"}, and who does each, are right</li></ul>
         ${mon ? '<p class="rv-hint">Nobody is assigned or notified on Monday. Ticking a follow-up here later adds a "Done" note to the item; editing the call later means reviewing it again.</p>' : ""}</section></div>
-    <footer class="rv-foot"><button type="button" class="btn ghost" id="rvEdit">Go back and edit</button><span class="grow"></span>
+    <footer class="rv-foot"><button type="button" class="btn ghost" id="rvEdit">Correct the draft first</button><span class="grow"></span>
       <button type="button" class="btn ghost" id="rvCancel">Cancel</button>
       <button type="button" class="btn" id="rvSend">${!mon ? "Approve" : again ? "Approve and update Monday" : "Send to Monday"}</button></footer>`;
 }
@@ -1028,36 +1037,62 @@ async function saveCall(body) {
   renderCall(r); loadCalls(); return r;
 }
 const items = () => shown.insight.action_items.map(a => ({...a}));
+// --- correct the AI's draft: a window like the review one, saying what each part is and what it changes -------------
+const MOODS = [["positive", "Positive", "pleased, happy with us"], ["neutral", "Neutral", "matter-of-fact"],
+               ["frustrated", "Frustrated", "unhappy, complaining"], ["angry", "Angry", "upset, raising their voice"]];
 function editForm() {
-  const r = shown, i = r.insight, labels = [...new Set(r.segments.map(s => s.speaker.split(" (")[0]))];
-  const draft = items();
-  const row = (a, n) => `<div class="erow" data-n="${n}">
-      <select data-k="owner" aria-label="Side"><option value="us" ${a.owner === "us" ? "selected" : ""}>We do it</option><option value="client" ${a.owner === "client" ? "selected" : ""}>Client does it</option></select>
-      <select data-k="speaker" aria-label="Person"><option value="">Who? (unclear)</option>${labels.map(l => `<option value="${esc(l)}" ${a.speaker === l ? "selected" : ""}>${esc(r.speakers?.[l] || l)}</option>`).join("")}</select>
-      <input type="text" class="task" data-k="task" value="${esc(a.task)}" aria-label="Task" maxlength="300" required>
-      <input type="text" data-k="due" value="${esc(a.due || "")}" placeholder="Due (optional)" aria-label="Due" maxlength="80">
-      <button type="button" class="x" data-del="${n}" aria-label="Remove">&times;</button></div>`;
-  const sec = $("#detail [data-dtab=overview]");
-  sec.innerHTML = `<form id="editForm"><h3 class="sub">Edit this call</h3><p class="help">Your changes replace the AI's. Alerts are re-run from the rules when you save; the quote checks stay as they were.</p>
-    <label for="eSum">Summary</label><textarea id="eSum" name="summary" style="min-height:110px" maxlength="2000" required>${esc(i.summary)}</textarea>
-    <div class="grid2"><div><label for="eSent">Client mood</label><select id="eSent" name="sentiment">${["positive", "neutral", "frustrated", "angry"].map(v => `<option ${v === i.sentiment ? "selected" : ""}>${v}</option>`).join("")}</select></div>
-      <div><label for="eRisk">Risk of leaving (%)</label><input id="eRisk" type="number" name="risk" min="0" max="100" step="1" value="${Math.round(i.churn_risk * 100)}" required></div></div>
-    <h3 class="sub">Follow-ups</h3><div id="eItems"></div>
-    <button type="button" class="btn ghost" id="eAdd">Add a follow-up</button>
-    <div class="row" style="margin-top:18px"><button class="btn">Save changes</button><button type="button" class="btn ghost" id="eCancel">Cancel</button></div>
-    <div class="err" id="eErr" role="alert"></div></form>`;
-  const draw = () => $("#eItems").innerHTML = draft.map(row).join("") || '<p class="help">No follow-ups.</p>';
-  draw();
-  $("#eItems").oninput = $("#eItems").onchange = e => { const el = e.target, n = el.closest(".erow")?.dataset.n; if (n != null && el.dataset.k) draft[n][el.dataset.k] = el.value || (el.dataset.k === "task" ? "" : null); };
+  const r = shown, i = r.insight, dlg = $("#reviewDlg"), approved = r.approved_by != null, th = Math.round((r.churn_min ?? server.churn_alert) * 100);
+  const labels = [...new Set(r.segments.map(s => s.speaker.split(" (")[0]))];
+  const draft = items(), riskWord = v => v >= 60 ? "High" : v >= 30 ? "Medium" : "Low";
+  const step = (n, title, hint, body) => `<section class="rv-step"><div class="rv-n">${n}</div><div class="rv-main"><h3>${title}</h3><p class="rv-hint">${hint}</p>${body}</div></section>`;
+  const card = (a, n) => `<div class="fu" data-n="${n}">
+      <div class="fu-top"><span class="fu-num">Follow-up ${n + 1}</span><button type="button" class="linkbtn fu-del" data-del="${n}">Remove</button></div>
+      <label>What needs doing</label><textarea data-k="task" rows="2" maxlength="300" required placeholder="e.g. Send the client the consent records">${esc(a.task)}</textarea>
+      <div class="fu-grid">
+        <div><label>Whose job is it</label><select data-k="owner"><option value="us" ${a.owner === "us" ? "selected" : ""}>Ours (Acme Leads)</option>
+          <option value="client" ${a.owner === "client" ? "selected" : ""}>The client's</option></select></div>
+        <div><label>Who said they'd do it</label><select data-k="speaker"><option value="">Not said</option>${labels.map(l => `<option value="${esc(l)}" ${a.speaker === l ? "selected" : ""}>${esc(nm(r.speakers?.[l] || l))}</option>`).join("")}</select></div>
+        <div><label>By when <span class="muted">(optional)</span></label><input type="text" data-k="due" value="${esc(a.due || "")}" placeholder="e.g. Friday" maxlength="80"></div></div></div>`;
+  dlg.innerHTML = `<form id="editForm" class="rv-form">
+    <header class="rv-head"><div><span class="rv-eyebrow">${approved ? "Correct the approved report" : "Correct the AI's draft"}</span>
+      <h2 id="rvTitle">Fix anything the AI got wrong</h2>
+      <p>Change only what's wrong; your version replaces the AI's. ${approved ? "Nothing goes to Monday until you review and send it again." : "Nothing is sent anywhere when you save."}</p></div>
+      <button type="button" class="rv-x" id="eCancelX" aria-label="Close">&times;</button></header>
+    <div class="rv-body">
+      ${step(1, "Summary", "What happened on the call, in two or three sentences. It's the first thing people read here and on Monday.",
+        `<textarea id="eSum" name="summary" rows="5" maxlength="2000" required>${esc(i.summary)}</textarea>`)}
+      ${step(2, "How the client feels", "Their mood across the whole call, and how likely they are to stop buying from us.",
+        `<div class="moods" role="radiogroup" aria-label="Client mood">${MOODS.map(([v, t, d]) => `<label class="mood"><input type="radio" name="sentiment" value="${v}" ${v === i.sentiment ? "checked" : ""}><span><b>${t}</b><small>${d}</small></span></label>`).join("")}</div>
+         <label for="eRisk" style="margin-top:16px">Risk of leaving: <b id="eRiskVal"></b></label>
+         <input id="eRisk" type="range" name="risk" min="0" max="100" step="5" value="${Math.round(i.churn_risk * 20) * 5}">
+         <p class="rv-hint" style="margin:4px 0 0">${th}% or more raises an alert for the account manager.</p>`)}
+      ${step(3, "Follow-ups", "Everything someone agreed to do on the call. On Monday each becomes a subitem under the call.",
+        `<div id="eItems"></div><button type="button" class="btn ghost" id="eAdd">+ Add a follow-up</button>`)}
+      <div class="rv-note">When you save, the alerts are worked out again from your version.${approved ? " The call goes back to <b>Waiting for review</b>; review and send it again to update its Monday item." : " Then use <b>Review and send to Monday</b> when it's right."}</div>
+      <div class="err" id="eErr" role="alert"></div></div>
+    <footer class="rv-foot"><span class="grow"></span><button type="button" class="btn ghost" id="eCancel">Cancel</button>
+      <button class="btn" id="eSave">Save corrections</button></footer></form>`;
+  const risk = () => { const v = +$("#eRisk").value; $("#eRiskVal").textContent = `${v}% (${riskWord(v)})`; };
+  const draw = () => $("#eItems").innerHTML = draft.map(card).join("") || '<p class="rv-empty" style="margin-bottom:10px">No follow-ups. Add one if something was agreed.</p>';
+  draw(); risk();
+  $("#eRisk").oninput = risk;
+  $("#eItems").oninput = $("#eItems").onchange = e => { const el = e.target, n = el.closest(".fu")?.dataset.n; if (n != null && el.dataset.k) draft[n][el.dataset.k] = el.value || (el.dataset.k === "task" ? "" : null); };
   $("#eItems").onclick = e => { const d = e.target.closest("[data-del]"); if (d) { draft.splice(+d.dataset.del, 1); draw(); } };
-  $("#eAdd").onclick = () => { draft.push({owner: "us", speaker: null, task: "", due: null, quote: "", done: false}); draw(); $("#eItems .erow:last-child .task").focus(); };
-  $("#eCancel").onclick = () => renderCall(shown);
+  $("#eAdd").onclick = () => { draft.push({owner: "us", speaker: null, task: "", due: null, quote: "", done: false}); draw(); $("#eItems .fu:last-child textarea").focus(); };
+  $("#eCancel").onclick = $("#eCancelX").onclick = () => dlg.close();
   $("#editForm").onsubmit = async e => {
-    e.preventDefault(); const f = e.target;
-    try { flash = "Saved your changes, and the alerts were re-run from the rules. Approve it when it's right."; await saveCall({summary: f.summary.value.trim(), sentiment: f.sentiment.value,
-                      churn_risk: Number(f.risk.value) / 100, action_items: draft.filter(a => a.task.trim())}); }
-    catch (err) { flash = ""; $("#eErr").textContent = err.message; }
+    e.preventDefault(); const f = e.target; $("#eSave").disabled = true; $("#eSave").textContent = "Saving...";
+    try { flash = approved ? "Saved your corrections. The call is waiting for review again: review and send it to update Monday."
+                           : "Saved your corrections, and the alerts were worked out again. When it's right, review and send it to Monday.";
+          const body = {action_items: draft.filter(a => a.task.trim())}, sum = f.summary.value.trim(), risk = Number(f.risk.value) / 100;
+          if (sum !== i.summary) body.summary = sum;  // only what changed: a new summary is re-indexed for Ask, which takes a moment
+          if (f.sentiment.value !== i.sentiment) body.sentiment = f.sentiment.value;
+          if (Math.round(risk * 100) !== Math.round(i.churn_risk * 20) * 5) body.churn_risk = risk;
+          await saveCall(body);
+          dlg.close(); notify(esc(flash)); }
+    catch (err) { flash = ""; $("#eErr").textContent = err.message; $("#eSave").disabled = false; $("#eSave").textContent = "Save corrections"; }
   };
+  dlg.showModal(); dlg.querySelector(".rv-body").scrollTop = 0;
 }
 document.addEventListener("change", async e => {
   const d = e.target.closest("[data-done]"); if (!d) return;
@@ -1069,11 +1104,11 @@ document.addEventListener("change", async e => {
   catch (err) { d.checked = !d.checked; notify(esc(err.message), "err"); }
 });
 document.addEventListener("click", async e => {
-  if (e.target.closest("#editBtn")) { dtab("overview"); editForm(); $("#eSum").focus(); }
+  if (e.target.closest("#editBtn")) { editForm(); return; }
   const dlg = $("#reviewDlg"), mon = server.monday_board;
   if (e.target.closest("#approveBtn")) { dlg.innerHTML = reviewHtml(shown, mon, shown.monday_item_id && mon ? `${mon}/pulses/${shown.monday_item_id}` : ""); dlg.showModal(); dlg.querySelector(".rv-body").scrollTop = 0; return; }
   if (e.target.closest("#rvCancel, #rvCancelX")) return dlg.close();
-  if (e.target.closest("#rvEdit")) { dlg.close(); dtab("overview"); editForm(); $("#eSum").focus(); return; }
+  if (e.target.closest("#rvEdit")) { dlg.close(); editForm(); return; }
   if (e.target === dlg) return dlg.close();  // a click on the dimmed backdrop
   const b = e.target.closest("#rvSend"); if (!b) return;
   b.disabled = true; b.textContent = server.monday_board ? "Approving and sending to Monday..." : "Approving...";
